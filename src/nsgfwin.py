@@ -28,6 +28,7 @@
 
 import numpy as N
 from util import hannwin,_isseq
+from sys import stderr
 
 def nsgfwin(fmin,fmax,bins,sr,Ls):
 
@@ -38,46 +39,43 @@ def nsgfwin(fmin,fmax,bins,sr,Ls):
     
     b = N.ceil(N.log2(fmax/fmin))+1
 
-    if not _isseq(bins) == 1:
+    if not _isseq(bins):
         bins = N.ones(b,dtype=float)*bins
     elif len(bins) < b:
+        # TODO: test this branch!
         bins[bins <= 0] = 1
         bins = N.concatenate((bins,N.ones(b-len(bins),dtype=int)*N.min(bins)))
     
     fbas = []
     for kk,bkk in enumerate(bins):
-        r = N.arange(kk*bkk,(kk+1)*bkk)/float(bkk)
-        fbas.append(2**r*fmin)
+        r = N.arange(kk*bkk,(kk+1)*bkk,dtype=float)
+        # TODO: use N.logspace instead
+        fbas.append(2**(r/bkk)*fmin)
     fbas = N.concatenate(fbas)
 
-    if fbas[N.min(N.where(fbas >= fmax))] >= nf:
-        fbas = fbas[:N.max(N.where(fbas<fmax))]
+    if fbas[N.min(N.where(fbas>=fmax))] >= nf:
+        fbas = fbas[:N.max(N.where(fbas<fmax))+1]
     else:
-        fbas = fbas[:N.min(N.where(fbas>=fmax))]
+        # TODO: test this branch!
+        fbas = fbas[:N.min(N.where(fbas>=fmax))+1]
     
     lbas = len(fbas)
-    fbas = N.insert(fbas,0,0)
-    fbas[lbas+1] = nf
-    fbas[lbas+2:2*(lbas+1)] = sr-fbas[lbas:1:-1]
+    fbas = N.concatenate(((0.,),fbas,(nf,),sr-fbas[::-1]))
+    fbas *= float(Ls)/sr
     
-    fbas *= Ls/sr
-    
-    M = N.zeros(len(fbas),dtype=float);
-    M[0] = 2*fmin*(Ls/sr)
+    # TODO: put together with array indexing
+    M = N.zeros(fbas.shape,int)
+    M[0] = N.round(2.*fmin*Ls/sr)
     for k in xrange(1,2*lbas+1):
-        M[k] = fbas[k+1]-fbas[k-1]
-    M[-1] = Ls-fbas[-1]
-    M = N.round(M)
+        M[k] = N.round(fbas[k+1]-fbas[k-1])
+    M[-1] = N.round(Ls-fbas[-2])
     
-    g = []
-    for ii in xrange(2*(lbas+1)):   
-        if M[ii] < 4:
-            M[ii] = 4
-
-        g.append(hannwin(N.round(M[ii])))
+    M = N.clip(M,4,N.max(M))
+    
+    g = [hannwin(m) for m in M]
     
     fbas[lbas] = (fbas[lbas-1]+fbas[lbas+1])/2
     fbas[lbas+2] = Ls-fbas[lbas]
-    rfbas = N.round(fbas)
+    rfbas = N.round(fbas).astype(int)
     
     return g,rfbas,M

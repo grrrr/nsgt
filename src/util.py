@@ -8,7 +8,7 @@ import numpy as N
 from math import pi
 
 def hannwin(l):
-    r = N.arange(l)
+    r = N.arange(l,dtype=float)
     r *= pi*2./l
     r = N.cos(r)
     r += 1.
