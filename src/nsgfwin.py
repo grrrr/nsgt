@@ -28,7 +28,6 @@
 
 import numpy as N
 from util import hannwin,_isseq
-from sys import stderr
 
 def nsgfwin(fmin,fmax,bins,sr,Ls):
 
@@ -40,7 +39,7 @@ def nsgfwin(fmin,fmax,bins,sr,Ls):
     b = N.ceil(N.log2(fmax/fmin))+1
 
     if not _isseq(bins):
-        bins = N.ones(b,dtype=float)*bins
+        bins = N.ones(b,dtype=int)*bins
     elif len(bins) < b:
         # TODO: test this branch!
         bins[bins <= 0] = 1
@@ -64,7 +63,7 @@ def nsgfwin(fmin,fmax,bins,sr,Ls):
     fbas *= float(Ls)/sr
     
     # TODO: put together with array indexing
-    M = N.zeros(fbas.shape,int)
+    M = N.empty(fbas.shape,int)
     M[0] = N.round(2.*fmin*Ls/sr)
     for k in xrange(1,2*lbas+1):
         M[k] = N.round(fbas[k+1]-fbas[k-1])

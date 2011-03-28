@@ -28,7 +28,7 @@ if __name__ == "__main__":
     g,a,M = nsgfwin(fmin,fmax,bins,fs,Ls)
     
     diff = lambda a: a[1:]-a[:-1]
-    shift = N.vstack([N.mod(-a[-1],Ls), diff(a)])
+    shift = N.concatenate(((N.mod(-a[-1],Ls),), diff(a)))
 
     gd = nsdual(g,shift,M)
     
