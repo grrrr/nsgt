@@ -13,17 +13,13 @@ def nsgtf(f,g,shift,M=None):
     # Check input arguments
     assert len(g) == len(shift)
     
-    N = len(shift)    # The number of frequency slices
+    n = len(shift)    # The number of frequency slices
     M = chkM(M,g)
     
-    Ls,col = f.shape()
-    
-    if min(Ls,col) > 1:
+    if len(f.shape) > 1:
         raise RuntimeError('Right now, this routine supports only single channel signals')
     
-    if col != 1 and Ls == 1:
-        f = f.T
-        Ls = col
+    Ls = len(f)
     
     # some preparation    
     f = N.fft.fft(f)
@@ -31,25 +27,26 @@ def nsgtf(f,g,shift,M=None):
     timepos = N.cumsum(shift)-shift[0]+1 # Calculate positions from shift vector
     
     # A small amount of zero-padding might be needed (e.g. for scale frames)
-    fill = timepos[N]+shift[0]-Ls-1
+    fill = timepos[n-1]+shift[0]-Ls-1
     f = N.concatenate((f,N.zeros(fill,dtype=f.dtype)))
     
     c = [] # Initialisation of the result
         
     # The actual transform
-    for ii in range(N):
+    for ii in range(n):
         X = len(g[ii])
-        sl = N.array((-floor(X/2),ceil(X/2)-1),dtype=int)
-        win_range = N.mod(timepos[ii]+sl-1,Ls+fill)+1
+        sl = N.arange(-floor(X/2.),ceil(X/2.),dtype=int)
+        sl += timepos[ii]-1
+        win_range = N.mod(sl,Ls+fill)
 
         if M[ii] < X: # if the number of time channels is too small, aliasing is introduced
-            col = ceil(X/M[ii])
+            col = ceil(float(X)/M[ii])
             temp = N.zeros((M[ii],col),dtype=float)
-            temp[-floor(X/2):,:ceil(X/2)] = f[win_range]*fftshift(N.conj(g[ii]))
+            temp[-floor(X/2.):,:ceil(X/2.)] = f[win_range]*fftshift(N.conj(g[ii]))
             c.append(N.fft.ifft(N.sum(temp,axis=1)))
         else:
             temp = N.zeros((M[ii],1),dtype=float)
-            temp[-floor(X/2):,:ceil(X/2)] = f[win_range]*fftshift(N.conj(g[ii]))
+            temp[-floor(X/2.):,:ceil(X/2.)] = f[win_range]*fftshift(N.conj(g[ii]))
             c.append(N.fft.ifft(temp))
     
 #    if max(M) == min(M):

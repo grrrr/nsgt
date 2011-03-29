@@ -8,6 +8,9 @@ from nsgtf import nsgtf,nsigtf
 from nsdual import nsdual
 from nsgfwin import nsgfwin
 
+def calcshift(a,Ls):
+    return N.concatenate(((N.mod(-a[-1],Ls),), a[1:]-a[:-1]))
+
 if __name__ == "__main__":
     import numpy as N
     from scikits.audiolab import Sndfile
@@ -27,8 +30,7 @@ if __name__ == "__main__":
 
     g,a,M = nsgfwin(fmin,fmax,bins,fs,Ls)
     
-    diff = lambda a: a[1:]-a[:-1]
-    shift = N.concatenate(((N.mod(-a[-1],Ls),), diff(a)))
+    shift = calcshift(a,Ls)
 
     gd = nsdual(g,shift,M)
     
