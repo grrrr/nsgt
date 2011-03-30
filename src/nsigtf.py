@@ -43,6 +43,7 @@ Edited by Nicki Holighaus 01.03.11
 
 import numpy as N
 from math import ceil,floor
+from itertools import izip
 from util import fft,ifft
 
 def nsigtf(c,gd,shift,Ls = None):
@@ -51,21 +52,21 @@ def nsigtf(c,gd,shift,Ls = None):
     timepos = N.cumsum(shift)-shift[0]+1 # Calculate positions from shift vector
     
     n = len(timepos) # The number of time slices
-    NN = timepos[-1]+shift[0]-1 # Length of the reconstruction before truncation
+    nn = timepos[-1]+shift[0]-1 # Length of the reconstruction before truncation
     
-    fr = N.zeros(NN,dtype=complex)  # Initialize output
+    fr = N.zeros(nn,dtype=complex)  # Initialize output
     
     # The overlap-add procedure including multiplication with the synthesis windows    
-    for ii in range(n):
-        X = len(gd[ii])
+    for gdii,tpii,cii in izip(gd,timepos,c):
+        X = len(gdii)
         # TODO: the following indexes can be written as two slices
-        ixs = N.concatenate((N.arange(0,int(ceil(X/2.))),N.arange(X-int(floor(X/2.)),X)))
+        ixs = N.concatenate((N.arange(0,ceil(X/2.),dtype=int),N.arange(X-floor(X/2.),X,dtype=int)))
 
-        temp = fft(c[ii])*len(c[ii])
-        cii = temp[ixs]
-        pos = N.arange(-floor(X/2.),ceil(X/2.),dtype=int)+timepos[ii]-1
-        win_range = N.mod(pos,NN)
-        fr[win_range] += N.fft.fftshift(cii*gd[ii])
+        temp = fft(cii)*len(cii)
+        tii = temp[ixs]
+        pos = N.arange(-floor(X/2.),ceil(X/2.),dtype=int)+tpii-1
+        win_range = N.mod(pos,nn)
+        fr[win_range] += N.fft.fftshift(tii*gdii)
 
     # TODO: this could probably be a rifft, if real signals (as outcome) are assumed
     fr = ifft(fr)

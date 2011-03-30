@@ -35,6 +35,7 @@ Edited by Nicki Holighaus 01.02.11
 
 import numpy as N
 from math import ceil,floor
+from itertools import izip
 from util import chkM,fft,ifft
 
 def nsgtf(f,g,shift,M=None):
@@ -61,22 +62,22 @@ def nsgtf(f,g,shift,M=None):
     c = [] # Initialisation of the result
         
     # The actual transform
-    for ii in range(n):
-        X = len(g[ii])
-        pos = N.arange(-floor(X/2.),ceil(X/2.),dtype=int)+timepos[ii]-1
+    for gii,tpii,mii in izip(g,timepos,M):
+        X = len(gii)
+        pos = N.arange(-floor(X/2.),ceil(X/2.),dtype=int)+tpii-1
         win_range = N.mod(pos,Ls+fill)
-        t = f[win_range]*N.fft.fftshift(N.conj(g[ii]))
+        t = f[win_range]*N.fft.fftshift(N.conj(gii))
         # TODO: the following indexes can be written as two slices
-        ixs = N.concatenate((N.arange(M[ii]-int(floor(X/2.)),M[ii]),N.arange(0,int(ceil(X/2.)))))
+        ixs = N.concatenate((N.arange(mii-floor(X/2.),mii,dtype=int),N.arange(0,ceil(X/2.),dtype=int)))
 
-        if M[ii] < X: # if the number of time channels is too small, aliasing is introduced
+        if mii < X: # if the number of time channels is too small, aliasing is introduced
             # TODO: branch not tested
-            col = ceil(float(X)/M[ii])
-            temp = N.zeros((M[ii],col),dtype=complex)
+            col = ceil(float(X)/mii)
+            temp = N.zeros((mii,col),dtype=complex)
             temp[ixs] = t
             temp = N.sum(temp,axis=1)
         else:
-            temp = N.zeros(M[ii],dtype=complex)
+            temp = N.zeros(mii,dtype=complex)
             temp[ixs] = t
 
         # TODO: can FFT be padded to power of 2?

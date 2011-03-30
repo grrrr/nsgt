@@ -41,7 +41,7 @@ def nsdual(g,shift,M=None):
         X = len(gi)
         sl = N.arange(-floor(X/2.),ceil(X/2.),dtype=int)+timepos[ii]-1
         w = N.mod(sl,NN)
-        x[w] += (N.fft.fftshift(gi)**2)*M[ii]
+        x[w] += N.square(N.fft.fftshift(gi))*M[ii]
         win_range.append(w)
 
     # Using the frame operator and the original window sequence, compute 
