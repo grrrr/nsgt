@@ -21,7 +21,6 @@ minor edit by Gino Velasco 23.02.11
 """
 
 import numpy as N
-from scipy.fftpack import fftshift,ifftshift
 from math import floor,ceil
 from itertools import izip
 from util import chkM
@@ -42,10 +41,10 @@ def nsdual(g,shift,M=None):
         X = len(gi)
         sl = N.arange(-floor(X/2.),ceil(X/2.),dtype=int)+timepos[ii]-1
         w = N.mod(sl,NN)
-        x[w] += (fftshift(gi)**2)*M[ii]
+        x[w] += (N.fft.fftshift(gi)**2)*M[ii]
         win_range.append(w)
 
     # Using the frame operator and the original window sequence, compute 
     # the dual window sequence
-    gd = [ifftshift(fftshift(gi)/x[wi]) for gi,wi in izip(g,win_range)]
+    gd = [N.fft.ifftshift(N.fft.fftshift(gi)/x[wi]) for gi,wi in izip(g,win_range)]
     return gd

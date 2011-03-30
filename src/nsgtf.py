@@ -35,7 +35,6 @@ Edited by Nicki Holighaus 01.02.11
 
 import numpy as N
 from math import ceil,floor
-from scipy.fftpack import fftshift
 from util import chkM,fft,ifft
 
 def nsgtf(f,g,shift,M=None):
@@ -66,7 +65,7 @@ def nsgtf(f,g,shift,M=None):
         X = len(g[ii])
         pos = N.arange(-floor(X/2.),ceil(X/2.),dtype=int)+timepos[ii]-1
         win_range = N.mod(pos,Ls+fill)
-        t = f[win_range]*fftshift(N.conj(g[ii]))
+        t = f[win_range]*N.fft.fftshift(N.conj(g[ii]))
         # TODO: the following indexes can be written as two slices
         ixs = N.concatenate((N.arange(M[ii]-int(floor(X/2.)),M[ii]),N.arange(0,int(ceil(X/2.)))))
 

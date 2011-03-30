@@ -43,7 +43,6 @@ Edited by Nicki Holighaus 01.03.11
 
 import numpy as N
 from math import ceil,floor
-from scipy.fftpack import fftshift
 from util import fft,ifft
 
 def nsigtf(c,gd,shift,Ls = None):
@@ -66,7 +65,7 @@ def nsigtf(c,gd,shift,Ls = None):
         cii = temp[ixs]
         pos = N.arange(-floor(X/2.),ceil(X/2.),dtype=int)+timepos[ii]-1
         win_range = N.mod(pos,NN)
-        fr[win_range] += fftshift(cii*gd[ii])
+        fr[win_range] += N.fft.fftshift(cii*gd[ii])
 
     # TODO: this could probably be a rifft, if real signals (as outcome) are assumed
     fr = ifft(fr)
