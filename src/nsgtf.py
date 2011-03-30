@@ -36,7 +36,7 @@ Edited by Nicki Holighaus 01.02.11
 import numpy as N
 from math import ceil,floor
 from scipy.fftpack import fftshift
-from util import chkM
+from util import chkM,fft,ifft
 
 def nsgtf(f,g,shift,M=None):
     # Check input arguments
@@ -51,7 +51,7 @@ def nsgtf(f,g,shift,M=None):
     Ls = len(f)
     
     # some preparation    
-    f = N.fft.fft(f)
+    f = fft(f)
     
     timepos = N.cumsum(shift)-shift[0]+1 # Calculate positions from shift vector
     
@@ -81,7 +81,7 @@ def nsgtf(f,g,shift,M=None):
             temp[ixs] = t
 
         # TODO: can FFT be padded to power of 2?
-        c.append(N.fft.ifft(temp))
+        c.append(ifft(temp))
     
 #    if max(M) == min(M):
 #        c = c.T

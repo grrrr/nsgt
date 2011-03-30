@@ -5,11 +5,10 @@ Created on 24.03.2011
 '''
 
 import numpy as N
-from math import pi
 
 def hannwin(l):
     r = N.arange(l,dtype=float)
-    r *= pi*2./l
+    r *= N.pi*2./l
     r = N.cos(r)
     r += 1.
     r *= 0.5
@@ -29,4 +28,23 @@ def chkM(M,g):
         M = N.ones(len(g),dtype=int)*M
     return M
 
-
+# try to use FFT3 if available, else use numpy.fftpack
+try:
+    import fftw3
+except ImportError:
+    fft = N.fft.fft
+    ifft = N.fft.ifft
+else:
+    def fft(x):
+        x = x.astype(complex)
+        r = N.empty_like(x)
+        ft = fftw3.Plan(x,r, direction='forward', flags=('estimate',))
+        ft()
+        return r
+    
+    def ifft(x):
+        r = N.empty_like(x)
+        ft = fftw3.Plan(x,r, direction='backward', flags=('estimate',))
+        ft()
+        r /= len(r)  # normalize
+        return r

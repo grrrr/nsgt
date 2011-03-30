@@ -37,13 +37,14 @@ back to the time side.
 
 More information can be found at:
 http://nuhag.eu/nonstatgab/
-"""
 
 Edited by Nicki Holighaus 01.03.11
+"""
 
 import numpy as N
 from math import ceil,floor
 from scipy.fftpack import fftshift
+from util import fft,ifft
 
 def nsigtf(c,gd,shift,Ls = None):
     assert len(c) == len(gd) == len(shift)
@@ -61,13 +62,13 @@ def nsigtf(c,gd,shift,Ls = None):
         # TODO: the following indexes can be written as two slices
         ixs = N.concatenate((N.arange(0,int(ceil(X/2.))),N.arange(X-int(floor(X/2.)),X)))
 
-        temp = N.fft.fft(c[ii])*len(c[ii])
+        temp = fft(c[ii])*len(c[ii])
         cii = temp[ixs]
         pos = N.arange(-floor(X/2.),ceil(X/2.),dtype=int)+timepos[ii]-1
         win_range = N.mod(pos,NN)
         fr[win_range] += fftshift(cii*gd[ii])
 
     # TODO: this could probably be a rifft, if real signals (as outcome) are assumed
-    fr = N.fft.ifft(fr)
+    fr = ifft(fr)
     fr = fr[:Ls] # Truncate the signal to original length (if given)
     return fr
