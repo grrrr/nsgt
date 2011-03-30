@@ -1,14 +1,30 @@
-'''
-Created on 24.03.2011
+"""
+NSDUAL.M - Nicki Holighaus 02.02.11
 
-@author: thomas
-'''
+Computes (for the painless case) the dual frame corresponding to a given 
+non-stationary Gabor frame specified by the windows 'g' and time shifts
+'shift'.
+
+Note, the time shifts corresponding to the dual window sequence is the
+same as the original shift sequence and as such already given.
+
+This routine's output can be used to achieve reconstruction of a signal 
+from its non-stationary Gabor coefficients using the inverse 
+non-stationary Gabor transform 'nsigt'.
+
+More information on Non-stationary Gabor transforms
+can be found at:
+
+http://nuhag.eu/nonstatgab/
+
+minor edit by Gino Velasco 23.02.11
+"""
 
 import numpy as N
 from scipy.fftpack import fftshift,ifftshift
-from util import chkM
 from math import floor,ceil
 from itertools import izip
+from util import chkM
 
 def nsdual(g,shift,M=None):
     # Check input arguments
@@ -21,11 +37,10 @@ def nsdual(g,shift,M=None):
     x = N.zeros((NN,),dtype=float)
     
     # Construct the diagonal of the frame operator matrix explicitly
-    win_range = [] #= N.empty((len(timepos),2),dtype=int)
+    win_range = []
     for ii,gi in enumerate(g):
         X = len(gi)
-        sl = N.arange(-floor(X/2.),ceil(X/2.),dtype=int)
-        sl += timepos[ii]-1
+        sl = N.arange(-floor(X/2.),ceil(X/2.),dtype=int)+timepos[ii]-1
         w = N.mod(sl,NN)
         x[w] += (fftshift(gi)**2)*M[ii]
         win_range.append(w)
