@@ -51,12 +51,12 @@ def nsigtf(c,gd,shift,Ls = None):
 
     timepos = N.cumsum(shift)-shift[0]+1 # Calculate positions from shift vector
     
-    n = len(timepos) # The number of time slices
+#    n = len(timepos) # The number of time slices
     nn = timepos[-1]+shift[0]-1 # Length of the reconstruction before truncation
     
     fr = N.zeros(nn,dtype=complex)  # Initialize output
     
-    # The overlap-add procedure including multiplication with the synthesis windows    
+    # The overlap-add procedure including multiplication with the synthesis windows
     for gdii,tpii,cii in izip(gd,timepos,c):
         X = len(gdii)
         # TODO: the following indexes can be written as two slices

@@ -42,7 +42,7 @@ def nsgtf(f,g,shift,M=None):
     # Check input arguments
     assert len(g) == len(shift)
     
-    n = len(shift)    # The number of frequency slices
+#    n = len(shift)    # The number of frequency slices
     M = chkM(M,g)
     
     if len(f.shape) > 1:

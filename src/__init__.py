@@ -39,14 +39,18 @@ if __name__ == "__main__":
     
     Ls = len(s)
 
+    # calculate transform parameters
     g,a,M = nsgfwin(options.fmin,options.fmax,options.bins,fs,Ls)
     
     shift = calcshift(a,Ls)
 
-    gd = nsdual(g,shift,M)
-    
+    # transform 
     c,_ = nsgtf(s,g,shift,M)
     
+    # calculate dual windows
+    gd = nsdual(g,shift,M)
+    
+    # inverse transform 
     s_r = nsigtf(c,gd,shift,Ls)
     
     t2 = time()
