@@ -28,6 +28,9 @@ def chkM(M,g):
         M = N.ones(len(g),dtype=int)*M
     return M
 
+def calcshift(a,Ls):
+    return N.concatenate(((N.mod(-a[-1],Ls),), a[1:]-a[:-1]))
+
 # try to use FFT3 if available, else use numpy.fftpack
 try:
     import fftw3
