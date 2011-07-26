@@ -1,4 +1,12 @@
+# -*- coding: utf-8
+
 """
+Thomas Grill, 2011
+http://grrrr.org/nsgt
+
+--
+Original matlab code comments follow:
+
 NSGTF.M - Gino Velasco 24.02.11
 
 [c,Ls] = nsgtf(f,g,shift,M)
@@ -28,7 +36,7 @@ sense that each window is considered to be centered at
 0 and the signal itself is shifted accordingly.
 
 More information can be found at:
-http://nuhag.eu/nonstatgab/
+http://www.univie.ac.at/nonstatgab/
 
 Edited by Nicki Holighaus 01.02.11
 """
@@ -46,7 +54,7 @@ def nsgtf(f,g,shift,M=None):
     M = chkM(M,g)
     
     if len(f.shape) > 1:
-        raise RuntimeError('Right now, this routine supports only single channel signals')
+        raise RuntimeError('Currently this routine supports only single channel signals')
     
     Ls = len(f)
     
@@ -59,7 +67,7 @@ def nsgtf(f,g,shift,M=None):
     fill = timepos[-1]+shift[0]-Ls-1
     f = N.concatenate((f,N.zeros(fill,dtype=f.dtype)))
     
-    c = [] # Initialisation of the result
+    c = [] # Initialization of the result
         
     # The actual transform
     for gii,tpii,mii in izip(g,timepos,M):

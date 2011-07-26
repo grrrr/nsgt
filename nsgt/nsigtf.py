@@ -1,4 +1,12 @@
+# -*- coding: utf-8
+
 """
+Thomas Grill, 2011
+http://grrrr.org/nsgt
+
+--
+Original matlab code comments follow:
+
 NSIGTF.N - Gino Velasco 24.02.11
 
 fr = nsigtf(c,gd,shift,Ls)
@@ -36,7 +44,7 @@ last step, an inverse Fourier transform brings the signal
 back to the time side.
 
 More information can be found at:
-http://nuhag.eu/nonstatgab/
+http://www.univie.ac.at/nonstatgab/
 
 Edited by Nicki Holighaus 01.03.11
 """

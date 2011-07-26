@@ -1,4 +1,12 @@
+# -*- coding: utf-8
+
 """
+Thomas Grill, 2011
+http://grrrr.org/nsgt
+
+--
+Original matlab code comments follow:
+
 NSDUAL.M - Nicki Holighaus 02.02.11
 
 Computes (for the painless case) the dual frame corresponding to a given 
@@ -15,7 +23,7 @@ non-stationary Gabor transform 'nsigt'.
 More information on Non-stationary Gabor transforms
 can be found at:
 
-http://nuhag.eu/nonstatgab/
+http://www.univie.ac.at/nonstatgab/
 
 minor edit by Gino Velasco 23.02.11
 """

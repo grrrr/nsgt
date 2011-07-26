@@ -1,6 +1,12 @@
 # -*- coding: utf-8
 
 """
+Thomas Grill, 2011
+http://grrrr.org/nsgt
+
+--
+Original matlab code comments follow:
+
 NSGFWIN.M
 ---------------------------------------------------------------
  [g,rfbas,M]=nsgfwin(fmin,bins,sr,Ls) creates a set of windows whose
@@ -71,7 +77,7 @@ def nsgfwin(fmin,fmax,bins,sr,Ls):
         M[k] = N.round(fbas[k+1]-fbas[k-1])
     M[-1] = N.round(Ls-fbas[-2])
     
-    M = N.clip(M,4,N.max(M))
+    M = N.clip(M,4,N.inf)
     
     g = [hannwin(m) for m in M]
     

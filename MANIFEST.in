@@ -1,0 +1,2 @@
+include gpl.txt
+recursive-include examples *.py *.txt

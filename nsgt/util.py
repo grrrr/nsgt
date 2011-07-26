@@ -1,8 +1,9 @@
-'''
-Created on 24.03.2011
+# -*- coding: utf-8
 
-@author: thomas
-'''
+"""
+Thomas Grill, 2011
+http://grrrr.org
+"""
 
 import numpy as N
 
