@@ -7,6 +7,8 @@ setup(
     version = "0.02",
     author = "Thomas Grill",
     author_email = "gr@grrrr.org",
+    maintainer = "Thomas Grill",
+    maintainer_email = "gr@grrrr.org",
     description = "Python implementation of Non Stationary Gabor Transform (NSGT)",
     license = "GPL",
     keywords = "fourier gabor",
