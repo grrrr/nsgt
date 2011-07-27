@@ -1,5 +1,24 @@
 # -*- coding: utf-8
 
+"""
+Python implementation of Non-Stationary Gabor Transform (NSGT)
+derived from MATLAB code by NUHAG, University of Vienna, Austria
+
+Thomas Grill, 2011
+http://grrrr.org/nsgt
+
+
+Installation:
+
+In the console (terminal application) change to the folder containing this readme.txt file.
+
+To build the package run the following command:
+python setup.py build
+
+To install the package (with administrator rights):
+sudo python setup.py install
+"""
+
 from setuptools import setup
 
 setup(
@@ -9,7 +28,7 @@ setup(
     author_email = "gr@grrrr.org",
     maintainer = "Thomas Grill",
     maintainer_email = "gr@grrrr.org",
-    description = "Python implementation of Non Stationary Gabor Transform (NSGT)",
+    description = "Python implementation of Non-Stationary Gabor Transform (NSGT)",
     license = "GPL",
     keywords = "fourier gabor",
     url = "http://grrrr.org/nsgt",
