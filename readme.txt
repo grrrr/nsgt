@@ -4,6 +4,19 @@ derived from MATLAB code by NUHAG, University of Vienna, Austria
 Thomas Grill, 2011
 http://grrrr.org/nsgt
 
+
+Installation:
+
+In the console (terminal application) change to the folder containing this readme.txt file.
+
+To build the package run the following command:
+python setup.py build
+
+To install the package (with administrator rights):
+sudo python setup.py install
+
+--
+
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
 as published by the Free Software Foundation; either version 2
