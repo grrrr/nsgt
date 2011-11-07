@@ -25,6 +25,8 @@ from nsdual import nsdual
 from nsgtf import nsgtf
 from nsigtf import nsigtf
 from util import calcshift
+from slicq import sliCQ
+from islicq import isliCQ
 
 class CQ_NSGT:
     def __init__(self,fmin,fmax,bins,fs,Ls):
@@ -43,8 +45,8 @@ class CQ_NSGT:
 
     def forward(self,s):
         'transform' 
-        c,_ = nsgtf(s,self.g,self.shift,self.M)
-        return c
+        f,_ = nsgtf(s,self.g,self.shift,self.M)
+        return f
 
     def backward(self,c):
         'inverse transform'

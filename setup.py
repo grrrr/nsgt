@@ -23,7 +23,7 @@ from setuptools import setup
 
 setup(
     name = "nsgt",
-    version = "0.02",
+    version = "0.03",
     author = "Thomas Grill",
     author_email = "gr@grrrr.org",
     maintainer = "Thomas Grill",

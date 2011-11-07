@@ -72,6 +72,7 @@ def nsgtf(f,g,shift,M=None):
     # The actual transform
     for gii,tpii,mii in izip(g,timepos,M):
         X = len(gii)
+        assert X == len(mii)
         pos = N.arange(-floor(X/2.),ceil(X/2.),dtype=int)+tpii-1
         win_range = N.mod(pos,Ls+fill)
         t = f[win_range]*N.fft.fftshift(N.conj(gii))

@@ -47,7 +47,8 @@ def nsdual(g,shift,M=None):
     win_range = []
     for ii,gi in enumerate(g):
         X = len(gi)
-        sl = N.arange(-floor(X/2.),ceil(X/2.),dtype=int)+timepos[ii]-1
+        sl = N.arange(-floor(X/2.),ceil(X/2.),dtype=int)
+        sl += timepos[ii]-1
         w = N.mod(sl,NN)
         x[w] += N.square(N.fft.fftshift(gi))*M[ii]
         win_range.append(w)
