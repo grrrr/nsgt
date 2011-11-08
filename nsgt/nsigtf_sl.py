@@ -50,41 +50,36 @@ Edited by Nicki Holighaus 01.03.11
 """
 
 import numpy as N
-from math import ceil,floor
 from itertools import izip
 from util import fft,ifft
 
-def nsigtf_sl(c,gd,shift,Ls = None,sliced=True):
-    assert len(c) == len(gd) == len(shift)
+# it's exactly the same as nsigtf
+def nsigtf_sl(cseq,gd,shift,Ls = None):
+    assert len(gd) == len(shift)
 
     timepos = N.cumsum(shift)
     nn = timepos[-1] # Length of the reconstruction before truncation
     timepos -= shift[0]-1 # Calculate positions from shift vector
+
+    for c in cseq:
+        assert len(c) == len(gd)
     
-    fr = N.zeros(nn,dtype=complex)  # Initialize output
-        
-    if sliced:   # it's exactly the same as the non-sliced version
-        # The overlap-add procedure including multiplication with the synthesis windows        
-        for gdii,tpii,cii in izip(gd,timepos,c):
-            X = len(gdii)
-            ixs = N.concatenate((N.arange(X-floor(X/2.),X,dtype=int),N.arange(0,ceil(X/2.),dtype=int)))
+        fr = N.zeros(nn,dtype=complex)  # Initialize output
             
-            temp = fft(cii)*len(cii)
-            win_range = N.mod(N.arange(-floor(X/2.),ceil(X/2.),dtype=int)+tpii-1,nn)
-            fr[win_range] += temp[ixs]*N.fft.fftshift(gdii)
-    else:
         # The overlap-add procedure including multiplication with the synthesis windows
         for gdii,tpii,cii in izip(gd,timepos,c):
             X = len(gdii)
-            # TODO: the following indexes can be written as two slices
-            ixs = N.concatenate((N.arange(0,ceil(X/2.),dtype=int),N.arange(X-floor(X/2.),X,dtype=int)))
     
-            temp = fft(cii)*len(cii)
-            win_range = N.mod(N.arange(-floor(X/2.),ceil(X/2.),dtype=int)+tpii-1,nn)
-            fr[win_range] += N.fft.fftshift(temp[ixs]*gdii)
-    
-    # TODO: this could probably be a rifft, if real signals (as outcome) are assumed
-    fr = ifft(fr)
-    fr = fr[:Ls] # Truncate the signal to original length (if given)
-
-    return fr
+            temp = fft(cii)
+            temp *= len(cii)
+            temp *= gdii
+            
+            win_range = N.arange(-X//2,X-X//2,dtype=int)
+            win_range += tpii-1
+            win_range %= nn
+            fr[win_range] += N.fft.fftshift(temp)
+        
+        # TODO: this could probably be a rifft, if real signals (as outcome) are assumed
+        fr = ifft(fr)
+        fr = fr[:Ls] # Truncate the signal to original length (if given)
+        yield fr

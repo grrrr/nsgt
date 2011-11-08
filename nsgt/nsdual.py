@@ -29,7 +29,6 @@ minor edit by Gino Velasco 23.02.11
 """
 
 import numpy as N
-from math import floor,ceil
 from itertools import izip
 from util import chkM
 
@@ -39,21 +38,22 @@ def nsdual(g,shift,M=None):
     M = chkM(M,g)
 
     # Setup the necessary parameters
-    timepos = N.cumsum(shift)-shift[0]+1
-    NN = timepos[-1]+shift[0]-1
+    timepos = N.cumsum(shift)
+    NN = timepos[-1]
+    timepos -= shift[0]-1
     x = N.zeros((NN,),dtype=float)
     
     # Construct the diagonal of the frame operator matrix explicitly
     win_range = []
-    for ii,gi in enumerate(g):
+    for gi,tpii,mii in izip(g,timepos,M):
         X = len(gi)
-        sl = N.arange(-floor(X/2.),ceil(X/2.),dtype=int)
-        sl += timepos[ii]-1
-        w = N.mod(sl,NN)
-        x[w] += N.square(N.fft.fftshift(gi))*M[ii]
-        win_range.append(w)
+        sl = N.arange(-X//2,X-X//2,dtype=int)
+        sl += tpii-1
+        sl %= NN
+        x[sl] += N.square(N.fft.fftshift(gi))*mii
+        win_range.append(sl)
 
     # Using the frame operator and the original window sequence, compute 
     # the dual window sequence
-    gd = [N.fft.ifftshift(N.fft.fftshift(gi)/x[wi]) for gi,wi in izip(g,win_range)]
+    gd = [gi/N.fft.ifftshift(x[wi]) for gi,wi in izip(g,win_range)]
     return gd

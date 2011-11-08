@@ -13,11 +13,7 @@ def nsgtf_sl((f,fodd),g,shift,M=None,sliced=True):
     # Check input arguments
     assert len(g) == len(shift)
     
-#    n = len(shift)    # The number of frequency slices
     M = chkM(M,g)
-    
-    if len(f.shape) > 1:
-        raise RuntimeError('Currently this routine supports only single channel signals')
     
     Ls = len(f)
     
