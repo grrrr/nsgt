@@ -47,7 +47,7 @@ def nsdual(g,shift,M=None):
     win_range = []
     for gi,tpii,mii in izip(g,timepos,M):
         X = len(gi)
-        sl = N.arange(-X//2,X-X//2,dtype=int)
+        sl = N.arange(-(X//2),X-(X//2),dtype=int)
         sl += tpii-1
         sl %= NN
         x[sl] += N.square(N.fft.fftshift(gi))*mii

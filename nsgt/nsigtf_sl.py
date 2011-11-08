@@ -64,7 +64,7 @@ def nsigtf_sl(cseq,gd,shift,Ls = None):
     wins = []
     for gdii,tpii in izip(gd,timepos):
         X = len(gdii)
-        win_range = N.arange(-X//2,X-X//2,dtype=int)
+        win_range = N.arange(-(X//2),X-(X//2),dtype=int)
         win_range += tpii-1
         win_range %= nn
         wins.append(win_range)

@@ -48,7 +48,7 @@ if __name__ == "__main__":
     s = sf.read_frames(sf.nframes)
     if len(s.shape) > 1: 
         s = N.mean(s,axis=1)
-
+        
     t1 = time()
     
     # calculate transform parameters

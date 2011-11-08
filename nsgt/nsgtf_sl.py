@@ -22,7 +22,7 @@ def nsgtf_sl(cseq,g,shift,Ls,M=None,sliced=True):
     wins = []
     for gii,tpii in izip(g,timepos):
         Lg = len(gii)
-        win_range = N.arange(-Lg//2,Lg-Lg//2,dtype=int)
+        win_range = N.arange(-(Lg//2),Lg-(Lg//2),dtype=int)
         win_range += tpii-1
         win_range %= Ls+fill
         wins.append(win_range)
@@ -49,14 +49,14 @@ def nsgtf_sl(cseq,g,shift,Ls,M=None,sliced=True):
                     # branch NOT tested
                     col = int(ceil(float(Lg)/mii))
                     temp = N.zeros(col*mii,dtype=complex)
-                    temp[col*mii-Lg//2:] = t[:-Lg//2]
-                    temp[:Lg//2] = t[-Lg//2:]
+                    temp[col*mii-(Lg//2):] = t[:-(Lg//2)]
+                    temp[:Lg//2] = t[-(Lg//2):]
                     temp = temp.reshape((mii,col))
                     temp = N.sum(temp,axis=1)
                 else:
                     temp = N.zeros(mii,dtype=complex) 
-                    temp[-Lg//2:] = t[:-Lg//2]
-                    temp[:Lg//2] = t[-Lg//2:]
+                    temp[-(Lg//2):] = t[:-(Lg//2)]
+                    temp[:(Lg//2)] = t[-(Lg//2):]
                     
                 X = ifft(temp)
                     
