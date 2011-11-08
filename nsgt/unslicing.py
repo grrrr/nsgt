@@ -9,8 +9,9 @@ from itertools import izip,cycle
 
 def slicequads(frec_sliced,hhop):
     slices = [[slice(hhop*((i+3-k*2)%4),hhop*((i+3-k*2)%4+1)) for i in xrange(4)] for k in xrange(2)]
+    slices = cycle(slices)
     
-    for fsl,sl in izip(frec_sliced,cycle(slices)):
+    for fsl,sl in izip(frec_sliced,slices):
 #        assert len(fsl) == hhop*4
         yield [fsl[sli] for sli in sl] 
 

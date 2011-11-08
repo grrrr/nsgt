@@ -61,22 +61,24 @@ def nsigtf_sl(cseq,gd,shift,Ls = None):
     nn = timepos[-1] # Length of the reconstruction before truncation
     timepos -= shift[0]-1 # Calculate positions from shift vector
 
+    wins = []
+    for gdii,tpii in izip(gd,timepos):
+        X = len(gdii)
+        win_range = N.arange(-X//2,X-X//2,dtype=int)
+        win_range += tpii-1
+        win_range %= nn
+        wins.append(win_range)
+
     for c in cseq:
         assert len(c) == len(gd)
     
         fr = N.zeros(nn,dtype=complex)  # Initialize output
             
         # The overlap-add procedure including multiplication with the synthesis windows
-        for gdii,tpii,cii in izip(gd,timepos,c):
-            X = len(gdii)
-    
+        for cii,gdii,win_range in izip(c,gd,wins):
             temp = fft(cii)
             temp *= len(cii)
             temp *= gdii
-            
-            win_range = N.arange(-X//2,X-X//2,dtype=int)
-            win_range += tpii-1
-            win_range %= nn
             fr[win_range] += N.fft.fftshift(temp)
         
         # TODO: this could probably be a rifft, if real signals (as outcome) are assumed

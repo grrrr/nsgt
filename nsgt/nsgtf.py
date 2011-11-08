@@ -46,7 +46,7 @@ from math import ceil,floor
 from itertools import izip
 from util import chkM,fft,ifft
 
-def nsgtf(f,g,shift,M=None):
+def nsgtf(f,g,shift,Ls,M=None):
     # Check input arguments
     assert len(g) == len(shift)
     
@@ -56,7 +56,7 @@ def nsgtf(f,g,shift,M=None):
     if len(f.shape) > 1:
         raise RuntimeError('Currently this routine supports only single channel signals')
     
-    Ls = len(f)
+#    Ls = len(f)
     
     # some preparation    
     f = fft(f)
@@ -72,7 +72,7 @@ def nsgtf(f,g,shift,M=None):
     # The actual transform
     for gii,tpii,mii in izip(g,timepos,M):
         X = len(gii)
-        assert X == len(mii)
+        assert X == mii #len(mii)
         pos = N.arange(-floor(X/2.),ceil(X/2.),dtype=int)+tpii-1
         win_range = N.mod(pos,Ls+fill)
         t = f[win_range]*N.fft.fftshift(N.conj(gii))
@@ -94,4 +94,4 @@ def nsgtf(f,g,shift,M=None):
     
 #    if max(M) == min(M):
 #        c = c.T
-    return c,Ls
+    return c

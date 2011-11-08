@@ -7,7 +7,7 @@ Created on 05.11.2011
 import numpy as N
 from util import hannwin
 from reblock import reblock
-from itertools import chain,izip
+from itertools import chain,izip,cycle
 
 def makewnd(sl_len,tr_area):
     hhop = sl_len//4
@@ -32,20 +32,21 @@ def slicing(f,sl_len,tr_area):
     tw = [tw[o:o+hhop] for o in xrange(0,sl_len,hhop)]
     
     pad = N.zeros(hhop,float)
-    # stream of hopsize/2 blocks with leading and trailing zero blocks 
-    sseq = reblock(chain((pad,pad),f,(pad,pad)),hhop,dtype=float,fulllast=True,padding=0.)
+    # stream of hopsize/2 blocks with leading and trailing zero blocks
+    f = chain((pad,pad),f,(pad,pad))
+    sseq = reblock(f,hhop,dtype=float,fulllast=True,padding=0.)
 
     slices = [[slice(hhop*((i+3-k*2)%4),hhop*((i+3-k*2)%4+1)) for i in xrange(4)] for k in xrange(2)]
+    slices = cycle(slices)
     
     past = []
-    kk = 0
     for fi in sseq:
         past.append(fi)
         if len(past) == 4:
             f_slice = N.empty(sl_len,dtype=fi.dtype)
-            for sli,pi,twi in izip(slices[kk],past,tw):
+            sl = slices.next()
+            for sli,pi,twi in izip(sl,past,tw):
                 f_slice[sli] = pi
                 f_slice[sli] *= twi
-            yield f_slice,kk
-            kk = 1-kk  # change sign
+            yield f_slice
             past = past[2:]  # pop the two oldest slices
