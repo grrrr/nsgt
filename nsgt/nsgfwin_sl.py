@@ -44,7 +44,7 @@ def diff(x):
 
 def nsgfwin_sl(fmin,fmax,bins,sr,Ls,min_win=4,Qvar = 1,sliced=True):
 
-    nf = sr/2
+    nf = sr/2.
     
     if fmax > nf:
         fmax = nf
@@ -106,7 +106,7 @@ def nsgfwin_sl(fmin,fmax,bins,sr,Ls,min_win=4,Qvar = 1,sliced=True):
         for kk in (1,lbas+2):
             if M[kk-1] > M[kk]:
                 g[kk-1] = N.ones(M[kk-1],dtype=g[kk-1].dtype)
-                g[kk-1][M[kk-1]//2-floor(M[kk]/2.):M[kk-1]//2+ceil(M[kk]/2.)] = hannwin(M[kk])
+                g[kk-1][M[kk-1]//2-M[kk]//2:M[kk-1]//2+ceil(M[kk]/2.)] = hannwin(M[kk])
         
         rfbas = N.round(fbas/2.).astype(int)*2
         shift = N.hstack((N.mod(-rfbas[-1],Ls),diff(rfbas)))

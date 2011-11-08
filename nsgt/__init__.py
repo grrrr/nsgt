@@ -22,6 +22,8 @@ All standard disclaimers apply.
 
 from nsgfwin import nsgfwin
 from nsdual import nsdual
+from nsgtf_sl import nsgtf_sl
+from nsigtf_sl import nsigtf_sl
 from nsgtf import nsgtf
 from nsigtf import nsigtf
 from util import calcshift
@@ -44,11 +46,12 @@ class CQ_NSGT:
 
     def forward(self,s):
         'transform' 
-        return nsgtf(s,self.g,self.shift,self.Ls,self.M)
+#        return nsgtf(s,self.g,self.shift,self.Ls,self.M)
+        return nsgtf_sl((s,),self.g,self.shift,self.Ls,self.M).next()
 
     def backward(self,c):
         'inverse transform'
-        return nsigtf(c,self.gd,self.shift,self.Ls)
+        return nsigtf_sl((c,),self.gd,self.shift,self.Ls).next()
 
 
 import unittest

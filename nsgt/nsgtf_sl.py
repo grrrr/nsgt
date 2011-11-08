@@ -5,9 +5,10 @@ Created on 05.11.2011
 '''
 
 import numpy as N
-from math import ceil,floor
+from math import ceil
 from itertools import izip
 from util import chkM,fft,ifft
+from warnings import warn
 
 def nsgtf_sl(cseq,g,shift,Ls,M=None,sliced=True):
     # Check input arguments
@@ -16,15 +17,14 @@ def nsgtf_sl(cseq,g,shift,Ls,M=None,sliced=True):
     M = chkM(M,g)
 
     timepos = N.cumsum(shift)
-    fill = timepos[-1]-Ls
-    timepos -= shift[0]-1 # Calculate positions from shift vector
+    NN = timepos[-1]
+    timepos -= shift[0] # Calculate positions from shift vector
     
     wins = []
     for gii,tpii in izip(g,timepos):
         Lg = len(gii)
-        win_range = N.arange(-(Lg//2),Lg-(Lg//2),dtype=int)
-        win_range += tpii-1
-        win_range %= Ls+fill
+        win_range = N.arange(-(Lg//2)+tpii,Lg-(Lg//2)+tpii,dtype=int)
+        win_range %= NN
         wins.append(win_range)
 
     for f in cseq:
@@ -32,7 +32,7 @@ def nsgtf_sl(cseq,g,shift,Ls,M=None,sliced=True):
         f = fft(f)
         
         # A small amount of zero-padding might be needed (e.g. for scale frames)
-        f = N.concatenate((f,N.zeros(fill,dtype=f.dtype)))
+        f = N.hstack((f,N.zeros(NN-Ls,dtype=f.dtype)))
         
         c = [] # Initialization of the result
             
@@ -46,7 +46,9 @@ def nsgtf_sl(cseq,g,shift,Ls,M=None,sliced=True):
                 t = f[win_range]*N.fft.fftshift(N.conj(gii))
     
                 if mii < Lg: # if the number of time channels is too small, aliasing is introduced
-                    # branch NOT tested
+                    warn("Branch not tested")
+                    # branch might have difficulties with odd mii
+
                     col = int(ceil(float(Lg)/mii))
                     temp = N.zeros(col*mii,dtype=complex)
                     temp[col*mii-(Lg//2):] = t[:-(Lg//2)]
@@ -55,18 +57,19 @@ def nsgtf_sl(cseq,g,shift,Ls,M=None,sliced=True):
                     temp = N.sum(temp,axis=1)
                 else:
                     temp = N.zeros(mii,dtype=complex) 
-                    temp[-(Lg//2):] = t[:-(Lg//2)]
-                    temp[:(Lg//2)] = t[-(Lg//2):]
+                    temp[-(Lg//2):] = t[:(Lg//2)]  # if mii is odd, this is of length mii//2
+                    temp[:-(Lg//2)] = t[(Lg//2):]  # if mii is odd, this is of length mii-mii//2
                     
                 X = ifft(temp)
                     
             else:  # non-sliced
                 t = f[win_range]*N.fft.fftshift(N.conj(gii))
                 # TODO: the following indexes can be written as two slices, see above
-                ixs = N.concatenate((N.arange(mii-Lg//2,mii,dtype=int),N.arange(0,Lg-Lg//2,dtype=int)))
+                ixs = N.concatenate((N.arange(mii-(Lg//2),mii,dtype=int),N.arange(0,Lg-(Lg//2),dtype=int)))
         
                 if mii < Lg: # if the number of time channels is too small, aliasing is introduced
-                    # TODO: branch not tested
+                    warn("Branch not tested")
+
                     col = int(ceil(float(Lg)/mii))
                     temp = N.zeros((mii,col),dtype=complex)
                     temp[ixs] = t

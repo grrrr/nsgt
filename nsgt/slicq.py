@@ -61,9 +61,9 @@ class CQ_NSGT_sliced:
         f_sliced = slicing(s,self.sl_len,self.tr_area)
         # Slightly modified nsgtf (perfect reconstruction version)
         cseq =  nsgtf_sl(f_sliced,self.g,self.shift,self.sl_len,self.M)
-#        cseq = (nsgtf(fi,self.g,self.shift,self.sl_len,self.M) for fi in f_sliced)  # SAME!
     
         return arrange(cseq,self.M,True)
+
 
     def backward(self,cseq):
         'inverse transform - c: iterable sequence of coefficients'
@@ -71,7 +71,6 @@ class CQ_NSGT_sliced:
         cseq = arrange(cseq,self.M,False)
         
         frec_sliced = nsigtf_sl(cseq,self.gd,self.shift,self.sl_len)
-#        frec_sliced = (nsigtf(c,self.gd,self.shift,self.sl_len) for c in cseq)
         
         frec_sliced = imap(N.real,frec_sliced)
         

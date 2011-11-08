@@ -59,13 +59,12 @@ def nsigtf_sl(cseq,gd,shift,Ls = None):
 
     timepos = N.cumsum(shift)
     nn = timepos[-1] # Length of the reconstruction before truncation
-    timepos -= shift[0]-1 # Calculate positions from shift vector
+    timepos -= shift[0] # Calculate positions from shift vector
 
     wins = []
     for gdii,tpii in izip(gd,timepos):
         X = len(gdii)
-        win_range = N.arange(-(X//2),X-(X//2),dtype=int)
-        win_range += tpii-1
+        win_range = N.arange(-(X//2)+tpii,X-(X//2)+tpii,dtype=int)
         win_range %= nn
         wins.append(win_range)
 
