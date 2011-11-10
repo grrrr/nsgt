@@ -22,36 +22,36 @@ All standard disclaimers apply.
 
 from nsgfwin import nsgfwin
 from nsdual import nsdual
-from nsgtf_sl import nsgtf_sl
-from nsigtf_sl import nsigtf_sl
 from nsgtf import nsgtf
 from nsigtf import nsigtf
-from util import calcshift
+from util import calcwinrange
 from slicq import CQ_NSGT_sliced
 
 class CQ_NSGT:
-    def __init__(self,fmin,fmax,bins,fs,Ls):
+    def __init__(self,fmin,fmax,bins,fs,Ls,realout=True,measurefft=False):
         self.fmin = fmin
         self.fmax = fmax
         self.bins = bins
         self.fs = fs
         self.Ls = Ls
-
+        self.realout = realout
+        self.measurefft = measurefft
+        
         # calculate transform parameters
-        self.g,self.a,self.M = nsgfwin(self.fmin,self.fmax,self.bins,self.fs,self.Ls)
+        self.g,rfbas,self.M = nsgfwin(self.fmin,self.fmax,self.bins,self.fs,self.Ls)
         # calculate shifts
-        self.shift = calcshift(self.a,self.Ls)
+        self.wins,self.nn = calcwinrange(self.g,rfbas,self.Ls)
         # calculate dual windows
-        self.gd = nsdual(self.g,self.shift,self.M)
+        self.gd = nsdual(self.g,self.wins,self.nn,self.M)
 
     def forward(self,s):
         'transform' 
 #        return nsgtf(s,self.g,self.shift,self.Ls,self.M)
-        return nsgtf_sl((s,),self.g,self.shift,self.Ls,self.M).next()
+        return nsgtf(s,self.g,self.wins,self.nn,self.M,measurefft=self.measurefft)
 
     def backward(self,c):
         'inverse transform'
-        return nsigtf_sl((c,),self.gd,self.shift,self.Ls).next()
+        return nsigtf(c,self.gd,self.wins,self.nn,self.Ls,realout=self.realout,measurefft=self.measurefft)
 
 
 import unittest

@@ -50,33 +50,30 @@ Edited by Nicki Holighaus 01.03.11
 """
 
 import numpy as N
-from math import ceil,floor
 from itertools import izip
-from util import fft,ifft
+from util import fftp,ifftp,irfftp
 
-def nsigtf(c,gd,shift,Ls = None):
-    assert len(c) == len(gd) == len(shift)
+def nsigtf_sl(cseq,gd,wins,nn,Ls=None,realout=False,measurefft=False):
 
-    timepos = N.cumsum(shift)-shift[0]+1 # Calculate positions from shift vector
+    fft = fftp(measure=measurefft)
+    ifft = irfftp(measure=measurefft) if realout else ifftp(measure=measurefft)
     
-#    n = len(timepos) # The number of time slices
-    nn = timepos[-1]+shift[0]-1 # Length of the reconstruction before truncation
+    for c in cseq:
+        assert len(c) == len(gd)
     
-    fr = N.zeros(nn,dtype=complex)  # Initialize output
-    
-    # The overlap-add procedure including multiplication with the synthesis windows
-    for gdii,tpii,cii in izip(gd,timepos,c):
-        X = len(gdii)
-        # TODO: the following indexes can be written as two slices
-        ixs = N.concatenate((N.arange(0,ceil(X/2.),dtype=int),N.arange(X-floor(X/2.),X,dtype=int)))
+        fr = N.zeros(nn,dtype=complex)  # Initialize output
+            
+        # The overlap-add procedure including multiplication with the synthesis windows
+        for cii,gdii,win_range in izip(c,gd,wins):
+            temp = fft(cii)
+            temp *= len(cii)
+            temp *= gdii
+            fr[win_range] += N.fft.fftshift(temp)
+        
+        fr = ifft(fr).copy()
+        fr = fr[:Ls] # Truncate the signal to original length (if given)
+        yield fr
 
-        temp = fft(cii)*len(cii)
-        tii = temp[ixs]
-        pos = N.arange(-floor(X/2.),ceil(X/2.),dtype=int)+tpii-1
-        win_range = N.mod(pos,nn)
-        fr[win_range] += N.fft.fftshift(tii*gdii)
-
-    # TODO: this could probably be a rifft, if real signals (as outcome) are assumed
-    fr = ifft(fr)
-    fr = fr[:Ls] # Truncate the signal to original length (if given)
-    return fr
+# non-sliced version
+def nsigtf(c,gd,wins,nn,Ls=None,realout=False,measurefft=False):
+    return nsigtf_sl((c,),gd,wins,nn,Ls=Ls,realout=realout,measurefft=measurefft).next()

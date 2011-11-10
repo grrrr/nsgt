@@ -31,22 +31,22 @@ def slicing(f,sl_len,tr_area):
     # four parts of slice with centered window function
     tw = [tw[o:o+hhop] for o in xrange(0,sl_len,hhop)]
     
-    pad = N.zeros(hhop,float)
     # stream of hopsize/2 blocks with leading and trailing zero blocks
-    f = chain((pad,pad),f,(pad,pad))
-    sseq = reblock(f,hhop,dtype=float,fulllast=True,padding=0.)
+    fseq = reblock(f,hhop,dtype=float,fulllast=True,padding=0.)
+    pad = N.zeros(hhop,float)
+    fseq = chain((pad,pad),fseq,(pad,pad))
 
     slices = [[slice(hhop*((i+3-k*2)%4),hhop*((i+3-k*2)%4+1)) for i in xrange(4)] for k in xrange(2)]
     slices = cycle(slices)
     
     past = []
-    for fi in sseq:
+    for fi in fseq:
         past.append(fi)
         if len(past) == 4:
             f_slice = N.empty(sl_len,dtype=fi.dtype)
             sl = slices.next()
             for sli,pi,twi in izip(sl,past,tw):
-                f_slice[sli] = pi
-                f_slice[sli] *= twi
+                f_slice[sli] = pi    # signal
+                f_slice[sli] *= twi  # multiply with part of window function
             yield f_slice
             past = past[2:]  # pop the two oldest slices

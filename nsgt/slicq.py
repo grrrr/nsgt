@@ -11,16 +11,15 @@ Created on 05.11.2011
 '''
 
 import numpy as N
-from itertools import imap,izip,cycle
+from itertools import izip,cycle
 
 from slicing import slicing
 from unslicing import unslicing
 from nsdual import nsdual
 from nsgfwin_sl import nsgfwin_sl
-from nsgtf_sl import nsgtf_sl
-from nsigtf_sl import nsigtf_sl
-from nsgtf import nsgtf
-from nsigtf import nsigtf
+from nsgtf import nsgtf_sl
+from nsigtf import nsigtf_sl
+from util import calcwinrange
 
 
 def arrange(cseq,M,fwd):
@@ -33,12 +32,11 @@ def arrange(cseq,M,fwd):
     else:
         ixs = cycle(ixs[::-1])
 
-    return ([N.hstack((ckk[ix0],ckk[ix1])) for ckk,(ix0,ix1) in izip(ci,ixi)] for ci,ixi in izip(cseq,ixs))
-
+    return ([N.concatenate((ckk[ix0],ckk[ix1])) for ckk,(ix0,ix1) in izip(ci,ixi)] for ci,ixi in izip(cseq,ixs))
 
 
 class CQ_NSGT_sliced:
-    def __init__(self,fmin,fmax,bins,sl_len,tr_area,fs,min_win=16,Qvar=1):
+    def __init__(self,fmin,fmax,bins,sl_len,tr_area,fs,min_win=16,Qvar=1,realout=True,measurefft=False):
         assert sl_len%2 == 0
 
         self.fmin = fmin
@@ -47,20 +45,22 @@ class CQ_NSGT_sliced:
         self.sl_len = sl_len
         self.tr_area = tr_area
         self.fs = fs
-        self.min_win = min_win
-        self.Qvar = Qvar
+        self.realout = realout
+        self.measurefft = measurefft
 
-        # This is just a slightly modified version of nsgfwin
-        self.g,self.shift,self.M = nsgfwin_sl(self.fmin,self.fmax,self.bins,self.fs,self.sl_len,self.min_win,self.Qvar)
-        self.gd = nsdual(self.g,self.shift,self.M)
+        self.g,rfbas,self.M = nsgfwin_sl(self.fmin,self.fmax,self.bins,self.fs,self.sl_len,min_win,Qvar)
+        
+        self.wins,self.nn = calcwinrange(self.g,rfbas,self.sl_len)
+        
+        self.gd = nsdual(self.g,self.wins,self.nn,self.M)
 
 
     def forward(self,s):
         'transform - s: iterable sequence of sequences' 
         # Compute the slices (zero-padded Tukey window version)
         f_sliced = slicing(s,self.sl_len,self.tr_area)
-        # Slightly modified nsgtf (perfect reconstruction version)
-        cseq =  nsgtf_sl(f_sliced,self.g,self.shift,self.sl_len,self.M)
+
+        cseq =  nsgtf_sl(f_sliced,self.g,self.wins,self.nn,self.M,measurefft=self.measurefft)
     
         return arrange(cseq,self.M,True)
 
@@ -70,9 +70,7 @@ class CQ_NSGT_sliced:
 
         cseq = arrange(cseq,self.M,False)
         
-        frec_sliced = nsigtf_sl(cseq,self.gd,self.shift,self.sl_len)
-        
-        frec_sliced = imap(N.real,frec_sliced)
+        frec_sliced = nsigtf_sl(cseq,self.gd,self.wins,self.nn,self.sl_len,realout=self.realout,measurefft=self.measurefft)
         
         # Glue the parts back together
         f_rec = unslicing(frec_sliced,self.sl_len)

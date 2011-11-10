@@ -7,6 +7,7 @@ http://grrrr.org
 
 import numpy as N
 from math import exp,floor,ceil,pi
+from itertools import izip
 
 def hannwin(l):
     r = N.arange(l,dtype=float)
@@ -77,26 +78,95 @@ def chkM(M,g):
         M = N.ones(len(g),dtype=int)*M
     return M
 
-def calcshift(a,Ls):
-    return N.concatenate(((N.mod(-a[-1],Ls),), a[1:]-a[:-1]))
+def calcwinrange(g,rfbas,Ls):
+    shift = N.concatenate(((N.mod(-rfbas[-1],Ls),), rfbas[1:]-rfbas[:-1]))
+    
+    timepos = N.cumsum(shift)
+    nn = timepos[-1]
+    timepos -= shift[0] # Calculate positions from shift vector
+    
+    wins = []
+    for gii,tpii in izip(g,timepos):
+        Lg = len(gii)
+        win_range = N.arange(-(Lg//2)+tpii,Lg-(Lg//2)+tpii,dtype=int)
+        win_range %= nn
+        wins.append(win_range)
+        
+    return wins,nn
 
 # try to use FFT3 if available, else use numpy.fftpack
 try:
     import fftw3
 except ImportError:
-    fft = N.fft.fft
-    ifft = N.fft.ifft
+    class fftp:
+        def __init__(self,measure=False):
+            pass
+        def __call__(self,x):
+            return N.fft.fft(x)
+    class ifftp:
+        def __init__(self,measure=False):
+            pass
+        def __call__(self,x):
+            return N.fft.ifft(x)
+    class irfftp:
+        def __init__(self,measure=False):
+            pass
+        def __call__(self,x):
+            return N.fft.irfft(x[:len(x)//2+1])
 else:
-    def fft(x):
-        x = x.astype(complex)
-        r = N.empty_like(x)
-        ft = fftw3.Plan(x,r, direction='forward', flags=('estimate',))
-        ft()
-        return r
-    
-    def ifft(x):
-        r = N.empty_like(x)
-        ft = fftw3.Plan(x,r, direction='backward', flags=('estimate',))
-        ft()
-        r /= len(r)  # normalize
-        return r
+    class fftpool:
+        def __init__(self,measure):
+            self.measure = measure
+            self.pool = {}
+        def __call__(self,x):
+            lx = len(x)
+            try:
+                transform = self.pool[lx]
+            except KeyError:
+                transform = self.init(lx,self.measure)
+                self.pool[lx] = transform
+            return transform(x)
+
+    class fftp(fftpool):
+        def __init__(self,measure=False):
+            fftpool.__init__(self,measure)
+        def init(self,n,measure):
+            inp = fftw3.create_aligned_array(n,dtype=complex)
+            outp = fftw3.create_aligned_array(n,dtype=complex)
+            plan = fftw3.Plan(inp,outp, direction='forward', flags=('measure' if measure else 'estimate',))
+            return lambda x: self.do(x,inp,outp,plan)
+        @staticmethod
+        def do(x,inp,outp,plan):
+            inp[:] = x
+            plan()
+            return outp
+
+    class ifftp(fftpool):
+        def __init__(self,measure=False):
+            fftpool.__init__(self,measure)
+        def init(self,n,measure):
+            inp = fftw3.create_aligned_array(n,dtype=complex)
+            outp = fftw3.create_aligned_array(n,dtype=complex)
+            plan = fftw3.Plan(inp,outp, direction='backward', flags=('measure' if measure else 'estimate',))
+            return lambda x: self.do(x,inp,outp,plan)
+        @staticmethod
+        def do(x,inp,outp,plan):
+            inp[:] = x
+            plan()
+            outp /= len(outp)
+            return outp
+
+    class irfftp(fftpool):
+        def __init__(self,measure=False):
+            fftpool.__init__(self,measure)
+        def init(self,n,measure):
+            inp = fftw3.create_aligned_array(n//2+1,dtype=complex)
+            outp = fftw3.create_aligned_array(n,dtype=float)
+            plan = fftw3.Plan(inp,outp, direction='backward', realtypes='halfcomplex c2r', flags=('measure' if measure else 'estimate',))
+            return lambda x: self.do(x,inp,outp,plan)
+        @staticmethod
+        def do(x,inp,outp,plan):
+            inp[:] = x[:len(inp)]
+            plan()
+            outp /= len(outp)
+            return outp

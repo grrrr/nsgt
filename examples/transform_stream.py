@@ -61,14 +61,17 @@ if __name__ == "__main__":
 #    signal = reblock((s,),1024)  # input stream
     signal = (s,)
 
+    # generator for forward transformation
     c = slicq.forward(signal)
 
-    # realize transform
+    # realize transform from iterator
     c = list(c)
 
+    # generator for backward transformation
     outseq = slicq.backward(c)
 
-    s_r = reblock(outseq,len(s),fulllast=False).next() # make single output array
+    # make single output array from iterator
+    s_r = reblock(outseq,len(s),fulllast=False).next() 
     
     t2 = time()
 

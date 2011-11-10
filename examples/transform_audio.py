@@ -53,6 +53,7 @@ if __name__ == "__main__":
     
     # calculate transform parameters
     Ls = len(s)
+    
     nsgt = CQ_NSGT(options.fmin,options.fmax,options.bins,fs,Ls)
     
     # forward transform 
@@ -63,7 +64,7 @@ if __name__ == "__main__":
     
     t2 = time()
 
-    norm = lambda x: N.sqrt(N.sum(N.square(N.abs(x))))
+    norm = lambda x: N.sqrt(N.sum(N.square(x)))
     rec_err = norm(s-s_r)/norm(s)
     print "Reconstruction error: %.3e"%rec_err
     print "Calculation time: %.3f s"%(t2-t1)

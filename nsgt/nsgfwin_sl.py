@@ -37,10 +37,7 @@ EXTERNALS : firwin
 import numpy as N
 from util import hannwin,blackharr,_isseq
 from itertools import chain
-from math import floor,ceil
-
-def diff(x):
-    return x[1:]-x[:-1]
+from math import ceil
 
 def nsgfwin_sl(fmin,fmax,bins,sr,Ls,min_win=4,Qvar = 1,sliced=True):
 
@@ -109,10 +106,9 @@ def nsgfwin_sl(fmin,fmax,bins,sr,Ls,min_win=4,Qvar = 1,sliced=True):
                 g[kk-1][M[kk-1]//2-M[kk]//2:M[kk-1]//2+ceil(M[kk]/2.)] = hannwin(M[kk])
         
         rfbas = N.round(fbas/2.).astype(int)*2
-        shift = N.hstack((N.mod(-rfbas[-1],Ls),diff(rfbas)))
-        return g,shift,M
     else:
         fbas[lbas] = (fbas[lbas-1]+fbas[lbas+1])/2
         fbas[lbas+2] = Ls-fbas[lbas]
         rfbas = N.round(fbas).astype(int)
-        return g,rfbas,M
+    
+    return g,rfbas,M
