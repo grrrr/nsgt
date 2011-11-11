@@ -39,6 +39,7 @@ if __name__ == "__main__":
     parser.add_option("--bins",dest="bins",type="int",default=12,help="bins per octave")
     parser.add_option("--slice",dest="sl_len",type="int",default=2**16,help="slice length")
     parser.add_option("--trans",dest="tr_area",type="int",default=4096,help="transition area")
+    parser.add_option("--userecwnd",dest="userecwnd",type="int",default=0,help="use reconstruction window")
     parser.add_option("--plot",dest="plot",type="int",default=0,help="plot transform (needs installed matplotlib and scipy packages)")
 
     (options, args) = parser.parse_args()
@@ -51,14 +52,13 @@ if __name__ == "__main__":
     sf = Sndfile(args[0])
     fs = sf.samplerate
     s = sf.read_frames(sf.nframes)
-    if len(s.shape) > 1: 
+    if sf.channels > 1: 
         s = N.mean(s,axis=1)
 
-    slicq = CQ_NSGT_sliced(options.fmin,options.fmax,options.bins,options.sl_len,options.tr_area,fs)
+    slicq = CQ_NSGT_sliced(options.fmin,options.fmax,options.bins,options.sl_len,options.tr_area,fs,userecwnd=options.userecwnd)
 
     t1 = time()
     
-#    signal = reblock((s,),1024)  # input stream
     signal = (s,)
 
     # generator for forward transformation
