@@ -28,17 +28,21 @@ from util import calcwinrange
 from slicq import CQ_NSGT_sliced
 
 class CQ_NSGT:
-    def __init__(self,fmin,fmax,bins,fs,Ls,realout=True,measurefft=False):
+    def __init__(self,fmin,fmax,bins,fs,Ls,real=True,measurefft=False,matrixform=False):
         self.fmin = fmin
         self.fmax = fmax
         self.bins = bins
         self.fs = fs
         self.Ls = Ls
-        self.realout = realout
+        self.real = real
         self.measurefft = measurefft
         
         # calculate transform parameters
         self.g,rfbas,self.M = nsgfwin(self.fmin,self.fmax,self.bins,self.fs,self.Ls)
+
+        if matrixform:
+            self.M[:] = self.M.max()
+    
         # calculate shifts
         self.wins,self.nn = calcwinrange(self.g,rfbas,self.Ls)
         # calculate dual windows
@@ -46,12 +50,11 @@ class CQ_NSGT:
 
     def forward(self,s):
         'transform' 
-#        return nsgtf(s,self.g,self.shift,self.Ls,self.M)
-        return nsgtf(s,self.g,self.wins,self.nn,self.M,measurefft=self.measurefft)
+        return nsgtf(s,self.g,self.wins,self.nn,self.M,real=self.real,measurefft=self.measurefft)
 
     def backward(self,c):
         'inverse transform'
-        return nsigtf(c,self.gd,self.wins,self.nn,self.Ls,realout=self.realout,measurefft=self.measurefft)
+        return nsigtf(c,self.gd,self.wins,self.nn,self.Ls,real=self.real,measurefft=self.measurefft)
 
 
 import unittest

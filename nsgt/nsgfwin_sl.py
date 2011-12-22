@@ -39,7 +39,7 @@ from util import hannwin,blackharr,_isseq
 from itertools import chain
 from math import ceil
 
-def nsgfwin_sl(fmin,fmax,bins,sr,Ls,min_win=4,Qvar = 1,sliced=True):
+def nsgfwin_sl(fmin,fmax,bins,sr,Ls,min_win=4,Qvar = 1,sliced=True,matrixform=True):
 
     nf = sr/2.
     
@@ -93,6 +93,9 @@ def nsgfwin_sl(fmin,fmax,bins,sr,Ls,min_win=4,Qvar = 1,sliced=True):
         M[-1] = N.round(Ls-fbas[-2])
     
     N.clip(M,min_win,N.inf,out=M)
+    
+    if matrixform:
+        M[:] = M.max()
     
     if sliced: 
         g = [blackharr(m) for m in M]

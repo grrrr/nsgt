@@ -36,7 +36,7 @@ def arrange(cseq,M,fwd):
 
 
 class CQ_NSGT_sliced:
-    def __init__(self,fmin,fmax,bins,sl_len,tr_area,fs,min_win=16,Qvar=1,realout=True,userecwnd=False,measurefft=False):
+    def __init__(self,fmin,fmax,bins,sl_len,tr_area,fs,min_win=16,Qvar=1,realout=True,recwnd=False,matrixform=False,measurefft=False):
         assert sl_len%2 == 0
 
         self.fmin = fmin
@@ -47,9 +47,9 @@ class CQ_NSGT_sliced:
         self.fs = fs
         self.realout = realout
         self.measurefft = measurefft
-        self.userecwnd = userecwnd
+        self.userecwnd = recwnd
 
-        self.g,rfbas,self.M = nsgfwin_sl(self.fmin,self.fmax,self.bins,self.fs,self.sl_len,min_win,Qvar)
+        self.g,rfbas,self.M = nsgfwin_sl(self.fmin,self.fmax,self.bins,self.fs,self.sl_len,min_win,Qvar,matrixform=matrixform)
         
         self.wins,self.nn = calcwinrange(self.g,rfbas,self.sl_len)
         

@@ -34,6 +34,8 @@ if __name__ == "__main__":
     parser.add_option("--fmin",dest="fmin",type="float",default=80,help="minimum frequency")
     parser.add_option("--fmax",dest="fmax",type="float",default=22050,help="maximum frequency")
     parser.add_option("--bins",dest="bins",type="int",default=12,help="bins per octave")
+    parser.add_option("--usereal",dest="usereal",type="int",default=0,help="assume real signal")
+    parser.add_option("--usematrixform",dest="usematrixform",type="int",default=0,help="use regular time division (matrix form)")
     parser.add_option("--plot",dest="plot",type="int",default=0,help="plot transform (needs installed matplotlib and scipy packages)")
     
     (options, args) = parser.parse_args()
@@ -54,7 +56,7 @@ if __name__ == "__main__":
     # calculate transform parameters
     Ls = len(s)
     
-    nsgt = CQ_NSGT(options.fmin,options.fmax,options.bins,fs,Ls)
+    nsgt = CQ_NSGT(options.fmin,options.fmax,options.bins,fs,Ls,real=options.usereal,matrixform=options.usematrixform)
     
     # forward transform 
     c = nsgt.forward(s)

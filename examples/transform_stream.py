@@ -13,7 +13,6 @@ from scikits.audiolab import Sndfile
 from time import time
 import os.path
 from itertools import imap
-import pylab as P
 
 from nsgt import CQ_NSGT_sliced
 from reblock import reblock
@@ -39,6 +38,8 @@ if __name__ == "__main__":
     parser.add_option("--bins",dest="bins",type="int",default=12,help="bins per octave")
     parser.add_option("--slice",dest="sl_len",type="int",default=2**16,help="slice length")
     parser.add_option("--trans",dest="tr_area",type="int",default=4096,help="transition area")
+    parser.add_option("--usereal",dest="usereal",type="int",default=0,help="assume real signal")
+    parser.add_option("--usematrixform",dest="usematrixform",type="int",default=0,help="use regular time division (matrix form)")
     parser.add_option("--userecwnd",dest="userecwnd",type="int",default=0,help="use reconstruction window")
     parser.add_option("--plot",dest="plot",type="int",default=0,help="plot transform (needs installed matplotlib and scipy packages)")
 
@@ -55,7 +56,7 @@ if __name__ == "__main__":
     if sf.channels > 1: 
         s = N.mean(s,axis=1)
 
-    slicq = CQ_NSGT_sliced(options.fmin,options.fmax,options.bins,options.sl_len,options.tr_area,fs,userecwnd=options.userecwnd)
+    slicq = CQ_NSGT_sliced(options.fmin,options.fmax,options.bins,options.sl_len,options.tr_area,fs,real=options.usereal,recwnd=options.userecwnd,matrixform=options.usematrixform)
 
     t1 = time()
     

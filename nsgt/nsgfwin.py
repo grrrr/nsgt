@@ -77,8 +77,7 @@ def nsgfwin(fmin,fmax,bins,sr,Ls,min_win=4):
         M[k] = N.round(fbas[k+1]-fbas[k-1])
     M[-1] = N.round(Ls-fbas[-2])
     
-    M = N.clip(M,min_win,N.inf).astype(int)
-    
+    M = N.clip(M,min_win,N.inf).astype(int)    
     g = [hannwin(m) for m in M]
     
     fbas[lbas] = (fbas[lbas-1]+fbas[lbas+1])/2
