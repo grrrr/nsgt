@@ -108,6 +108,11 @@ except ImportError:
             pass
         def __call__(self,x):
             return N.fft.ifft(x)
+    class rfftp:
+        def __init__(self,measure=False):
+            pass
+        def __call__(self,x):
+            return N.fft.rfft(x)
     class irfftp:
         def __init__(self,measure=False):
             pass
@@ -141,6 +146,20 @@ else:
             plan()
             return outp
 
+    class rfftp(fftpool):
+        def __init__(self,measure=False):
+            fftpool.__init__(self,measure)
+        def init(self,n,measure):
+            inp = fftw3.create_aligned_array(n,dtype=float)
+            outp = fftw3.create_aligned_array(n//2+1,dtype=complex)
+            plan = fftw3.Plan(inp,outp, direction='forward', realtypes='halfcomplex r2c',flags=('measure' if measure else 'estimate',))
+            return lambda x: self.do(x,inp,outp,plan)
+        @staticmethod
+        def do(x,inp,outp,plan):
+            inp[:] = x
+            plan()
+            return outp
+
     class ifftp(fftpool):
         def __init__(self,measure=False):
             fftpool.__init__(self,measure)
@@ -160,8 +179,8 @@ else:
         def __init__(self,measure=False):
             fftpool.__init__(self,measure)
         def init(self,n,measure):
-            inp = fftw3.create_aligned_array(n//2+1,dtype=complex)
-            outp = fftw3.create_aligned_array(n,dtype=float)
+            inp = fftw3.create_aligned_array(n,dtype=complex)
+            outp = fftw3.create_aligned_array((n-1)*2,dtype=float)
             plan = fftw3.Plan(inp,outp, direction='backward', realtypes='halfcomplex c2r', flags=('measure' if measure else 'estimate',))
             return lambda x: self.do(x,inp,outp,plan)
         @staticmethod
@@ -170,3 +189,41 @@ else:
             plan()
             outp /= len(outp)
             return outp
+
+import unittest
+
+class TestFFT(unittest.TestCase):
+    @staticmethod
+    def rms(x):
+        return N.sqrt(N.mean(N.square(N.abs(x))))
+
+    def setUp(self):
+        pass
+
+    def test_rfft(self,n=1000):
+        seq = N.random.random(n)
+        ft = rfftp()
+        a = ft(seq)
+        b = N.fft.rfft(seq)
+        self.assertTrue(self.rms(a-b) < 1.e-10)
+    def test_irfft(self,n=1000):
+        seq = N.random.random(n)+N.random.random(n)*1.j
+        ft = irfftp()
+        a = ft(seq)
+        b = N.fft.irfft(seq)
+        self.assertTrue(self.rms(a-b) < 1.e-10)
+    def test_fft(self,n=1000):
+        seq = N.random.random(n)
+        ft = fftp()
+        a = ft(seq)
+        b = N.fft.fft(seq)
+        self.assertTrue(self.rms(a-b) < 1.e-10)
+    def test_ifft(self,n=1000):
+        seq = N.random.random(n)+N.random.random(n)*1.j
+        ft = ifftp()
+        a = ft(seq)
+        b = N.fft.ifft(seq)
+        self.assertTrue(self.rms(a-b) < 1.e-10)
+
+if __name__ == '__main__':
+    unittest.main()

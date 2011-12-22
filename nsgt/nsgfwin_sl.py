@@ -94,9 +94,6 @@ def nsgfwin_sl(fmin,fmax,bins,sr,Ls,min_win=4,Qvar = 1,sliced=True,matrixform=Tr
     
     N.clip(M,min_win,N.inf,out=M)
     
-    if matrixform:
-        M[:] = M.max()
-    
     if sliced: 
         g = [blackharr(m) for m in M]
     else:

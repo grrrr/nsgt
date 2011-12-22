@@ -15,6 +15,11 @@ def nsgtf_sl(f_slices,g,wins,nn,M=None,real=False,measurefft=False):
     fft = fftp(measure=measurefft)
     ifft = ifftp(measure=measurefft)
     
+    if real:
+        sl = slice(0,len(g)//2+1)
+    else:
+        sl = slice(0,None)
+    
     for f in f_slices:
         Ls = len(f)
         
@@ -28,7 +33,7 @@ def nsgtf_sl(f_slices,g,wins,nn,M=None,real=False,measurefft=False):
         c = [] # Initialization of the result
             
         # The actual transform
-        for gii,mii,win_range in izip(g,M,wins):
+        for mii,gii,win_range in izip(M[sl],g,wins):
             Lg = len(gii)
             
             t = f[win_range]*N.fft.fftshift(N.conj(gii))

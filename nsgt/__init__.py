@@ -29,6 +29,12 @@ from slicq import CQ_NSGT_sliced
 
 class CQ_NSGT:
     def __init__(self,fmin,fmax,bins,fs,Ls,real=True,measurefft=False,matrixform=False):
+        assert fmin > 0
+        assert fmax > fmin
+        assert bins > 0
+        assert fs > 0
+        assert Ls > 0
+        
         self.fmin = fmin
         self.fmax = fmax
         self.bins = bins

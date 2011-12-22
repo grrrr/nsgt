@@ -59,10 +59,13 @@ def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,measurefft=False):
     ifft = irfftp(measure=measurefft) if real else ifftp(measure=measurefft)
     
     for c in cseq:
-        assert len(c) == len(gd)
+        if real:
+            assert len(c) == len(gd)//2+1
+        else:
+            assert len(c) == len(gd)
     
         fr = N.zeros(nn,dtype=complex)  # Initialize output
-            
+
         # The overlap-add procedure including multiplication with the synthesis windows
         for cii,gdii,win_range in izip(c,gd,wins):
             Lg = len(gdii)
@@ -77,6 +80,8 @@ def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,measurefft=False):
             temp *= gdii
             fr[win_range] += N.fft.fftshift(temp)
         
+        if real:
+            fr = fr[:nn//2+1]
         fr = ifft(fr).copy()
         fr = fr[:Ls] # Truncate the signal to original length (if given)
         yield fr
