@@ -68,6 +68,8 @@ def nsgfwin_sl(fmin,fmax,bins,sr,Ls,min_win=4,Qvar = 1,sliced=True,matrixform=Tr
         # TODO: test this branch!
         fbas = fbas[:N.min(N.where(fbas>=fmax))+1]
     
+#    print "fbas",fbas
+
     lbas = len(fbas)
     fbas = N.concatenate(((0.,),fbas,(nf,),sr-fbas[::-1]))
     fbas *= float(Ls)/sr
@@ -93,6 +95,8 @@ def nsgfwin_sl(fmin,fmax,bins,sr,Ls,min_win=4,Qvar = 1,sliced=True,matrixform=Tr
         M[-1] = N.round(Ls-fbas[-2])
     
     N.clip(M,min_win,N.inf,out=M)
+    
+#    print "M",M
     
     if sliced: 
         g = [blackharr(m) for m in M]

@@ -51,8 +51,7 @@ def cfilter(cseq,framedur):
     famp = interp1d(*(N.array(amp).T)) 
     for f,c in enumerate(cseq):
         tm = f*framedur
-#        amp = db2lin(famp(tm))
-        amp = (f//100)%2
+        amp = db2lin(famp(tm))
         yield [ci*amp for ci in c]
 
 if __name__ == "__main__":    
@@ -66,7 +65,7 @@ if __name__ == "__main__":
     parser.add_option("--bins",dest="bins",type="int",default=12,help="bins per octave")
     parser.add_option("--slice",dest="sl_len",type="int",default=2**16,help="slice length")
     parser.add_option("--trans",dest="tr_area",type="int",default=4096,help="transition area")
-    parser.add_option("--userecwnd",dest="userecwnd",type="int",default=0,help="use reconstruction window")
+    parser.add_option("--recwnd",dest="recwnd",type="int",default=0,help="use reconstruction window")
 
     (options, args) = parser.parse_args()
     if not options.input:
@@ -83,7 +82,7 @@ if __name__ == "__main__":
 
     sfo = Sndfile(options.output,mode='w',format=Format('wav','pcm16'),channels=1,samplerate=fs)
 
-    slicq = CQ_NSGT_sliced(options.fmin,options.fmax,options.bins,options.sl_len,options.tr_area,fs,userecwnd=options.userecwnd)
+    slicq = CQ_NSGT_sliced(options.fmin,options.fmax,options.bins,options.sl_len,options.tr_area,fs,recwnd=options.recwnd,real=True,matrixform=True)
 
     t1 = time()
 
@@ -97,10 +96,10 @@ if __name__ == "__main__":
     c = cfilter(c,float(options.sl_len)/fs)
 
     # generator for backward transformation
-    signal = slicq.backward(c)
+    trans = slicq.backward(c)
 
     # output resulting signal
-    sndwriter(sfo,signal,maxframes=frames)
+    sndwriter(sfo,trans,maxframes=frames)
 
     t2 = time()
 

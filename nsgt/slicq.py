@@ -57,12 +57,14 @@ class CQ_NSGT_sliced:
         self.measurefft = measurefft
         self.userecwnd = recwnd
 
-        self.g,rfbas,self.M = nsgfwin_sl(self.fmin,self.fmax,self.bins,self.fs,self.sl_len,min_win,Qvar,matrixform=matrixform)
+        self.g,self.rfbas,self.M = nsgfwin_sl(self.fmin,self.fmax,self.bins,self.fs,self.sl_len,min_win,Qvar,matrixform=matrixform)
+        
+#        print "rfbas",self.rfbas/float(self.sl_len)*self.fs
         
         if matrixform:
             self.M[:] = self.M.max()
 
-        self.wins,self.nn = calcwinrange(self.g,rfbas,self.sl_len)
+        self.wins,self.nn = calcwinrange(self.g,self.rfbas,self.sl_len)
         
         self.gd = nsdual(self.g,self.wins,self.nn,self.M)
 

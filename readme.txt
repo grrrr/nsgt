@@ -6,6 +6,7 @@ http://grrrr.org/nsgt
 
 
 Installation:
+-------------
 
 In the console (terminal application) change to the folder containing this readme.txt file.
 
@@ -14,6 +15,15 @@ python setup.py build
 
 To install the package (with administrator rights):
 sudo python setup.py install
+
+
+Todo:
+-----
+
+- Variable-Q
+- Multi-channel operation
+- Quality measurement for coefficients of sliced transform
+- Unify nsgfwin sliced/non-sliced
 
 --
 
