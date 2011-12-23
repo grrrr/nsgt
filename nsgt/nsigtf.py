@@ -53,21 +53,27 @@ import numpy as N
 from itertools import izip
 from util import fftp,ifftp,irfftp
 
-def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,measurefft=False):
+def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=False,measurefft=False):
 
     fft = fftp(measure=measurefft)
     ifft = irfftp(measure=measurefft) if real else ifftp(measure=measurefft)
     
     for c in cseq:
         if real:
-            assert len(c) == len(gd)//2+1
+            if reducedform:
+                assert len(c) == len(gd)//2-1
+                sl = slice(1,len(gd)//2)
+            else:
+                assert len(c) == len(gd)//2+1
+                sl = slice(0,len(gd)//2+1)
         else:
             assert len(c) == len(gd)
+            sl = slice(0,None)
     
         fr = N.zeros(nn,dtype=complex)  # Initialize output
 
         # The overlap-add procedure including multiplication with the synthesis windows
-        for cii,gdii,win_range in izip(c,gd,wins):
+        for cii,gdii,win_range in izip(c,gd[sl],wins[sl]):
             Lg = len(gdii)
             t = fft(cii)
             if len(t) == Lg:
@@ -82,10 +88,10 @@ def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,measurefft=False):
         
         if real:
             fr = fr[:nn//2+1]
-        fr = ifft(fr).copy()
+        fr = ifft(fr)
         fr = fr[:Ls] # Truncate the signal to original length (if given)
         yield fr
 
 # non-sliced version
-def nsigtf(c,gd,wins,nn,Ls=None,real=False,measurefft=False):
-    return nsigtf_sl((c,),gd,wins,nn,Ls=Ls,real=real,measurefft=measurefft).next()
+def nsigtf(c,gd,wins,nn,Ls=None,real=False,reducedform=False,measurefft=False):
+    return nsigtf_sl((c,),gd,wins,nn,Ls=Ls,real=real,reducedform=reducedform,measurefft=measurefft).next()

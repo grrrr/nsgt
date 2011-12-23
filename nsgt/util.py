@@ -101,36 +101,39 @@ except ImportError:
     class fftp:
         def __init__(self,measure=False):
             pass
-        def __call__(self,x):
+        def __call__(self,x,ref=False):
             return N.fft.fft(x)
     class ifftp:
         def __init__(self,measure=False):
             pass
-        def __call__(self,x):
+        def __call__(self,x,ref=False):
             return N.fft.ifft(x)
     class rfftp:
         def __init__(self,measure=False):
             pass
-        def __call__(self,x):
+        def __call__(self,x,ref=False):
             return N.fft.rfft(x)
     class irfftp:
         def __init__(self,measure=False):
             pass
-        def __call__(self,x):
+        def __call__(self,x,ref=False):
             return N.fft.irfft(x[:len(x)//2+1])
 else:
     class fftpool:
         def __init__(self,measure):
             self.measure = measure
             self.pool = {}
-        def __call__(self,x):
+        def __call__(self,x,ref=False):
             lx = len(x)
             try:
                 transform = self.pool[lx]
             except KeyError:
                 transform = self.init(lx,self.measure)
                 self.pool[lx] = transform
-            return transform(x)
+            tx = transform(x)
+            if not ref:
+                tx = tx.copy()
+            return tx
 
     class fftp(fftpool):
         def __init__(self,measure=False):

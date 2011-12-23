@@ -20,48 +20,8 @@ All standard disclaimers apply.
 
 """
 
-from nsgfwin import nsgfwin
-from nsdual import nsdual
-from nsgtf import nsgtf
-from nsigtf import nsigtf
-from util import calcwinrange
+from cq import CQ_NSGT
 from slicq import CQ_NSGT_sliced
-
-class CQ_NSGT:
-    def __init__(self,fmin,fmax,bins,fs,Ls,real=True,measurefft=False,matrixform=False):
-        assert fmin > 0
-        assert fmax > fmin
-        assert bins > 0
-        assert fs > 0
-        assert Ls > 0
-        
-        self.fmin = fmin
-        self.fmax = fmax
-        self.bins = bins
-        self.fs = fs
-        self.Ls = Ls
-        self.real = real
-        self.measurefft = measurefft
-        
-        # calculate transform parameters
-        self.g,rfbas,self.M = nsgfwin(self.fmin,self.fmax,self.bins,self.fs,self.Ls)
-
-        if matrixform:
-            self.M[:] = self.M.max()
-    
-        # calculate shifts
-        self.wins,self.nn = calcwinrange(self.g,rfbas,self.Ls)
-        # calculate dual windows
-        self.gd = nsdual(self.g,self.wins,self.nn,self.M)
-
-    def forward(self,s):
-        'transform' 
-        return nsgtf(s,self.g,self.wins,self.nn,self.M,real=self.real,measurefft=self.measurefft)
-
-    def backward(self,c):
-        'inverse transform'
-        return nsigtf(c,self.gd,self.wins,self.nn,self.Ls,real=self.real,measurefft=self.measurefft)
-
 
 import unittest
 
