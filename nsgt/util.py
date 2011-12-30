@@ -117,7 +117,7 @@ except ImportError:
         def __init__(self,measure=False):
             pass
         def __call__(self,x,ref=False):
-            return N.fft.irfft(x[:len(x)//2+1])
+            return N.fft.irfft(x) #x[:len(x)//2+1])
 else:
     class fftpool:
         def __init__(self,measure):
@@ -187,7 +187,7 @@ else:
             plan = fftw3.Plan(inp,outp, direction='backward', realtypes='halfcomplex c2r', flags=('measure' if measure else 'estimate',))
             return lambda x: self.do(x,inp,outp,plan)
         @staticmethod
-        def do(x,inp,outp,plan):
+        def do(x,inp,outp,plan,axis=-1):
             inp[:] = x[:len(inp)]
             plan()
             outp /= len(outp)

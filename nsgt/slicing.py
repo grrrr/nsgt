@@ -32,9 +32,14 @@ def slicing(f,sl_len,tr_area):
     tw = [tw[o:o+hhop] for o in xrange(0,sl_len,hhop)]
     
     # stream of hopsize/2 blocks with leading and trailing zero blocks
-    fseq = reblock(f,hhop,dtype=float,fulllast=True,padding=0.)
-    pad = N.zeros(hhop,float)
-    fseq = chain((pad,pad),fseq,(pad,pad))
+    fseq = reblock(f,hhop,dtype=float,fulllast=True,padding=0.,multichannel=True)
+    
+    # get first block to deduce number of channels
+    fseq0 = fseq.next()
+    chns = len(fseq0)
+    pad = N.zeros((chns,hhop),dtype=fseq0.dtype)
+    # assemble a stream of front padding, already retrieved first block, the block stream and some tail padding
+    fseq = chain((pad,pad,fseq0),fseq,(pad,pad))
 
     slices = [[slice(hhop*((i+3-k*2)%4),hhop*((i+3-k*2)%4+1)) for i in xrange(4)] for k in xrange(2)]
     slices = cycle(slices)
@@ -43,10 +48,10 @@ def slicing(f,sl_len,tr_area):
     for fi in fseq:
         past.append(fi)
         if len(past) == 4:
-            f_slice = N.empty(sl_len,dtype=fi.dtype)
+            f_slice = N.empty((chns,sl_len),dtype=fi.dtype)
             sl = slices.next()
             for sli,pi,twi in izip(sl,past,tw):
-                f_slice[sli] = pi    # signal
-                f_slice[sli] *= twi  # multiply with part of window function
+                f_slice[:,sli] = pi    # signal
+                f_slice[:,sli] *= twi  # multiply with part of window function
             yield f_slice
             past = past[2:]  # pop the two oldest slices

@@ -27,7 +27,7 @@ from nsigtf import nsigtf
 from util import calcwinrange
 
 class CQ_NSGT:
-    def __init__(self,fmin,fmax,bins,fs,Ls,real=True,measurefft=False,matrixform=False,reducedform=False):
+    def __init__(self,fmin,fmax,bins,fs,Ls,real=True,measurefft=False,matrixform=False,reducedform=False,multichannel=False):
         assert fmin > 0
         assert fmax > fmin
         assert bins > 0
@@ -52,15 +52,28 @@ class CQ_NSGT:
             else:
                 self.M[:] = self.M.max()
     
+        if multichannel:
+            self.channelize = lambda s: s
+            self.unchannelize = lambda s: s
+        else:
+            self.channelize = lambda s: (s,)
+            self.unchannelize = lambda s: s[0]
+
         # calculate shifts
         self.wins,self.nn = calcwinrange(self.g,rfbas,self.Ls)
         # calculate dual windows
         self.gd = nsdual(self.g,self.wins,self.nn,self.M)
 
     def forward(self,s):
-        'transform' 
-        return nsgtf(s,self.g,self.wins,self.nn,self.M,real=self.real,reducedform=self.reducedform,measurefft=self.measurefft)
+        'transform'
+        s = self.channelize(s)
+        fwd = lambda s: nsgtf(s,self.g,self.wins,self.nn,self.M,real=self.real,reducedform=self.reducedform,measurefft=self.measurefft)
+        c = map(fwd,s)
+        return self.unchannelize(c)
 
     def backward(self,c):
         'inverse transform'
-        return nsigtf(c,self.gd,self.wins,self.nn,self.Ls,real=self.real,reducedform=self.reducedform,measurefft=self.measurefft)
+        c = self.channelize(c)
+        bwd = lambda c: nsigtf(c,self.gd,self.wins,self.nn,self.Ls,real=self.real,reducedform=self.reducedform,measurefft=self.measurefft)
+        s = map(bwd,c)
+        return self.unchannelize(s)

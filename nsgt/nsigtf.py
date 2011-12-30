@@ -75,6 +75,7 @@ def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=False,measurefft=Fa
         # The overlap-add procedure including multiplication with the synthesis windows
         for cii,gdii,win_range in izip(c,gd[sl],wins[sl]):
             Lg = len(gdii)
+            
             t = fft(cii)
             if len(t) == Lg:
                 temp = t

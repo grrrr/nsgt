@@ -54,7 +54,7 @@ def nsgtf_sl(f_slices,g,wins,nn,M=None,real=False,reducedform=False,measurefft=F
                 
             ci = ifft(temp)
             c.append(ci)
-
+            
         yield c
         
 # non-sliced version

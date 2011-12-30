@@ -5,7 +5,7 @@ Created on 05.11.2011
 '''
 
 import numpy as N
-from itertools import izip,cycle
+from itertools import izip,cycle,chain
 from util import hannwin
 
 def slicequads(frec_sliced,hhop):
@@ -13,8 +13,7 @@ def slicequads(frec_sliced,hhop):
     slices = cycle(slices)
     
     for fsl,sl in izip(frec_sliced,slices):
-#        assert len(fsl) == hhop*4
-        yield [fsl[sli] for sli in sl] 
+        yield [[fslc[sli] for fslc in fsl] for sli in sl]
 
 
 def unslicing(frec_sliced,sl_len,tr_area,dtype=float,usewindow=True):
@@ -33,8 +32,15 @@ def unslicing(frec_sliced,sl_len,tr_area,dtype=float,usewindow=True):
         tw = [tw[o:o+hhop] for o in xrange(0,sl_len,hhop)]
     else:
         tw = cycle((1,))
-
-    output = [N.zeros(hhop,dtype=dtype) for _ in xrange(4)]
+        
+    # get first slice to deduce channels
+    firstquad = islices.next()
+    
+    chns = len(firstquad[0]) # number of channels in first quad
+    
+    islices = chain((firstquad,),islices)
+    
+    output = [N.zeros((chns,hhop),dtype=dtype) for _ in xrange(4)]
     
     for quad in islices:
         for osl,isl,w in izip(output,quad,tw):
@@ -43,7 +49,7 @@ def unslicing(frec_sliced,sl_len,tr_area,dtype=float,usewindow=True):
         for _ in xrange(2):
             # absolutely first two should be padding (and discarded by the receiver)
             yield output.pop(0)
-            output.append(N.zeros(hhop,dtype=dtype))
+            output.append(N.zeros((chns,hhop),dtype=dtype))
 
     for _ in xrange(2):
         # absolutely last two should be padding (and discarded by the receiver)

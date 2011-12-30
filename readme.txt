@@ -21,7 +21,6 @@ Todo:
 -----
 
 - Variable-Q
-- Multi-channel operation
 - Quality measurement for coefficients of sliced transform
 - Unify nsgfwin sliced/non-sliced
 
