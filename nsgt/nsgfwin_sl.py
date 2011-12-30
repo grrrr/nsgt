@@ -38,65 +38,51 @@ import numpy as N
 from util import hannwin,blackharr,_isseq
 from itertools import chain
 from math import ceil
+from fspacing import octfrqs 
 
-def nsgfwin_sl(fmin,fmax,bins,sr,Ls,min_win=4,Qvar = 1,sliced=True,matrixform=True):
-
+def nsgfwin_sl(fmin,fmax,bins,sr,Ls,min_win=4,Qvar=1,sliced=True,matrixform=True):
+#    print "fmin = %f, fmax= %f, bins = %i"%(fmin,fmax,bins)
+    
     nf = sr/2.
+        
+    f,q = octfrqs(fmin,fmax,bins)
+    assert len(f) == len(q)
+    assert f[0] > 0 and f[0] < nf   # fmin > 0 and fmin < sr/2
+    assert N.all((f[1:]-f[:-1]) > 0)  # frequencies must be increasing
+    assert N.all(q > 0)  # all q must be > 0
     
-    if fmax > nf:
-        fmax = nf
+    lim = N.argmax(f >= nf)
+    if lim != 0:
+        # f partly >= nf 
+        f = f[:lim]
+        q = q[:lim]
     
-    b = N.ceil(N.log2(fmax/fmin))+1
-
-    if not _isseq(bins):
-        bins = N.ones(b,dtype=int)*bins
-    elif len(bins) < b:
-        # TODO: test this branch!
-        bins[bins <= 0] = 1
-        bins = N.concatenate((bins,N.ones(b-len(bins),dtype=int)*N.min(bins)))
-    
-    fbas = []
-    for kk,bkk in enumerate(bins):
-        r = N.arange(kk*bkk,(kk+1)*bkk,dtype=float)
-        # TODO: use N.logspace instead
-        fbas.append(2**(r/bkk)*fmin)
-    fbas = N.concatenate(fbas)
-
-    if fbas[N.min(N.where(fbas>=fmax))] >= nf:
-        fbas = fbas[:N.max(N.where(fbas<fmax))+1]
-    else:
-        # TODO: test this branch!
-        fbas = fbas[:N.min(N.where(fbas>=fmax))+1]
-    
-#    print "fbas",fbas
-
+    fbas = f
     lbas = len(fbas)
-    fbas = N.concatenate(((0.,),fbas,(nf,),sr-fbas[::-1]))
+    
+    frqs = N.concatenate(((0.,),fbas,(nf,)))
+    
+    fbas = N.concatenate((frqs,sr-frqs[-2:0:-1]))
+
+    # at this point: fbas.... frequencies in Hz
+    
     fbas *= float(Ls)/sr
     
-    # TODO: put together with array indexing
+    # Omega[k] in the paper
+    M = N.empty(fbas.shape,int)
+    M[0] = N.round(2*fbas[1])
+    M[1:lbas+1] = N.round(fbas[1:lbas+1]/q[0:lbas])
+    M[lbas+1] = N.round(Ls-2*fbas[lbas])
+    M[-1:lbas+1:-1] = M[1:lbas+1]
+    
     if sliced:
-        M = N.empty(fbas.shape,float)
-        M[0] = 2.*fmin*Ls/sr
-        M[1] = fbas[1]*(2**(1./bins[0])-2**(-1./bins[0]))
-        for k in chain(xrange(2,lbas),(lbas+1,)):
-            M[k] = fbas[k+1]-fbas[k-1]
-        M[lbas] = fbas[lbas]*(2**(1./bins[-1])-2**(-1./bins[-1]))
-        M[lbas+2:2*(lbas+1)] = M[lbas:0:-1]
-        M[-1] = M[1]
-        M *= Qvar/4.
-        M = M.astype(int)
+        # multiple of 4
+        M //= 4
         M *= 4
-    else:  # non-sliced
-        M = N.empty(fbas.shape,int)
-        M[0] = N.round(2.*fmin*Ls/sr)
-        for k in xrange(1,2*lbas+1):
-            M[k] = N.round(fbas[k+1]-fbas[k-1])
-        M[-1] = N.round(Ls-fbas[-2])
     
     N.clip(M,min_win,N.inf,out=M)
-    
-#    print "M",M
+
+#    print "M",list(M)
     
     if sliced: 
         g = [blackharr(m) for m in M]
@@ -104,15 +90,18 @@ def nsgfwin_sl(fmin,fmax,bins,sr,Ls,min_win=4,Qvar = 1,sliced=True,matrixform=Tr
         g = [hannwin(m) for m in M]
     
     if sliced:
-        for kk in (1,lbas+2):
-            if M[kk-1] > M[kk]:
-                g[kk-1] = N.ones(M[kk-1],dtype=g[kk-1].dtype)
-                g[kk-1][M[kk-1]//2-M[kk]//2:M[kk-1]//2+ceil(M[kk]/2.)] = hannwin(M[kk])
+        if False:
+            for kk in (1,lbas+2):
+                if M[kk-1] > M[kk]:
+                    g[kk-1] = N.ones(M[kk-1],dtype=g[kk-1].dtype)
+                    g[kk-1][M[kk-1]//2-M[kk]//2:M[kk-1]//2+ceil(M[kk]/2.)] = hannwin(M[kk])
         
         rfbas = N.round(fbas/2.).astype(int)*2
     else:
         fbas[lbas] = (fbas[lbas-1]+fbas[lbas+1])/2
         fbas[lbas+2] = Ls-fbas[lbas]
         rfbas = N.round(fbas).astype(int)
+    
+#    print "rfbas",list(rfbas)
     
     return g,rfbas,M

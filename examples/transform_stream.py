@@ -90,7 +90,6 @@ if __name__ == "__main__":
         import pylab as P
         if options.matrixform:
             tr = N.abs(N.hstack(c))
-            print "tr",tr.shape,tr.dtype
             P.imshow(tr,aspect=100,interpolation='nearest')
             P.show()
     

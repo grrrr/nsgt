@@ -15,7 +15,7 @@ class Transpose:
         sha = N.array(sh).T
         sha[1] *= octbins/12.
         self.fsh = interp1d(*sha)
-    def __call__(self,t,c,reducedform=False):
+    def __call__(self,t,c,frqs,reducedform=False):
         ca = N.array(c,copy=True)
         cn = ca if reducedform else ca[1:-1]
         # manipulate here
@@ -30,9 +30,20 @@ class Transpose:
 
 class Gain:
     def __init__(self,gain):
-        # sh = ((0,0),(10,10),(20,0))  # time/dB pairs
+        # gain = ((0,0),(10,10),(20,0))  # time/dB pairs
         self.fgain = interp1d(*(N.array(gain).T))
-    def __call__(self,t,c,reducedform=False):
+    def __call__(self,t,c,frqs,reducedform=False):
+        ca = N.array(c,copy=True)
+        cn = ca if reducedform else ca[1:-1]
+        # manipulate here
+        cn *= 10**(self.fgain(t)/20.)
+        return ca
+
+class Filter:
+    def __init__(self,flt):
+        # flt = ((0,()),(10,()),(20,()))  # time/(frq/dB list) pairs
+        self.fgain = interp1d(*(N.array(flt).T))
+    def __call__(self,t,c,frqs,reducedform=False):
         ca = N.array(c,copy=True)
         cn = ca if reducedform else ca[1:-1]
         # manipulate here
@@ -43,6 +54,8 @@ class Transform:
     def __init__(self,fs,options):
         self.fs = fs
         self.options = options
+        b = N.ceil(N.log2(options.fmax/options.fmin))+1
+        self.frqs = None #options.fmin*2**()
         self.nsgt = CQ_NSGT_sliced(options.fmin,options.fmax,options.bins,options.sllen,options.trlen,fs,reducedform=options.lossy,real=True,recwnd=True,matrixform=True,multichannel=True)
     
     def __call__(self,s,actions):
@@ -55,7 +68,7 @@ class Transform:
         times = (options.sllen/float(fs)*(i-1)/2. for i in count())
         tc = izip(times,c)
     
-        c = self.process(tc,actions,reducedform=options.lossy)
+        c = self.process(tc,actions,frqs=self.frqs,reducedform=options.lossy)
     
         # inverse transform 
         s_r = self.nsgt.backward(c)
@@ -63,11 +76,11 @@ class Transform:
         return s_r
     
     @staticmethod
-    def process(tcseq,actions,reducedform=False):
+    def process(tcseq,actions,frqs,reducedform=False):
         for t,ci in tcseq:
             chns = []
             for cc in ci:
                 for action in actions:
-                    cc = action(t,cc,reducedform=reducedform)
+                    cc = action(t,cc,frqs=frqs,reducedform=reducedform)
                 chns.append(cc)
             yield chns
