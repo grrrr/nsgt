@@ -117,7 +117,7 @@ except ImportError:
         def __init__(self,measure=False):
             pass
         def __call__(self,x,ref=False):
-            return N.fft.irfft(x) #x[:len(x)//2+1])
+            return N.fft.irfft(x)
 else:
     class fftpool:
         def __init__(self,measure):

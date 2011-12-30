@@ -63,17 +63,19 @@ class CQ_NSGT:
         self.wins,self.nn = calcwinrange(self.g,rfbas,self.Ls)
         # calculate dual windows
         self.gd = nsdual(self.g,self.wins,self.nn,self.M)
+        
+        self.fwd = lambda s: nsgtf(s,self.g,self.wins,self.nn,self.M,real=self.real,reducedform=self.reducedform,measurefft=self.measurefft)
+        self.bwd = lambda c: nsigtf(c,self.gd,self.wins,self.nn,self.Ls,real=self.real,reducedform=self.reducedform,measurefft=self.measurefft)
+        
 
     def forward(self,s):
         'transform'
         s = self.channelize(s)
-        fwd = lambda s: nsgtf(s,self.g,self.wins,self.nn,self.M,real=self.real,reducedform=self.reducedform,measurefft=self.measurefft)
-        c = map(fwd,s)
+        c = map(self.fwd,s)
         return self.unchannelize(c)
 
     def backward(self,c):
         'inverse transform'
         c = self.channelize(c)
-        bwd = lambda c: nsigtf(c,self.gd,self.wins,self.nn,self.Ls,real=self.real,reducedform=self.reducedform,measurefft=self.measurefft)
-        s = map(bwd,c)
+        s = map(self.bwd,c)
         return self.unchannelize(s)

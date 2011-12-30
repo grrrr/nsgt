@@ -91,6 +91,10 @@ class CQ_NSGT_sliced:
         self.wins,self.nn = calcwinrange(self.g,self.rfbas,self.sl_len)
         
         self.gd = nsdual(self.g,self.wins,self.nn,self.M)
+        
+        self.fwd = lambda fc: nsgtf_sl(fc,self.g,self.wins,self.nn,self.M,real=self.real,reducedform=self.reducedform,measurefft=self.measurefft)
+        self.bwd = lambda cc: nsigtf_sl(cc,self.gd,self.wins,self.nn,self.sl_len,real=self.real,reducedform=self.reducedform,measurefft=self.measurefft)
+
 
     def forward(self,sig):
         'transform - s: iterable sequence of sequences' 
@@ -100,8 +104,7 @@ class CQ_NSGT_sliced:
         # Compute the slices (zero-padded Tukey window version)
         f_sliced = slicing(sig,self.sl_len,self.tr_area)
 
-        fwd = lambda fc: nsgtf_sl(fc,self.g,self.wins,self.nn,self.M,real=self.real,reducedform=self.reducedform,measurefft=self.measurefft)
-        cseq = chnmap(fwd,f_sliced)
+        cseq = chnmap(self.fwd,f_sliced)
     
         cseq = arrange(cseq,self.M,True)
         
@@ -117,8 +120,7 @@ class CQ_NSGT_sliced:
         
         cseq = arrange(cseq,self.M,False)
         
-        bwd = lambda cc: nsigtf_sl(cc,self.gd,self.wins,self.nn,self.sl_len,real=self.real,reducedform=self.reducedform,measurefft=self.measurefft)
-        frec_sliced = chnmap(bwd,cseq)
+        frec_sliced = chnmap(self.bwd,cseq)
         
         # Glue the parts back together
         ftype = float if self.real else complex
