@@ -14,8 +14,9 @@ from time import time
 import os.path
 from itertools import imap
 
-from nsgt import CQ_NSGT_sliced
+from nsgt import NSGT_sliced
 from reblock import reblock
+from fscale import LogScale,LinScale,MelScale
 
 class interpolate:
     def __init__(self,cqt,Ls):
@@ -33,9 +34,10 @@ if __name__ == "__main__":
     from optparse import OptionParser
     parser = OptionParser()
     
-    parser.add_option("--fmin",dest="fmin",type="float",default=80,help="minimum frequency")
+    parser.add_option("--fmin",dest="fmin",type="float",default=50,help="minimum frequency")
     parser.add_option("--fmax",dest="fmax",type="float",default=22050,help="maximum frequency")
-    parser.add_option("--bins",dest="bins",type="int",default=12,help="bins per octave")
+    parser.add_option("--bins",dest="bins",type="int",default=50,help="total frequency bins")
+    parser.add_option("--scale",dest="scale",type="str",default='log',help="frequency scale (log,lin,mel)")
     parser.add_option("--slice",dest="sl_len",type="int",default=2**16,help="slice length")
     parser.add_option("--trans",dest="tr_area",type="int",default=4096,help="transition area")
     parser.add_option("--real",dest="real",type="int",default=0,help="assume real signal")
@@ -56,7 +58,16 @@ if __name__ == "__main__":
     if sf.channels > 1: 
         s = N.mean(s,axis=1)
 
-    slicq = CQ_NSGT_sliced(options.fmin,options.fmax,options.bins,options.sl_len,options.tr_area,fs,real=options.real,recwnd=options.recwnd,matrixform=options.matrixform)
+    scales = {'log':LogScale,'lin':LinScale,'mel':MelScale}
+    try:
+        scale = scales[options.scale]
+    except KeyError:
+        parser.error('scale unknown')
+
+    scl = scale(options.fmin,options.fmax,options.bins)
+    slicq = NSGT_sliced(scl,options.sl_len,options.tr_area,fs,real=options.real,recwnd=options.recwnd,matrixform=options.matrixform)
+
+    print "frequencies:",slicq.frqs
 
     t1 = time()
     
@@ -87,13 +98,14 @@ if __name__ == "__main__":
         test_coeff_quality(c,s,g,shift,M,options.sl_len,len(s))
 
     if options.plot:
+        print "Plotting t*f space"
         import pylab as P
-        if options.matrixform:
-            tr = N.abs(N.hstack(c))
-            P.imshow(tr,aspect=100,interpolation='nearest')
-            P.show()
+#        if options.matrixform:
+        tr = N.array([[N.mean(N.abs(cj)) for cj in ci] for ci in c])
+        P.imshow(N.flipud(tr.T),aspect=float(tr.shape[0])/tr.shape[1]*0.5,interpolation='nearest')
+        P.show()
     
-        else:
+        if 0:
             Ls = sf.nframes
             hf = len(c)/2 if options.real else -1
     

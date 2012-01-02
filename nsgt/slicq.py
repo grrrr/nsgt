@@ -39,7 +39,7 @@ def starzip(iterables):
         for t in itr:
             yield t[i]
     iterables = iter(iterables) 
-    it = iterables.next()
+    it = iterables.next()  # we need that to determine the length of one element
     iterables = chain((it,),iterables)
     return [inner(itr,i) for i,itr in enumerate(tee(iterables,len(it)))]
 
@@ -50,10 +50,11 @@ def chnmap(gen,seq):
 
 class NSGT_sliced:
     def __init__(self,scale,sl_len,tr_area,fs,min_win=16,Qvar=1,real=False,recwnd=False,matrixform=False,reducedform=False,multichannel=False,measurefft=False):
+        assert fs > 0
         assert sl_len > 0
         assert tr_area >= 0
         assert sl_len > tr_area*2
-        assert fs > 0
+        assert min_win > 0
 
         assert sl_len%2 == 0
 
@@ -66,9 +67,9 @@ class NSGT_sliced:
         self.reducedform = reducedform
 
         self.scale = scale
-        self.frqs,q = self.scale()
+        self.frqs,self.q = self.scale()
 
-        self.g,self.rfbas,self.M = nsgfwin_sl(self.frqs,q,self.fs,self.sl_len,min_win,Qvar,matrixform=matrixform)
+        self.g,self.rfbas,self.M = nsgfwin_sl(self.frqs,self.q,self.fs,self.sl_len,min_win,Qvar,matrixform=matrixform)
         
 #        print "rfbas",self.rfbas/float(self.sl_len)*self.fs
         
@@ -131,12 +132,16 @@ class NSGT_sliced:
         return sig
 
 
-class CQ_NSGT_sliced:
+class CQ_NSGT_sliced(NSGT_sliced):
     def __init__(self,fmin,fmax,bins,sl_len,tr_area,fs,min_win=16,Qvar=1,real=False,recwnd=False,matrixform=False,reducedform=False,multichannel=False,measurefft=False):
         assert fmin > 0
         assert fmax > fmin
         assert bins > 0
 
-        scale = OctScale(self.fmin,self.fmax,self.bins)
+        self.fmin = fmin
+        self.fmax = fmax
+        self.bins = bins  # bins per octave
+
+        scale = OctScale(fmin,fmax,bins)
         NSGT_sliced.__init__(self,scale,sl_len,tr_area,fs,min_win,Qvar,real,recwnd,matrixform,reducedform,multichannel,measurefft)
 

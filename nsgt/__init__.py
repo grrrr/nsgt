@@ -21,7 +21,7 @@ All standard disclaimers apply.
 """
 
 from cq import CQ_NSGT
-from slicq import CQ_NSGT_sliced
+from slicq import NSGT_sliced,CQ_NSGT_sliced
 
 import unittest
 
