@@ -1,7 +1,7 @@
 # -*- coding: utf-8
 
 """
-Thomas Grill, 2011
+Thomas Grill, 2011-2012
 http://grrrr.org
 """
 

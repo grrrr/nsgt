@@ -20,7 +20,7 @@ from nsgfwin_sl import nsgfwin_sl
 from nsgtf import nsgtf_sl
 from nsigtf import nsigtf_sl
 from util import calcwinrange
-
+from fscale import OctScale
 
 def arrange(cseq,M,fwd):
     ixs = (
@@ -48,11 +48,8 @@ def chnmap(gen,seq):
     gens = map(gen,chns) # generators including transformation
     return izip(*gens)  # packing channels to one generator yielding channel tuples
 
-class CQ_NSGT_sliced:
-    def __init__(self,fmin,fmax,bins,sl_len,tr_area,fs,min_win=16,Qvar=1,real=False,recwnd=False,matrixform=False,reducedform=False,multichannel=False,measurefft=False):
-        assert fmin > 0
-        assert fmax > fmin
-        assert bins > 0
+class NSGT_sliced:
+    def __init__(self,scale,sl_len,tr_area,fs,min_win=16,Qvar=1,real=False,recwnd=False,matrixform=False,reducedform=False,multichannel=False,measurefft=False):
         assert sl_len > 0
         assert tr_area >= 0
         assert sl_len > tr_area*2
@@ -60,9 +57,6 @@ class CQ_NSGT_sliced:
 
         assert sl_len%2 == 0
 
-        self.fmin = fmin
-        self.fmax = fmax
-        self.bins = bins
         self.sl_len = sl_len
         self.tr_area = tr_area
         self.fs = fs
@@ -71,7 +65,10 @@ class CQ_NSGT_sliced:
         self.userecwnd = recwnd
         self.reducedform = reducedform
 
-        self.g,self.rfbas,self.M = nsgfwin_sl(self.fmin,self.fmax,self.bins,self.fs,self.sl_len,min_win,Qvar,matrixform=matrixform)
+        self.scale = scale
+        self.frqs,q = self.scale()
+
+        self.g,self.rfbas,self.M = nsgfwin_sl(self.frqs,q,self.fs,self.sl_len,min_win,Qvar,matrixform=matrixform)
         
 #        print "rfbas",self.rfbas/float(self.sl_len)*self.fs
         
@@ -132,3 +129,14 @@ class CQ_NSGT_sliced:
         sig.next()
         sig.next()
         return sig
+
+
+class CQ_NSGT_sliced:
+    def __init__(self,fmin,fmax,bins,sl_len,tr_area,fs,min_win=16,Qvar=1,real=False,recwnd=False,matrixform=False,reducedform=False,multichannel=False,measurefft=False):
+        assert fmin > 0
+        assert fmax > fmin
+        assert bins > 0
+
+        scale = OctScale(self.fmin,self.fmax,self.bins)
+        NSGT_sliced.__init__(self,scale,sl_len,tr_area,fs,min_win,Qvar,real,recwnd,matrixform,reducedform,multichannel,measurefft)
+

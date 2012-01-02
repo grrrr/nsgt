@@ -4,7 +4,7 @@
 Python implementation of Non-Stationary Gabor Transform (NSGT)
 derived from MATLAB code by NUHAG, University of Vienna, Austria
 
-Thomas Grill, 2011
+Thomas Grill, 2011-2012
 http://grrrr.org/nsgt
 
 
@@ -23,7 +23,7 @@ from setuptools import setup
 
 setup(
     name = "nsgt",
-    version = "0.05",
+    version = "0.06",
     author = "Thomas Grill",
     author_email = "gr@grrrr.org",
     maintainer = "Thomas Grill",

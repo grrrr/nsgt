@@ -1,7 +1,7 @@
 # -*- coding: utf-8
 
 """
-Thomas Grill, 2011
+Thomas Grill, 2011-2012
 http://grrrr.org/nsgt
 
 --
@@ -35,27 +35,27 @@ EXTERNALS : firwin
 """
 
 import numpy as N
-from util import hannwin,blackharr,_isseq
-from itertools import chain
+from util import hannwin,blackharr
 from math import ceil
-from fspacing import octfrqs 
 
-def nsgfwin_sl(fmin,fmax,bins,sr,Ls,min_win=4,Qvar=1,sliced=True,matrixform=True):
-#    print "fmin = %f, fmax= %f, bins = %i"%(fmin,fmax,bins)
-    
+def nsgfwin_sl(f,q,sr,Ls,min_win=4,Qvar=1,sliced=True,matrixform=True):
     nf = sr/2.
-        
-    f,q = octfrqs(fmin,fmax,bins)
-    assert len(f) == len(q)
-    assert f[0] > 0 and f[0] < nf   # fmin > 0 and fmin < sr/2
-    assert N.all((f[1:]-f[:-1]) > 0)  # frequencies must be increasing
-    assert N.all(q > 0)  # all q must be > 0
-    
+
+    lim = N.argmax(f > 0)
+    if lim != 0:
+        # f partly <= 0 
+        f = f[lim:]
+        q = q[lim:]
+            
     lim = N.argmax(f >= nf)
     if lim != 0:
         # f partly >= nf 
         f = f[:lim]
         q = q[:lim]
+    
+    assert len(f) == len(q)
+    assert N.all((f[1:]-f[:-1]) > 0)  # frequencies must be increasing
+    assert N.all(q > 0)  # all q must be > 0
     
     fbas = f
     lbas = len(fbas)
