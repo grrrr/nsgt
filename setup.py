@@ -7,6 +7,14 @@ derived from MATLAB code by NUHAG, University of Vienna, Austria
 Thomas Grill, 2011-2012
 http://grrrr.org/nsgt
 
+Austrian Research Institute for Artificial Intelligence (OFAI)
+AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
+
+
+covered by Creative Commons Attribution-NonCommercial-ShareAlike license (CC BY-NC-SA)
+http://creativecommons.org/licenses/by-nc-sa/3.0/at/deed.en
+
+--
 
 Installation:
 
@@ -29,7 +37,7 @@ setup(
     maintainer = "Thomas Grill",
     maintainer_email = "gr@grrrr.org",
     description = "Python implementation of Non-Stationary Gabor Transform (NSGT)",
-    license = "GPL",
+    license = "Creative Commons Attribution-NonCommercial-ShareAlike",
     keywords = "fourier gabor",
     url = "http://grrrr.org/nsgt",
     requires=("numpy",),
@@ -37,7 +45,7 @@ setup(
     classifiers=[
         "Development Status :: 4 - Beta",
         "Topic :: Scientific/Engineering :: Mathematics",
-        "License :: OSI Approved :: GNU General Public License (GPL)",
+        "License :: Creative Commons Attribution-NonCommercial-ShareAlike License (CC BY-NC-SA)",
         "Programming Language :: Python"
     ],
     test_suite="nsgt.__init__",

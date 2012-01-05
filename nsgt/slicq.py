@@ -16,7 +16,7 @@ from itertools import izip,cycle,chain,tee
 from slicing import slicing
 from unslicing import unslicing
 from nsdual import nsdual
-from nsgfwin_sl import nsgfwin_sl
+from nsgfwin_sl import nsgfwin
 from nsgtf import nsgtf_sl
 from nsigtf import nsigtf_sl
 from util import calcwinrange
@@ -69,7 +69,7 @@ class NSGT_sliced:
         self.scale = scale
         self.frqs,self.q = self.scale()
 
-        self.g,self.rfbas,self.M = nsgfwin_sl(self.frqs,self.q,self.fs,self.sl_len,min_win,Qvar,matrixform=matrixform)
+        self.g,self.rfbas,self.M = nsgfwin(self.frqs,self.q,self.fs,self.sl_len,sliced=True,min_win=min_win,Qvar=Qvar)
         
 #        print "rfbas",self.rfbas/float(self.sl_len)*self.fs
         

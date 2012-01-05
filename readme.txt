@@ -4,6 +4,15 @@ derived from MATLAB code by NUHAG, University of Vienna, Austria
 Thomas Grill, 2011-2012
 http://grrrr.org/nsgt
 
+Austrian Research Institute for Artificial Intelligence (OFAI)
+AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
+
+
+covered by Creative Commons Attribution-NonCommercial-ShareAlike license (CC BY-NC-SA)
+http://creativecommons.org/licenses/by-nc-sa/3.0/at/deed.en
+
+-----
+
 
 Installation:
 -------------
@@ -20,28 +29,9 @@ sudo python setup.py install
 Todo:
 -----
 
-- Variable-Q
 - Quality measurement for coefficients of sliced transform
 - Unify nsgfwin sliced/non-sliced
 
---
-
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
- 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-
-In the official distribution, the GNU General Public License is
-in the file gpl.txt
 
 --
 Original matlab code copyright follows:

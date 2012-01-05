@@ -77,8 +77,7 @@ class MelScale(Scale):
         self.mbnd = (self.mmax-self.mmin)/(self.bnds-1)  # mels per band
     def F(self,bnd):
         return mel2hz(self.mbnd*bnd+self.mmin)
-    def Q1(self,bnd):
-        # obviously not exact
+    def Q1(self,bnd): # obviously not exact
         mel = self.mbnd*bnd+self.mmin
         odivs = (N.exp(mel/-1127.)-1.)*(-781.177/self.mbnd)
         pow2n = N.power(2,1./odivs)

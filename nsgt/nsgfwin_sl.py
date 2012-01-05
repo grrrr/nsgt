@@ -37,8 +37,9 @@ EXTERNALS : firwin
 import numpy as N
 from util import hannwin,blackharr
 from math import ceil
+from warnings import warn
 
-def nsgfwin_sl(f,q,sr,Ls,min_win=4,Qvar=1,sliced=True,matrixform=True):
+def nsgfwin(f,q,sr,Ls,sliced=True,min_win=4,Qvar=1):
     nf = sr/2.
 
     lim = N.argmax(f > 0)
@@ -57,6 +58,11 @@ def nsgfwin_sl(f,q,sr,Ls,min_win=4,Qvar=1,sliced=True,matrixform=True):
     assert N.all((f[1:]-f[:-1]) > 0)  # frequencies must be increasing
     assert N.all(q > 0)  # all q must be > 0
     
+    qmax = f*(Ls/(8.*sr))
+    if N.any(q >= qmax):
+        slmin = int(N.ceil(N.max(q*(8.*sr)/f)))
+        warn("slice length too short - for the given frequency resolution the slice length should be >= %i"%slmin)
+    
     fbas = f
     lbas = len(fbas)
     
@@ -68,13 +74,15 @@ def nsgfwin_sl(f,q,sr,Ls,min_win=4,Qvar=1,sliced=True,matrixform=True):
     
     fbas *= float(Ls)/sr
     
-    # Omega[k] in the paper
-    M = N.empty(fbas.shape,int)
-    M[0] = N.round(2*fbas[1])
-    M[1:lbas+1] = N.round(fbas[1:lbas+1]/q[0:lbas])
-    M[lbas+1] = N.round(Ls-2*fbas[lbas])
-    M[-1:lbas+1:-1] = M[1:lbas+1]
+#    print "fbas",fbas
     
+    # Omega[k] in the paper
+    M = N.zeros(fbas.shape,int)
+    M[0] = N.round(2*fbas[1])
+    for k in xrange(1,2*lbas+1):
+        M[k] = N.round(fbas[k+1]-fbas[k-1])
+    M[-1] = N.round(Ls-fbas[-2])
+
     if sliced:
         # multiple of 4
         M //= 4
@@ -90,18 +98,18 @@ def nsgfwin_sl(f,q,sr,Ls,min_win=4,Qvar=1,sliced=True,matrixform=True):
         g = [hannwin(m) for m in M]
     
     if sliced:
-        if False:
-            for kk in (1,lbas+2):
-                if M[kk-1] > M[kk]:
-                    g[kk-1] = N.ones(M[kk-1],dtype=g[kk-1].dtype)
-                    g[kk-1][M[kk-1]//2-M[kk]//2:M[kk-1]//2+ceil(M[kk]/2.)] = hannwin(M[kk])
+        for kk in (1,lbas+2):
+            if M[kk-1] > M[kk]:
+                g[kk-1] = N.ones(M[kk-1],dtype=g[kk-1].dtype)
+                g[kk-1][M[kk-1]//2-M[kk]//2:M[kk-1]//2+ceil(M[kk]/2.)] = hannwin(M[kk])
         
         rfbas = N.round(fbas/2.).astype(int)*2
     else:
         fbas[lbas] = (fbas[lbas-1]+fbas[lbas+1])/2
         fbas[lbas+2] = Ls-fbas[lbas]
         rfbas = N.round(fbas).astype(int)
-    
-#    print "rfbas",list(rfbas)
+        
+#    print "rfbas",rfbas
+#    print "g",g    
     
     return g,rfbas,M

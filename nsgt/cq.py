@@ -7,6 +7,9 @@ derived from MATLAB code by NUHAG, University of Vienna, Austria
 Thomas Grill, 2011-2012
 http://grrrr.org/nsgt
 
+Austrian Research Institute for Artificial Intelligence (OFAI)
+AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
+
 --
 Original matlab code copyright follows:
 
@@ -20,31 +23,30 @@ All standard disclaimers apply.
 
 """
 
-from nsgfwin import nsgfwin
+import numpy as N
+from nsgfwin_sl import nsgfwin
 from nsdual import nsdual
 from nsgtf import nsgtf
 from nsigtf import nsigtf
 from util import calcwinrange
+from fscale import OctScale
 
-class CQ_NSGT:
-    def __init__(self,fmin,fmax,bins,fs,Ls,real=True,measurefft=False,matrixform=False,reducedform=False,multichannel=False):
-        assert fmin > 0
-        assert fmax > fmin
-        assert bins > 0
+class NSGT:
+    def __init__(self,scale,fs,Ls,real=True,measurefft=False,matrixform=False,reducedform=False,multichannel=False):
         assert fs > 0
         assert Ls > 0
         
-        self.fmin = fmin
-        self.fmax = fmax
-        self.bins = bins
+        self.scale = scale
         self.fs = fs
         self.Ls = Ls
         self.real = real
         self.measurefft = measurefft
         self.reducedform = reducedform
         
+        self.frqs,self.q = scale()
+        
         # calculate transform parameters
-        self.g,rfbas,self.M = nsgfwin(self.fmin,self.fmax,self.bins,self.fs,self.Ls)
+        self.g,rfbas,self.M = nsgfwin(self.frqs,self.q,self.fs,self.Ls,sliced=False)
 
         if matrixform:
             if self.reducedform:
@@ -79,3 +81,40 @@ class CQ_NSGT:
         c = self.channelize(c)
         s = map(self.bwd,c)
         return self.unchannelize(s)
+    
+class CQ_NSGT(NSGT):
+    def __init__(self,fmin,fmax,bins,fs,Ls,real=True,measurefft=False,matrixform=False,reducedform=False,multichannel=False):
+        assert fmin > 0
+        assert fmax > fmin
+        assert bins > 0
+        
+        self.fmin = fmin
+        self.fmax = fmax
+        self.bins = bins
+
+        scale = OctScale(fmin,fmax,bins)
+        NSGT.__init__(self,scale,fs,Ls,real,measurefft,matrixform,reducedform,multichannel)
+
+
+import unittest
+norm = lambda x: N.sqrt(N.sum(N.abs(N.square(x))))
+
+class TestNSGT(unittest.TestCase):
+
+    def setUp(self):
+        self.sig = N.random.random(1000000)
+
+    def test_oct(self):
+        for obins in xrange(1,100):
+            for _ in xrange(100):
+                fmin = N.random.random()*200+1
+                fmax = N.random.random()*(22048-fmin)+fmin
+                scale = OctScale(fmin,fmax,obins)
+                nsgt = NSGT(scale,fs=44100,Ls=len(self.sig))
+                c = nsgt.forward(self.sig)
+                s_r = nsgt.backward(c)
+                rec_err = norm(self.sig-s_r)/norm(self.sig)
+                self.assertAlmostEqual(rec_err,0)
+
+if __name__ == '__main__':
+    unittest.main()

@@ -208,25 +208,35 @@ class TestFFT(unittest.TestCase):
         ft = rfftp()
         a = ft(seq)
         b = N.fft.rfft(seq)
-        self.assertTrue(self.rms(a-b) < 1.e-10)
+        self.assertAlmostEqual(self.rms(a-b),0)
     def test_irfft(self,n=1000):
         seq = N.random.random(n)+N.random.random(n)*1.j
         ft = irfftp()
         a = ft(seq)
         b = N.fft.irfft(seq)
-        self.assertTrue(self.rms(a-b) < 1.e-10)
+        self.assertAlmostEqual(self.rms(a-b),0)
     def test_fft(self,n=1000):
         seq = N.random.random(n)
         ft = fftp()
         a = ft(seq)
         b = N.fft.fft(seq)
-        self.assertTrue(self.rms(a-b) < 1.e-10)
+        self.assertAlmostEqual(self.rms(a-b),0)
     def test_ifft(self,n=1000):
         seq = N.random.random(n)+N.random.random(n)*1.j
         ft = ifftp()
         a = ft(seq)
         b = N.fft.ifft(seq)
-        self.assertTrue(self.rms(a-b) < 1.e-10)
+        self.assertAlmostEqual(self.rms(a-b),0)
 
 if __name__ == '__main__':
     unittest.main()
+#
+#def suite():
+#    suite = unittest.TestSuite()
+#    suite.addTest(TestFFT())
+#    return suite
+#
+#if __name__ == '__main__':
+#    runner = unittest.TextTestRunner()
+#    test_suite = suite()
+#    runner.run (test_suite)

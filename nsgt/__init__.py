@@ -7,6 +7,14 @@ derived from MATLAB code by NUHAG, University of Vienna, Austria
 Thomas Grill, 2011-2012
 http://grrrr.org/nsgt
 
+Austrian Research Institute for Artificial Intelligence (OFAI)
+AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
+
+
+covered by Creative Commons Attribution-NonCommercial-ShareAlike license (CC BY-NC-SA)
+http://creativecommons.org/licenses/by-nc-sa/3.0/at/deed.en
+
+
 --
 Original matlab code copyright follows:
 
@@ -20,8 +28,9 @@ All standard disclaimers apply.
 
 """
 
-from cq import CQ_NSGT
+from cq import NSGT,CQ_NSGT
 from slicq import NSGT_sliced,CQ_NSGT_sliced
+from fscale import Scale,OctScale,LogScale,LinScale,MelScale
 
 import unittest
 

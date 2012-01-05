@@ -9,7 +9,7 @@ http://grrrr.org/nsgt
 """
 
 import numpy as N
-from nsgt import CQ_NSGT
+from nsgt import NSGT,LogScale,LinScale,MelScale,OctScale
 from scikits.audiolab import Sndfile
 from time import time
 import os.path
@@ -31,32 +31,40 @@ if __name__ == "__main__":
     from optparse import OptionParser
     parser = OptionParser()
     
+    parser.add_option("--input",dest="input",type="str",help="input file")
     parser.add_option("--fmin",dest="fmin",type="float",default=80,help="minimum frequency")
     parser.add_option("--fmax",dest="fmax",type="float",default=22050,help="maximum frequency")
-    parser.add_option("--bins",dest="bins",type="int",default=12,help="bins per octave")
+    parser.add_option("--bins",dest="bins",type="int",default=24,help="frequency bins (total or per octave)")
+    parser.add_option("--scale",dest="scale",type="str",default='oct',help="frequency scale (oct,log,lin,mel)")
     parser.add_option("--real",dest="real",type="int",default=0,help="assume real signal")
     parser.add_option("--matrixform",dest="matrixform",type="int",default=0,help="use regular time division (matrix form)")
     parser.add_option("--plot",dest="plot",type="int",default=0,help="plot transform (needs installed matplotlib and scipy packages)")
     
     (options, args) = parser.parse_args()
-    if not len(args):
-        parser.error("missing filename")
-    elif not os.path.exists(args[0]):
+    if not os.path.exists(options.input):
         parser.error("file not found")  
 
     # Read audio data
-    sf = Sndfile(args[0])
+    sf = Sndfile(options.input)
     fs = sf.samplerate
     s = sf.read_frames(sf.nframes)
     if len(s.shape) > 1: 
         s = N.mean(s,axis=1)
         
+    scales = {'log':LogScale,'lin':LinScale,'mel':MelScale,'oct':OctScale}
+    try:
+        scale = scales[options.scale]
+    except KeyError:
+        parser.error('scale unknown')
+
+    scl = scale(options.fmin,options.fmax,options.bins)
+
     t1 = time()
     
     # calculate transform parameters
     Ls = len(s)
     
-    nsgt = CQ_NSGT(options.fmin,options.fmax,options.bins,fs,Ls,real=options.real,matrixform=options.matrixform)
+    nsgt = NSGT(scl,fs,Ls,real=options.real,matrixform=options.matrixform)
     
     # forward transform 
     c = nsgt.forward(s)
@@ -74,9 +82,10 @@ if __name__ == "__main__":
     if options.plot:
         import pylab as P
         # interpolate CQT to get a grid
-        x = N.linspace(0,Ls,1000)
-        grid = interpolate(imap(N.abs,c[2:len(c)/2]),Ls)(x)
+        x = N.linspace(0,Ls,2000)
+        hf = -1 if options.real else len(c)/2
+        grid = interpolate(imap(N.abs,c[2:hf]),Ls)(x)
         # display grid
-        P.imshow(N.log(N.flipud(grid.T)),aspect=2)
+        P.imshow(N.log(N.flipud(grid.T)),aspect=float(grid.shape[0])/grid.shape[1]*0.5,interpolation='nearest')
         print "Plotting"
         P.show()

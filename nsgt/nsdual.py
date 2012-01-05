@@ -4,6 +4,9 @@
 Thomas Grill, 2011-2012
 http://grrrr.org/nsgt
 
+Austrian Research Institute for Artificial Intelligence (OFAI)
+AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
+
 --
 Original matlab code comments follow:
 
