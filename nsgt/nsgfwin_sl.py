@@ -38,6 +38,7 @@ import numpy as N
 from util import hannwin,blackharr
 from math import ceil
 from warnings import warn
+from itertools import chain
 
 def nsgfwin(f,q,sr,Ls,sliced=True,min_win=4,Qvar=1):
     nf = sr/2.
@@ -77,17 +78,26 @@ def nsgfwin(f,q,sr,Ls,sliced=True,min_win=4,Qvar=1):
 #    print "fbas",fbas
     
     # Omega[k] in the paper
-    M = N.zeros(fbas.shape,int)
-    M[0] = N.round(2*fbas[1])
-    for k in xrange(1,2*lbas+1):
-        M[k] = N.round(fbas[k+1]-fbas[k-1])
-    M[-1] = N.round(Ls-fbas[-2])
-
     if sliced:
-        # multiple of 4
-        M //= 4
-        M *= 4
-    
+        M = N.zeros(fbas.shape,float)
+        M[0] = 2*fbas[1]
+        M[1] = fbas[1]/q[0] #(2**(1./bins[0])-2**(-1./bins[0]))
+        for k in chain(xrange(2,lbas),(lbas+1,)):
+            M[k] = fbas[k+1]-fbas[k-1]
+        M[lbas] = fbas[lbas]/q[lbas-1] #(2**(1./bins[-1])-2**(-1./bins[-1]))
+#        M[lbas+1] = fbas[lbas]/q[lbas-1] #(2**(1./bins[-1])-2**(-1./bins[-1]))
+        M[lbas+2:2*(lbas+1)] = M[lbas:0:-1]
+#        M[-1] = M[1]
+        M *= Qvar/4.
+        M = N.round(M).astype(int)
+        M *= 4        
+    else:
+        M = N.zeros(fbas.shape,int)
+        M[0] = N.round(2*fbas[1])
+        for k in xrange(1,2*lbas+1):
+            M[k] = N.round(fbas[k+1]-fbas[k-1])
+        M[-1] = N.round(Ls-fbas[-2])
+
     N.clip(M,min_win,N.inf,out=M)
 
 #    print "M",list(M)

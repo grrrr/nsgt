@@ -117,7 +117,7 @@ class NSGT_sliced:
         cseq = self.channelize(cseq)
         
         cseq = arrange(cseq,self.M,False)
-        
+
         frec_sliced = chnmap(self.bwd,cseq)
         
         # Glue the parts back together
@@ -144,4 +144,73 @@ class CQ_NSGT_sliced(NSGT_sliced):
 
         scale = OctScale(fmin,fmax,bins)
         NSGT_sliced.__init__(self,scale,sl_len,tr_area,fs,min_win,Qvar,real,recwnd,matrixform,reducedform,multichannel,measurefft)
+
+import unittest
+norm = lambda x: N.sqrt(N.mean(N.abs(N.square(x))))
+
+class TestNSGT_slices(unittest.TestCase):
+
+    def setUp(self):
+        pass
+
+    def runit(self,siglen,fmin,fmax,obins,sllen,trlen,real):
+#        print siglen,fmin,fmax,obins,sllen,trlen,real
+        
+#        N.random.seed(0)
+        sig = N.random.random((siglen,))
+        scale = OctScale(fmin,fmax,obins)
+        nsgt = NSGT_sliced(scale,fs=44100,sl_len=sllen,tr_area=trlen,real=real)
+        c = nsgt.forward((sig,))
+
+        rc = nsgt.backward(c)
+        
+        s_r = N.concatenate(map(list,rc))[:len(sig)]
+        rec_err = norm(sig-s_r)
+        rec_err_n = rec_err/norm(sig)
+#        print "err abs",rec_err,"norm",rec_err_n
+        
+        if rec_err_n > 1.e-7:
+            import pylab as P
+#            P.plot(N.abs(sig-s_r))
+#            P.show()
+        
+        self.assertAlmostEqual(rec_err,0)
+        
+    def test_1d1(self):
+        self.runit(*map(int,"100000 100 18200 2 20000 5000 1".split())) # fail
+        
+    def test_1d11(self):
+        self.runit(*map(int,"100000 80 18200 6 20000 5000 1".split())) # success
+        
+    def test_1(self):
+        self.runit(*map(int,"100000 99 19895 6 84348 5928 1".split()))  # fail
+        
+    def test_1a(self):
+        self.runit(*map(int,"100000 99 19895 6 84348 5928 0".split()))  # success
+        
+    def test_1b(self):
+        self.runit(*map(int,"100000 100 20000 6 80000 5000 1".split()))  # fail
+        
+    def test_1c(self):
+        self.runit(*map(int,"100000 100 19000 6 80000 5000 1".split())) # fail
+        
+    def test_1d2(self):
+        self.runit(*map(int,"100000 100 18100 6 20000 5000 1".split())) # success
+        
+    def test_1e(self):
+        self.runit(*map(int,"100000 100 18000 6 20000 5000 1".split())) # success
+        
+    def gtest_oct(self):
+        for _ in xrange(100):
+            siglen = 100000
+            fmin = N.random.randint(200)+30
+            fmax = N.random.randint(22048-fmin)+fmin
+            obins = N.random.randint(24)+1
+            sllen = max(1,N.random.randint(50000))*2
+            trlen = max(2,N.random.randint(sllen//2-2))//2*2
+            real = N.random.randint(2)
+            self.runit(siglen, fmin, fmax, obins, sllen, trlen, real)
+
+if __name__ == '__main__':
+    unittest.main()
 

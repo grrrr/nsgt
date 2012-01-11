@@ -34,6 +34,7 @@ if __name__ == "__main__":
     parser = OptionParser()
     
     parser.add_option("--input",dest="input",type="str",help="input file")
+    parser.add_option("--length",dest="length",type="int",default=0,help="maximum length of signal")
     parser.add_option("--fmin",dest="fmin",type="float",default=50,help="minimum frequency")
     parser.add_option("--fmax",dest="fmax",type="float",default=22050,help="maximum frequency")
     parser.add_option("--bins",dest="bins",type="int",default=50,help="frequency bins (total or per octave)")
@@ -55,6 +56,9 @@ if __name__ == "__main__":
     s = sf.read_frames(sf.nframes)
     if sf.channels > 1: 
         s = N.mean(s,axis=1)
+        
+    if options.length:
+        s = s[:options.length]
 
     scales = {'log':LogScale,'lin':LinScale,'mel':MelScale,'oct':OctScale}
     try:

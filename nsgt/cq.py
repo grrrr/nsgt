@@ -102,19 +102,21 @@ norm = lambda x: N.sqrt(N.sum(N.abs(N.square(x))))
 class TestNSGT(unittest.TestCase):
 
     def setUp(self):
-        self.sig = N.random.random(1000000)
+        pass
 
     def test_oct(self):
-        for obins in xrange(1,100):
-            for _ in xrange(100):
-                fmin = N.random.random()*200+1
-                fmax = N.random.random()*(22048-fmin)+fmin
-                scale = OctScale(fmin,fmax,obins)
-                nsgt = NSGT(scale,fs=44100,Ls=len(self.sig))
-                c = nsgt.forward(self.sig)
-                s_r = nsgt.backward(c)
-                rec_err = norm(self.sig-s_r)/norm(self.sig)
-                self.assertAlmostEqual(rec_err,0)
+        for _ in xrange(100):
+            sig = N.random.random(100000)
+            fmin = N.random.random()*200+1
+            fmax = N.random.random()*(22048-fmin)+fmin
+            obins = N.random.randint(24)+1
+            print fmin,fmax,obins
+            scale = OctScale(fmin,fmax,obins)
+            nsgt = NSGT(scale,fs=44100,Ls=len(sig))
+            c = nsgt.forward(sig)
+            s_r = nsgt.backward(c)
+            rec_err = norm(sig-s_r)/norm(sig)
+            self.assertAlmostEqual(rec_err,0)
 
 if __name__ == '__main__':
     unittest.main()

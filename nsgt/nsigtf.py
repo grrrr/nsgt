@@ -50,7 +50,7 @@ Edited by Nicki Holighaus 01.03.11
 """
 
 import numpy as N
-from itertools import izip
+from itertools import izip,chain,imap
 from util import fftp,ifftp,irfftp
 
 def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=False,measurefft=False):
@@ -58,38 +58,47 @@ def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=False,measurefft=Fa
     fft = fftp(measure=measurefft)
     ifft = irfftp(measure=measurefft) if real else ifftp(measure=measurefft)
     
-    for c in cseq:
-        if real:
-            if reducedform:
-                assert len(c) == len(gd)//2-1
-                sl = slice(1,len(gd)//2)
-            else:
-                assert len(c) == len(gd)//2+1
-                sl = slice(0,len(gd)//2+1)
+    if real:
+        fftsymm = lambda c: N.hstack((c[0],c[-2:0:-1])).conj()
+        if reducedform:
+            # no coefficients for f=0 and f=fs/2
+            ln = len(gd)//2-1
+            symm = lambda fc: chain(fc,imap(fftsymm,fc[::-1]))
+            sl = lambda x: chain(x[1:len(gd)//2],x[len(gd)//2+1:])
         else:
-            assert len(c) == len(gd)
-            sl = slice(0,None)
-    
+            ln = len(gd)//2+1
+            symm = lambda fc: chain(fc,imap(fftsymm,fc[-2:0:-1]))
+            sl = lambda x: x
+    else:
+        ln = len(gd)
+        symm = lambda fc: fc
+        sl = lambda x: x
+
+    for c in cseq:
+        assert len(c) == ln
         fr = N.zeros(nn,dtype=complex)  # Initialize output
 
+        fc = symm(map(fft,c))
+
         # The overlap-add procedure including multiplication with the synthesis windows
-        for cii,gdii,win_range in izip(c,gd[sl],wins[sl]):
+        for t,gdii,win_range in izip(fc,sl(gd),sl(wins)):
             Lg = len(gdii)
             
-            t = fft(cii)
             if len(t) == Lg:
-                temp = t
+                temp = N.copy(t)
             else:
                 temp = N.empty(Lg,dtype=t.dtype)
                 temp[:(Lg+1)//2] = t[:(Lg+1)//2]
                 temp[-(Lg//2):] = t[-(Lg//2):]
-            temp *= len(cii)
+            temp *= len(t)
             temp *= gdii
             fr[win_range] += N.fft.fftshift(temp)
-        
+
         if real:
             fr = fr[:nn//2+1]
+
         fr = ifft(fr)
+
         fr = fr[:Ls] # Truncate the signal to original length (if given)
         yield fr
 
