@@ -94,12 +94,21 @@ def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=False,measurefft=Fa
             temp *= gdii
             fr[win_range] += N.fft.fftshift(temp)
 
+#        print len(fr),nn
+
         if real:
             fr = fr[:nn//2+1]
 
+#        print len(fr)
+
         fr = ifft(fr)
 
+#        print len(fr)
+
         fr = fr[:Ls] # Truncate the signal to original length (if given)
+
+#        print len(fr)
+
         yield fr
 
 # non-sliced version

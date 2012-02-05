@@ -12,8 +12,12 @@ import numpy as N
 from nsgt import NSGT,LogScale,LinScale,MelScale,OctScale
 from scikits.audiolab import Sndfile
 from time import time
-import os.path
+import os,os.path
 from itertools import imap
+
+def cputime():
+    utime, stime, cutime, cstime, elapsed_time = os.times()
+    return utime
 
 class interpolate:
     def __init__(self,cqt,Ls):
@@ -38,6 +42,8 @@ if __name__ == "__main__":
     parser.add_option("--scale",dest="scale",type="str",default='oct',help="frequency scale (oct,log,lin,mel)")
     parser.add_option("--real",dest="real",type="int",default=0,help="assume real signal")
     parser.add_option("--matrixform",dest="matrixform",type="int",default=0,help="use regular time division (matrix form)")
+    parser.add_option("--lossy",dest="lossy",type="int",default=0,help="omit bins for f=0 and f=fs/2 (lossy)")
+    parser.add_option("--time",dest="time",type="int",default=0,help="time calculation n-fold")
     parser.add_option("--plot",dest="plot",type="int",default=0,help="plot transform (needs installed matplotlib and scipy packages)")
     
     (options, args) = parser.parse_args()
@@ -59,25 +65,29 @@ if __name__ == "__main__":
 
     scl = scale(options.fmin,options.fmax,options.bins)
 
-    t1 = time()
-    
-    # calculate transform parameters
-    Ls = len(s)
-    
-    nsgt = NSGT(scl,fs,Ls,real=options.real,matrixform=options.matrixform)
-    
-    # forward transform 
-    c = nsgt.forward(s)
+    times = []
 
-    # inverse transform 
-    s_r = nsgt.backward(c)
+    for _ in xrange(options.time or 1):
+        t1 = cputime()
+        
+        # calculate transform parameters
+        Ls = len(s)
+        
+        nsgt = NSGT(scl,fs,Ls,real=options.real,matrixform=options.matrixform,reducedform=options.lossy)
+        
+        # forward transform 
+        c = nsgt.forward(s)
     
-    t2 = time()
-
+        # inverse transform 
+        s_r = nsgt.backward(c)
+ 
+        t2 = cputime()
+        times.append(t2-t1)
+        
     norm = lambda x: N.sqrt(N.sum(N.abs(N.square(x))))
     rec_err = norm(s-s_r)/norm(s)
     print "Reconstruction error: %.3e"%rec_err
-    print "Calculation time: %.3f s"%(t2-t1)
+    print "Calculation time: %.3f +- %.3f s (min=%.3f s)"%(N.mean(times),N.std(times)/2,N.min(times))
 
     if options.plot:
         import pylab as P

@@ -17,17 +17,6 @@ from itertools import imap
 from nsgt import NSGT_sliced,LogScale,LinScale,MelScale,OctScale
 from nsgt.reblock import reblock
 
-class interpolate:
-    def __init__(self,cqt,Ls):
-        from scipy.interpolate import interp1d
-        self.intp = [interp1d(N.linspace(0,Ls,len(r)),r) for r in cqt]
-    def __call__(self,x):
-        try:
-            len(x)
-        except:
-            return N.array([i(x) for i in self.intp])
-        else:
-            return N.array([[i(xi) for i in self.intp] for xi in x])
 
 if __name__ == "__main__":    
     from optparse import OptionParser
@@ -37,12 +26,12 @@ if __name__ == "__main__":
     parser.add_option("--length",dest="length",type="int",default=0,help="maximum length of signal")
     parser.add_option("--fmin",dest="fmin",type="float",default=50,help="minimum frequency")
     parser.add_option("--fmax",dest="fmax",type="float",default=22050,help="maximum frequency")
-    parser.add_option("--bins",dest="bins",type="int",default=50,help="frequency bins (total or per octave)")
     parser.add_option("--scale",dest="scale",type="str",default='log',help="frequency scale (oct,log,lin,mel)")
-    parser.add_option("--slice",dest="sl_len",type="int",default=2**16,help="slice length")
-    parser.add_option("--trans",dest="tr_area",type="int",default=4096,help="transition area")
+    parser.add_option("--bins",dest="bins",type="int",default=50,help="frequency bins (total or per octave)")
+    parser.add_option("--sllen",dest="sl_len",type="int",default=2**16,help="slice length")
+    parser.add_option("--trlen",dest="tr_area",type="int",default=4096,help="transition area")
     parser.add_option("--real",dest="real",type="int",default=0,help="assume real signal")
-    parser.add_option("--matrixform",dest="matrixform",type="int",default=0,help="use regular time division (matrix form)")
+    parser.add_option("--lossy",dest="matrixform",type="int",default=0,help="use regular time division (matrix form)")
     parser.add_option("--recwnd",dest="recwnd",type="int",default=0,help="use reconstruction window")
     parser.add_option("--plot",dest="plot",type="int",default=0,help="plot transform (needs installed matplotlib and scipy packages)")
 
@@ -69,8 +58,6 @@ if __name__ == "__main__":
     scl = scale(options.fmin,options.fmax,options.bins)
     slicq = NSGT_sliced(scl,options.sl_len,options.tr_area,fs,real=options.real,recwnd=options.recwnd,matrixform=options.matrixform)
 
-#    print "frequencies:",slicq.frqs
-
     t1 = time()
     
     signal = (s,)
@@ -78,11 +65,9 @@ if __name__ == "__main__":
     # generator for forward transformation
     c = slicq.forward(signal)
 
-    # realize transform from iterator
+    # realize transform from generator
     c = list(c)
     
-#    print c[0]
-
     # generator for backward transformation
     outseq = slicq.backward(c)
 
@@ -95,7 +80,7 @@ if __name__ == "__main__":
     rec_err = norm(s-s_r)/norm(s)
     print "Reconstruction error: %.3e"%rec_err
     print "Calculation time: %.3f s"%(t2-t1)
-    
+
     # Compare the sliced coefficients with non-sliced ones
     if False:
         test_coeff_quality(c,s,g,shift,M,options.sl_len,len(s))
@@ -104,18 +89,5 @@ if __name__ == "__main__":
         print "Plotting t*f space"
         import pylab as P
         tr = N.array([[N.mean(N.abs(cj)) for cj in ci] for ci in c])
-        P.imshow(N.log(N.flipud(tr.T)),aspect=float(tr.shape[0])/tr.shape[1]*0.5,interpolation='nearest')
+        P.imshow(N.log(N.flipud(tr.T)+1.e-10),aspect=float(tr.shape[0])/tr.shape[1]*0.5,interpolation='nearest')
         P.show()
-    
-        if 0:
-            Ls = sf.nframes
-            hf = -1 if options.real else len(c)/2
-    
-            # interpolate CQT to get a grid
-            x = N.linspace(0,Ls,1000)
-            grid = interpolate(imap(N.abs,c[2:hf]),Ls)(x)
-            print "grid",grid.shape
-            # display grid
-            P.imshow(N.log(N.flipud(grid.T)),aspect=2)
-            print "Plotting"
-            P.show()

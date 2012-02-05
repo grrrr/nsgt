@@ -59,10 +59,9 @@ def nsgfwin(f,q,sr,Ls,sliced=True,min_win=4,Qvar=1):
     assert N.all((f[1:]-f[:-1]) > 0)  # frequencies must be increasing
     assert N.all(q > 0)  # all q must be > 0
     
-    qmax = f*(Ls/(8.*sr))
-    if N.any(q >= qmax):
-        slmin = int(N.ceil(N.max(q*(8.*sr)/f)))
-        warn("slice length too short - for the given frequency resolution the slice length should be >= %i"%slmin)
+    qneeded = f*(Ls/(8.*sr))
+    if N.any(q >= qneeded):
+        warn("Q-factor too high for frequencies %s"%",".join("%.2f"%fi for fi in f[q >= qneeded]))
     
     fbas = f
     lbas = len(fbas)

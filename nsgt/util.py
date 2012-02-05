@@ -106,8 +106,8 @@ except ImportError:
     class ifftp:
         def __init__(self,measure=False):
             pass
-        def __call__(self,x,ref=False):
-            return N.fft.ifft(x)
+        def __call__(self,x,n=None,ref=False):
+            return N.fft.ifft(x,n=n)
     class rfftp:
         def __init__(self,measure=False):
             pass
@@ -116,8 +116,8 @@ except ImportError:
     class irfftp:
         def __init__(self,measure=False):
             pass
-        def __call__(self,x,ref=False):
-            return N.fft.irfft(x)
+        def __call__(self,x,n=None,ref=False):
+            return N.fft.irfft(x,n=n)
 else:
     class fftpool:
         def __init__(self,measure):
