@@ -31,7 +31,8 @@ if __name__ == "__main__":
     parser.add_option("--sllen",dest="sl_len",type="int",default=2**16,help="slice length")
     parser.add_option("--trlen",dest="tr_area",type="int",default=4096,help="transition area")
     parser.add_option("--real",dest="real",type="int",default=0,help="assume real signal")
-    parser.add_option("--lossy",dest="matrixform",type="int",default=0,help="use regular time division (matrix form)")
+    parser.add_option("--matrixform",dest="matrixform",type="int",default=0,help="use regular time division (matrix form)")
+    parser.add_option("--lossy",dest="lossy",type="int",default=0,help="forget bin at f=0 and f=fs/2")
     parser.add_option("--recwnd",dest="recwnd",type="int",default=0,help="use reconstruction window")
     parser.add_option("--plot",dest="plot",type="int",default=0,help="plot transform (needs installed matplotlib and scipy packages)")
 
@@ -56,7 +57,7 @@ if __name__ == "__main__":
         parser.error('scale unknown')
 
     scl = scale(options.fmin,options.fmax,options.bins)
-    slicq = NSGT_sliced(scl,options.sl_len,options.tr_area,fs,real=options.real,recwnd=options.recwnd,matrixform=options.matrixform)
+    slicq = NSGT_sliced(scl,options.sl_len,options.tr_area,fs,real=options.real,recwnd=options.recwnd,matrixform=options.matrixform,reducedform=options.lossy)
 
     t1 = time()
     
@@ -72,7 +73,7 @@ if __name__ == "__main__":
     outseq = slicq.backward(c)
 
     # make single output array from iterator
-    s_r = reblock(outseq,len(s),fulllast=False).next() 
+    s_r = reblock(outseq,len(s),fulllast=False).next()
     
     t2 = time()
 

@@ -83,7 +83,7 @@ if __name__ == "__main__":
  
         t2 = cputime()
         times.append(t2-t1)
-        
+
     norm = lambda x: N.sqrt(N.sum(N.abs(N.square(x))))
     rec_err = norm(s-s_r)/norm(s)
     print "Reconstruction error: %.3e"%rec_err

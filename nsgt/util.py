@@ -101,34 +101,34 @@ except ImportError:
     class fftp:
         def __init__(self,measure=False):
             pass
-        def __call__(self,x,ref=False):
+        def __call__(self,x,outn=None,ref=False):
             return N.fft.fft(x)
     class ifftp:
         def __init__(self,measure=False):
             pass
-        def __call__(self,x,n=None,ref=False):
+        def __call__(self,x,outn=None,n=None,ref=False):
             return N.fft.ifft(x,n=n)
     class rfftp:
         def __init__(self,measure=False):
             pass
-        def __call__(self,x,ref=False):
+        def __call__(self,x,outn=None,ref=False):
             return N.fft.rfft(x)
     class irfftp:
         def __init__(self,measure=False):
             pass
-        def __call__(self,x,n=None,ref=False):
-            return N.fft.irfft(x,n=n)
+        def __call__(self,x,outn=None,ref=False):
+            return N.fft.irfft(x,n=outn)
 else:
     class fftpool:
         def __init__(self,measure):
             self.measure = measure
             self.pool = {}
-        def __call__(self,x,ref=False):
+        def __call__(self,x,outn=None,ref=False):
             lx = len(x)
             try:
                 transform = self.pool[lx]
             except KeyError:
-                transform = self.init(lx,self.measure)
+                transform = self.init(lx,measure=self.measure,outn=outn)
                 self.pool[lx] = transform
             tx = transform(x)
             if not ref:
@@ -138,7 +138,7 @@ else:
     class fftp(fftpool):
         def __init__(self,measure=False):
             fftpool.__init__(self,measure)
-        def init(self,n,measure):
+        def init(self,n,measure,outn):
             inp = fftw3.create_aligned_array(n,dtype=complex)
             outp = fftw3.create_aligned_array(n,dtype=complex)
             plan = fftw3.Plan(inp,outp, direction='forward', flags=('measure' if measure else 'estimate',))
@@ -152,7 +152,7 @@ else:
     class rfftp(fftpool):
         def __init__(self,measure=False):
             fftpool.__init__(self,measure)
-        def init(self,n,measure):
+        def init(self,n,measure,outn):
             inp = fftw3.create_aligned_array(n,dtype=float)
             outp = fftw3.create_aligned_array(n//2+1,dtype=complex)
             plan = fftw3.Plan(inp,outp, direction='forward', realtypes='halfcomplex r2c',flags=('measure' if measure else 'estimate',))
@@ -166,7 +166,7 @@ else:
     class ifftp(fftpool):
         def __init__(self,measure=False):
             fftpool.__init__(self,measure)
-        def init(self,n,measure):
+        def init(self,n,measure,outn):
             inp = fftw3.create_aligned_array(n,dtype=complex)
             outp = fftw3.create_aligned_array(n,dtype=complex)
             plan = fftw3.Plan(inp,outp, direction='backward', flags=('measure' if measure else 'estimate',))
@@ -181,9 +181,9 @@ else:
     class irfftp(fftpool):
         def __init__(self,measure=False):
             fftpool.__init__(self,measure)
-        def init(self,n,measure):
+        def init(self,n,measure,outn):
             inp = fftw3.create_aligned_array(n,dtype=complex)
-            outp = fftw3.create_aligned_array((n-1)*2,dtype=float)
+            outp = fftw3.create_aligned_array(outn if outn is not None else (n-1)//2,dtype=float)
             plan = fftw3.Plan(inp,outp, direction='backward', realtypes='halfcomplex c2r', flags=('measure' if measure else 'estimate',))
             return lambda x: self.do(x,inp,outp,plan)
         @staticmethod

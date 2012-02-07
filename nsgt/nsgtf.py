@@ -23,11 +23,18 @@ def nsgtf_sl(f_slices,g,wins,nn,M=None,real=False,reducedform=False,measurefft=F
     else:
         sl = slice(0,None)
     
+    maxLg = max(int(ceil(float(len(gii))/mii))*mii for mii,gii in izip(M[sl],g[sl]))
+    temp0 = None
+    
     for f in f_slices:
         Ls = len(f)
         
         # some preparation    
         ft = fft(f)
+
+        if temp0 is None:
+            # pre-allocate buffer
+            temp0 = N.empty(maxLg,dtype=ft.dtype)
         
         # A small amount of zero-padding might be needed (e.g. for scale frames)
         if nn > Ls:
@@ -39,15 +46,28 @@ def nsgtf_sl(f_slices,g,wins,nn,M=None,real=False,reducedform=False,measurefft=F
         for mii,gii,win_range in izip(M[sl],g[sl],wins[sl]):
             Lg = len(gii)
             
-            t = ft[win_range]*N.fft.fftshift(N.conj(gii))
-
             # if the number of time channels is too small (mii < Lg), aliasing is introduced
             # wrap around and sum up in the end (below)
             col = int(ceil(float(Lg)/mii)) # normally col == 1
+                        
+            assert col*mii >= Lg                        
+            temp = temp0[:col*mii]
+
+            # original version
+#            t = ft[win_range]*N.fft.fftshift(N.conj(gii))
+#            temp[:(Lg+1)//2] = t[Lg//2:]  # if mii is odd, this is of length mii-mii//2
+#            temp[-(Lg//2):] = t[:Lg//2]  # if mii is odd, this is of length mii//2
+
+            # modified version to avoid superfluous memory allocation
+            ftw = ft[win_range]
+            t = temp[:(Lg+1)//2]
+            t[:] = gii[:(Lg+1)//2]  # if mii is odd, this is of length mii-mii//2
+            t *= ftw[Lg//2:]
+            t = temp[-(Lg//2):]
+            t[:] = gii[-(Lg//2):]  # if mii is odd, this is of length mii//2
+            t *= ftw[:Lg//2]
             
-            temp = N.zeros(col*mii,dtype=t.dtype)
-            temp[:(Lg+1)//2] = t[Lg//2:]  # if mii is odd, this is of length mii-mii//2
-            temp[-(Lg//2):] = t[:Lg//2]  # if mii is odd, this is of length mii//2
+            temp[(Lg+1)//2:-(Lg//2)] = 0  # clear gap (if any)
             
             if col > 1:
                 temp = N.sum(temp.reshape((mii,-1)),axis=1)

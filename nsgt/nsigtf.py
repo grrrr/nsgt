@@ -59,7 +59,7 @@ def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=False,measurefft=Fa
     ifft = irfftp(measure=measurefft) if real else ifftp(measure=measurefft)
     
     if real:
-        fftsymm = lambda c: N.hstack((c[0],c[-2:0:-1])).conj()
+        fftsymm = lambda c: N.hstack((c[0],c[-1:0:-1])).conj()  # c[-2:0:-1]
         if reducedform:
             # no coefficients for f=0 and f=fs/2
             ln = len(gd)//2-1
@@ -73,41 +73,49 @@ def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=False,measurefft=Fa
         ln = len(gd)
         symm = lambda fc: fc
         sl = lambda x: x
+        
+    maxLg = max(len(gdii) for gdii in sl(gd))
+    temp0 = None
 
     for c in cseq:
         assert len(c) == ln
-        fr = N.zeros(nn,dtype=complex)  # Initialize output
+        fr = N.zeros(nn,dtype=c[0].dtype)  # Initialize output
 
         fc = symm(map(fft,c))
+        
+        if temp0 is None:
+            temp0 = N.empty(maxLg,dtype=fr.dtype)
 
         # The overlap-add procedure including multiplication with the synthesis windows
         for t,gdii,win_range in izip(fc,sl(gd),sl(wins)):
             Lg = len(gdii)
-            
-            if len(t) == Lg:
-                temp = N.copy(t)
-            else:
-                temp = N.empty(Lg,dtype=t.dtype)
-                temp[:(Lg+1)//2] = t[:(Lg+1)//2]
-                temp[-(Lg//2):] = t[-(Lg//2):]
-            temp *= len(t)
-            temp *= gdii
-            fr[win_range] += N.fft.fftshift(temp)
 
-#        print len(fr),nn
+            if len(t) != Lg: # else never happened
+                print len(t),Lg
+                assert False
+
+#            temp = N.empty(Lg,dtype=t.dtype)
+            temp = temp0[:Lg]
+            temp[:(Lg+1)//2] = t[:(Lg+1)//2]
+            temp[-(Lg//2):] = t[-(Lg//2):]
+            temp *= gdii
+            temp *= len(t)
+
+            fr[win_range[:(Lg)//2]] += temp[-((Lg)//2):]
+            fr[win_range[-((Lg+1)//2):]] += temp[:(Lg+1)//2]
 
         if real:
             fr = fr[:nn//2+1]
 
-#        print len(fr)
+        print len(fr)
 
-        fr = ifft(fr)
+        fr = ifft(fr,outn=nn)
 
-#        print len(fr)
+        print len(fr)
 
         fr = fr[:Ls] # Truncate the signal to original length (if given)
 
-#        print len(fr)
+        print len(fr)
 
         yield fr
 
