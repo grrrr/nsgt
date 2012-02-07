@@ -40,7 +40,8 @@ from math import ceil
 from warnings import warn
 from itertools import chain
 
-def nsgfwin(f,q,sr,Ls,sliced=True,min_win=4,Qvar=1):
+def nsgfwin(f,q,sr,Ls,sliced=True,min_win=4,Qvar=1,dowarn=True)
+:
     nf = sr/2.
 
     lim = N.argmax(f > 0)
@@ -60,7 +61,7 @@ def nsgfwin(f,q,sr,Ls,sliced=True,min_win=4,Qvar=1):
     assert N.all(q > 0)  # all q must be > 0
     
     qneeded = f*(Ls/(8.*sr))
-    if N.any(q >= qneeded):
+    if N.any(q >= qneeded) and dowarn:
         warn("Q-factor too high for frequencies %s"%",".join("%.2f"%fi for fi in f[q >= qneeded]))
     
     fbas = f
