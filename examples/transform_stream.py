@@ -69,6 +69,8 @@ if __name__ == "__main__":
     # realize transform from generator
     c = list(c)
     
+    print len(c[0])
+    
     # generator for backward transformation
     outseq = slicq.backward(c)
 

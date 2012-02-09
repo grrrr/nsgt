@@ -59,7 +59,7 @@ def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=False,measurefft=Fa
     ifft = irfftp(measure=measurefft) if real else ifftp(measure=measurefft)
     
     if real:
-        fftsymm = lambda c: N.hstack((c[0],c[-1:0:-1])).conj()  # c[-2:0:-1]
+        fftsymm = lambda c: N.hstack((c[0],c[-1:0:-1])).conj()
         if reducedform:
             # no coefficients for f=0 and f=fs/2
             ln = len(gd)//2-1
@@ -75,49 +75,47 @@ def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=False,measurefft=Fa
         sl = lambda x: x
         
     maxLg = max(len(gdii) for gdii in sl(gd))
-    temp0 = None
 
-    for c in cseq:
+    # get first slice
+    c0 = cseq.next()
+
+    fr = N.empty(nn,dtype=c0[0].dtype)  # Initialize output
+    temp0 = N.empty(maxLg,dtype=fr.dtype)  # pre-allocation
+
+    loopparams = []
+    for gdii,win_range in izip(sl(gd),sl(wins)):
+        Lg = len(gdii)
+        temp = temp0[:Lg]
+        wr1 = win_range[:(Lg)//2]
+        wr2 = win_range[-((Lg+1)//2):]
+        sl1 = slice(None,(Lg+1)//2)
+        sl2 = slice(-(Lg//2),None)
+        p = (gdii,wr1,wr2,sl1,sl2,temp)
+        loopparams.append(p)
+
+    for c in chain((c0,),cseq):
         assert len(c) == ln
-        fr = N.zeros(nn,dtype=c[0].dtype)  # Initialize output
 
-        fc = symm(map(fft,c))
+        fr[:] = 0.
+        fc = map(fft,c)  # do transforms on coefficients
         
-        if temp0 is None:
-            temp0 = N.empty(maxLg,dtype=fr.dtype)
-
         # The overlap-add procedure including multiplication with the synthesis windows
-        for t,gdii,win_range in izip(fc,sl(gd),sl(wins)):
-            Lg = len(gdii)
-
-            if len(t) != Lg: # else never happened
-                print len(t),Lg
-                assert False
-
-#            temp = N.empty(Lg,dtype=t.dtype)
-            temp = temp0[:Lg]
-            temp[:(Lg+1)//2] = t[:(Lg+1)//2]
-            temp[-(Lg//2):] = t[-(Lg//2):]
+        for t,(gdii,wr1,wr2,sl1,sl2,temp) in izip(symm(fc),loopparams):
+            temp[sl1] = t[sl1]
+            temp[sl2] = t[sl2]
             temp *= gdii
             temp *= len(t)
 
-            fr[win_range[:(Lg)//2]] += temp[-((Lg)//2):]
-            fr[win_range[-((Lg+1)//2):]] += temp[:(Lg+1)//2]
+            fr[wr1] += temp[sl2]
+            fr[wr2] += temp[sl1]
 
-        if real:
-            fr = fr[:nn//2+1]
+        ftr = fr[:nn//2+1] if real else fr
 
-#        print len(fr)
+        sig = ifft(ftr,outn=nn)
 
-        fr = ifft(fr,outn=nn)
+        sig = sig[:Ls] # Truncate the signal to original length (if given)
 
-#        print len(fr)
-
-        fr = fr[:Ls] # Truncate the signal to original length (if given)
-
-#        print len(fr)
-
-        yield fr
+        yield sig
 
 # non-sliced version
 def nsigtf(c,gd,wins,nn,Ls=None,real=False,reducedform=False,measurefft=False):

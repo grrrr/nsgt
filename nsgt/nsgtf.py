@@ -26,6 +26,16 @@ def nsgtf_sl(f_slices,g,wins,nn,M=None,real=False,reducedform=False,measurefft=F
     maxLg = max(int(ceil(float(len(gii))/mii))*mii for mii,gii in izip(M[sl],g[sl]))
     temp0 = None
     
+    loopparams = []
+    for mii,gii,win_range in izip(M[sl],g[sl],wins[sl]):
+        Lg = len(gii)
+        col = int(ceil(float(Lg)/mii))
+        assert col*mii >= Lg
+        gi1 = gii[:(Lg+1)//2]
+        gi2 = gii[-(Lg//2):]
+        p = (mii,gii,gi1,gi2,win_range,Lg,col)
+        loopparams.append(p)
+    
     for f in f_slices:
         Ls = len(f)
         
@@ -43,14 +53,13 @@ def nsgtf_sl(f_slices,g,wins,nn,M=None,real=False,reducedform=False,measurefft=F
         c = [] # Initialization of the result
             
         # The actual transform
-        for mii,gii,win_range in izip(M[sl],g[sl],wins[sl]):
-            Lg = len(gii)
-            
+        for mii,gii,gi1,gi2,win_range,Lg,col in loopparams:
+#            Lg = len(gii)            
             # if the number of time channels is too small (mii < Lg), aliasing is introduced
             # wrap around and sum up in the end (below)
-            col = int(ceil(float(Lg)/mii)) # normally col == 1
-                        
-            assert col*mii >= Lg                        
+#            col = int(ceil(float(Lg)/mii)) # normally col == 1                        
+#            assert col*mii >= Lg                        
+
             temp = temp0[:col*mii]
 
             # original version
@@ -61,10 +70,10 @@ def nsgtf_sl(f_slices,g,wins,nn,M=None,real=False,reducedform=False,measurefft=F
             # modified version to avoid superfluous memory allocation
             ftw = ft[win_range]
             t = temp[:(Lg+1)//2]
-            t[:] = gii[:(Lg+1)//2]  # if mii is odd, this is of length mii-mii//2
+            t[:] = gi1  # if mii is odd, this is of length mii-mii//2
             t *= ftw[Lg//2:]
             t = temp[-(Lg//2):]
-            t[:] = gii[-(Lg//2):]  # if mii is odd, this is of length mii//2
+            t[:] = gi2  # if mii is odd, this is of length mii//2
             t *= ftw[:Lg//2]
             
             temp[(Lg+1)//2:-(Lg//2)] = 0  # clear gap (if any)

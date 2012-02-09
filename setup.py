@@ -31,7 +31,7 @@ from setuptools import setup
 
 setup(
     name = "nsgt",
-    version = "0.09",
+    version = "0.10",
     author = "Thomas Grill",
     author_email = "gr@grrrr.org",
     maintainer = "Thomas Grill",
