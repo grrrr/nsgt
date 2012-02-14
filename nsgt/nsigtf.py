@@ -87,8 +87,9 @@ def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=False,measurefft=Fa
     for gdii,win_range in izip(sl(gd),sl(wins)):
         Lg = len(gdii)
         temp = temp0[:Lg]
-        wr1 = win_range[:(Lg)//2]
-        wr2 = win_range[-((Lg+1)//2):]
+#        wr1 = win_range[:(Lg)//2]
+#        wr2 = win_range[-((Lg+1)//2):]
+        wr1,wr2 = win_range
         sl1 = slice(None,(Lg+1)//2)
         sl2 = slice(-(Lg//2),None)
         p = (gdii,wr1,wr2,sl1,sl2,temp)
@@ -102,13 +103,21 @@ def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=False,measurefft=Fa
         
         # The overlap-add procedure including multiplication with the synthesis windows
         for t,(gdii,wr1,wr2,sl1,sl2,temp) in izip(symm(fc),loopparams):
-            temp[sl1] = t[sl1]
-            temp[sl2] = t[sl2]
+            t1 = temp[sl1]
+            t2 = temp[sl2]
+            t1[:] = t[sl1]
+            t2[:] = t[sl2]
             temp *= gdii
             temp *= len(t)
 
-            fr[wr1] += temp[sl2]
-            fr[wr2] += temp[sl1]
+#            fr[wr1] += temp[sl2]
+#            fr[wr2] += temp[sl1]
+            wr1a,wr1b = wr1
+            fr[wr1a] += t2[:wr1a.stop-wr1a.start]
+            fr[wr1b] += t2[wr1a.stop-wr1a.start:]
+            wr2a,wr2b = wr2
+            fr[wr2a] += t1[:wr2a.stop-wr2a.start]
+            fr[wr2b] += t1[wr2a.stop-wr2a.start:]
 
         ftr = fr[:nn//2+1] if real else fr
 
