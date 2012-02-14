@@ -73,15 +73,15 @@ def nsgtf_sl(f_slices,g,wins,nn,M=None,real=False,reducedform=False,measurefft=F
             t2 = temp[-(Lg//2):]
             t2[:] = gi2  # if mii is odd, this is of length mii//2
 
-#            ftw = ft[win_range]
-#            t2 *= ftw[:Lg//2]
-#            t1 *= ftw[Lg//2:]
+            ftw = ft[win_range]
+            t2 *= ftw[:Lg//2]
+            t1 *= ftw[Lg//2:]
 
-            (wh1a,wh1b),(wh2a,wh2b) = win_range
-            t2[:wh1a.stop-wh1a.start] *= ft[wh1a]
-            t2[wh1a.stop-wh1a.start:] *= ft[wh1b]
-            t1[:wh2a.stop-wh2a.start] *= ft[wh2a]
-            t1[wh2a.stop-wh2a.start:] *= ft[wh2b]
+#            (wh1a,wh1b),(wh2a,wh2b) = win_range
+#            t2[:wh1a.stop-wh1a.start] *= ft[wh1a]
+#            t2[wh1a.stop-wh1a.start:] *= ft[wh1b]
+#            t1[:wh2a.stop-wh2a.start] *= ft[wh2a]
+#            t1[wh2a.stop-wh2a.start:] *= ft[wh2b]
             
             temp[(Lg+1)//2:-(Lg//2)] = 0  # clear gap (if any)
             
