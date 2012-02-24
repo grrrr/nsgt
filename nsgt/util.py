@@ -146,9 +146,17 @@ else:
             except KeyError:
                 transform = self.init(lx,measure=self.measure,outn=outn)
                 self.pool[lx] = transform
-            tx = transform(x)
+            plan,pre,post = transform
+            if pre is not None:
+                x = pre(x)
+            plan.inarray[:] = x
+            plan()
             if not ref:
-                tx = tx.copy()
+                tx = plan.outarray.copy()
+            else:
+                tx = plan.outarray
+            if post is not None:
+                tx = post(tx)
             return tx
 
     class fftp(fftpool):
@@ -158,12 +166,7 @@ else:
             inp = fftw3.create_aligned_array(n,dtype=complex)
             outp = fftw3.create_aligned_array(n,dtype=complex)
             plan = fftw3.Plan(inp,outp, direction='forward', flags=('measure' if measure else 'estimate',))
-            return lambda x: self.do(x,inp,outp,plan)
-        @staticmethod
-        def do(x,inp,outp,plan):
-            inp[:] = x
-            plan()
-            return outp
+            return (plan,None,None)
 
     class rfftp(fftpool):
         def __init__(self,measure=False):
@@ -172,12 +175,7 @@ else:
             inp = fftw3.create_aligned_array(n,dtype=float)
             outp = fftw3.create_aligned_array(n//2+1,dtype=complex)
             plan = fftw3.Plan(inp,outp, direction='forward', realtypes='halfcomplex r2c',flags=('measure' if measure else 'estimate',))
-            return lambda x: self.do(x,inp,outp,plan)
-        @staticmethod
-        def do(x,inp,outp,plan):
-            inp[:] = x
-            plan()
-            return outp
+            return (plan,None,None)
 
     class ifftp(fftpool):
         def __init__(self,measure=False):
@@ -186,13 +184,7 @@ else:
             inp = fftw3.create_aligned_array(n,dtype=complex)
             outp = fftw3.create_aligned_array(n,dtype=complex)
             plan = fftw3.Plan(inp,outp, direction='backward', flags=('measure' if measure else 'estimate',))
-            return lambda x: self.do(x,inp,outp,plan)
-        @staticmethod
-        def do(x,inp,outp,plan):
-            inp[:] = x
-            plan()
-            outp /= len(outp)
-            return outp
+            return (plan,None,lambda x: x/len(x))
 
     class irfftp(fftpool):
         def __init__(self,measure=False):
@@ -201,13 +193,7 @@ else:
             inp = fftw3.create_aligned_array(n,dtype=complex)
             outp = fftw3.create_aligned_array(outn if outn is not None else (n-1)//2,dtype=float)
             plan = fftw3.Plan(inp,outp, direction='backward', realtypes='halfcomplex c2r', flags=('measure' if measure else 'estimate',))
-            return lambda x: self.do(x,inp,outp,plan)
-        @staticmethod
-        def do(x,inp,outp,plan,axis=-1):
-            inp[:] = x[:len(inp)]
-            plan()
-            outp /= len(outp)
-            return outp
+            return (plan,lambda x: x[:n],lambda x: x/len(x))
 
 import unittest
 
