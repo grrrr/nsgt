@@ -49,10 +49,11 @@ class NSGT:
         self.g,rfbas,self.M = nsgfwin(self.frqs,self.q,self.fs,self.Ls,sliced=False)
 
         if matrixform:
+            notdef = type(matrixform) is bool or matrixform < 0
             if self.reducedform:
-                self.M[:] = self.M[1:len(self.M)//2].max()
+                self.M[:] = self.M[1:len(self.M)//2].max() if notdef else matrixform
             else:
-                self.M[:] = self.M.max()
+                self.M[:] = self.M.max() if notdef else matrixform
     
         if multichannel:
             self.channelize = lambda s: s
