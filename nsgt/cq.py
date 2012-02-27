@@ -44,16 +44,15 @@ class NSGT:
         self.reducedform = reducedform
         
         self.frqs,self.q = scale()
-        
+
         # calculate transform parameters
         self.g,rfbas,self.M = nsgfwin(self.frqs,self.q,self.fs,self.Ls,sliced=False)
 
         if matrixform:
-            notdef = type(matrixform) is bool or matrixform < 0
             if self.reducedform:
-                self.M[:] = self.M[1:len(self.M)//2].max() if notdef else matrixform
+                self.M[:] = self.M[1:len(self.M)//2].max()
             else:
-                self.M[:] = self.M.max() if notdef else matrixform
+                self.M[:] = self.M.max()
     
         if multichannel:
             self.channelize = lambda s: s

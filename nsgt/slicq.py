@@ -74,11 +74,10 @@ class NSGT_sliced:
 #        print "rfbas",self.rfbas/float(self.sl_len)*self.fs
         
         if matrixform:
-            notdef = type(matrixform) is bool or matrixform < 0
             if self.reducedform:
-                self.M[:] = self.M[1:len(self.M)//2].max() if notdef else matrixform
+                self.M[:] = self.M[1:len(self.M)//2].max()
             else:
-                self.M[:] = self.M.max() if notdef else matrixform
+                self.M[:] = self.M.max()
                 
         if multichannel:
             self.channelize = lambda seq: seq

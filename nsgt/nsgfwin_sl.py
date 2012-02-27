@@ -96,7 +96,7 @@ def nsgfwin(f,q,sr,Ls,sliced=True,min_win=4,Qvar=1,dowarn=True):
         for k in xrange(1,2*lbas+1):
             M[k] = N.round(fbas[k+1]-fbas[k-1])
         M[-1] = N.round(Ls-fbas[-2])
-
+        
     N.clip(M,min_win,N.inf,out=M)
 
 #    print "M",list(M)
