@@ -30,6 +30,17 @@ def blackharr(n,l=None,mod=True):
     bh = N.hstack((bh[-n//2:],bh[:-n//2]))
     return bh
 
+def blackharrcw(bandwidth,corr_shift):
+    flip = -1 if corr_shift < 0 else 1
+    corr_shift *= flip
+    
+    M = N.ceil(bandwidth/2+corr_shift-1)*2
+    win = N.concatenate((N.arange(M//2,M),N.arange(0,M//2)))-corr_shift
+    win = (0.35872 - 0.48832*N.cos(win*(2*N.pi/bandwidth))+ 0.14128*N.cos(win*(4*N.pi/bandwidth)) -0.01168*N.cos(win*(6*N.pi/bandwidth)))*(win <= bandwidth)*(win >= 0)
+
+    return win[::flip],M
+
+
 def cont_tukey_win(n,sl_len,tr_area):
     g = N.arange(n)*(sl_len/float(n))
     g[N.logical_or(g < sl_len/4.-tr_area/2.,g > 3*sl_len/4.+tr_area/2.)] = 0.
