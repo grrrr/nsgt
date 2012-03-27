@@ -13,8 +13,10 @@ class Scale:
         self.bnds = bnds
     def __len__(self):
         return self.bnds
-    def Q(self,bnd):
+    def Q(self,bnd=None):
         # numerical differentiation (if self.Q not defined by sub-class)
+        if bnd is None:
+            bnd = N.arange(self.bnds)
         return self.F(bnd)*self.dbnd/(self.F(bnd+self.dbnd)-self.F(bnd-self.dbnd))
     def __call__(self):
         f = N.array([self.F(b) for b in xrange(self.bnds)],dtype=float)
@@ -30,9 +32,9 @@ class OctScale(Scale):
         self.bpo = int(bpo)
         self.pow2n = 2**(1./self.bpo)
         self.q = N.sqrt(self.pow2n)/(self.pow2n-1.)/2.
-    def F(self,bnd):
-        return self.fmin*self.pow2n**bnd
-    def Q(self,bnd):
+    def F(self,bnd=None):
+        return self.fmin*self.pow2n**(bnd if bnd is not None else N.arange(self.bnds))
+    def Q(self,bnd=None):
         return self.q
 
 class LogScale(Scale):
@@ -43,9 +45,9 @@ class LogScale(Scale):
         odiv = N.log2(self.fmax/self.fmin)/(self.bnds-1)
         self.pow2n = 2**odiv
         self.q = N.sqrt(self.pow2n)/(self.pow2n-1.)/2.
-    def F(self,bnd):
-        return self.fmin*self.pow2n**bnd
-    def Q(self,bnd):
+    def F(self,bnd=None):
+        return self.fmin*self.pow2n**(bnd if bnd is not None else N.arange(self.bnds))
+    def Q(self,bnd=None):
         return self.q
     
 class LinScale(Scale):
@@ -54,9 +56,9 @@ class LinScale(Scale):
         self.fmin = float(fmin)
         self.fmax = float(fmax)
         self.df = (self.fmax-self.fmin)/(self.bnds-1)
-    def F(self,bnd):
-        return self.fmin+self.df*bnd
-    def Q(self,bnd):
+    def F(self,bnd=None):
+        return (bnd if bnd is not None else N.arange(self.bnds))*self.df+self.fmin
+    def Q(self,bnd=None):
         return self.F(bnd)/(self.df*2)
 
 def hz2mel(f):
