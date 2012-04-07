@@ -127,7 +127,7 @@ def nsgfwin(f,q,sr,Ls,sliced=True,min_win=4,Qvar=1,dowarn=True):
 
 
 
-def nsgfwin(f,q,sr,Ls,sliced=True,min_win=4,Qvar=1,dowarn=True):
+def nsgfwin_new(f,q,sr,Ls,sliced=True,min_win=4,Qvar=1,dowarn=True):
     nf = sr/2.
 
     lim = N.argmax(f > 0)

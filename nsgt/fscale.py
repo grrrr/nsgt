@@ -63,11 +63,11 @@ class LinScale(Scale):
 
 def hz2mel(f):
     "\cite{shannon:2003}"
-    return N.log10(f/100.+1.)*2595.
+    return N.log10(f/700.+1.)*2595.
 
 def mel2hz(m):
     "\cite{shannon:2003}"
-    return (N.power(10.,m/2595.)-1.)*100.
+    return (N.power(10.,m/2595.)-1.)*700.
 
 class MelScale(Scale):
     def __init__(self,fmin,fmax,bnds):
