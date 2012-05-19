@@ -86,6 +86,7 @@ if __name__ == "__main__":
 
     # Compare the sliced coefficients with non-sliced ones
     if False:
+        # not implemented yet!
         test_coeff_quality(c,s,g,shift,M,options.sl_len,len(s))
 
     if options.plot:
