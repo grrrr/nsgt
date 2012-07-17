@@ -9,6 +9,7 @@ from math import ceil
 from itertools import izip
 from util import chkM,fftp,ifftp
 
+#@profile
 def nsgtf_sl(f_slices,g,wins,nn,M=None,real=False,reducedform=False,measurefft=False):
     M = chkM(M,g)
     

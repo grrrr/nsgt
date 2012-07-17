@@ -22,6 +22,7 @@ from nsigtf import nsigtf_sl
 from util import calcwinrange
 from fscale import OctScale
 
+# one of the more expensive functions (32/400)
 def arrange(cseq,M,fwd):
     ixs = (
            [(slice(3*mkk//4,mkk),slice(0,3*mkk//4)) for mkk in M],  # odd

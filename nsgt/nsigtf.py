@@ -53,6 +53,7 @@ import numpy as N
 from itertools import izip,chain,imap
 from util import fftp,ifftp,irfftp
 
+#@profile
 def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=False,measurefft=False):
     cseq = iter(cseq)
 
