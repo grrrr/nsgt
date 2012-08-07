@@ -4,12 +4,12 @@
 Python implementation of Non-Stationary Gabor Transform (NSGT)
 derived from MATLAB code by NUHAG, University of Vienna, Austria
 
-Thomas Grill, 2011
+Thomas Grill, 2011-2012
 http://grrrr.org/nsgt
 """
 
 import numpy as N
-from scikits.audiolab import Sndfile
+from scikits.audiolab import Sndfile,Format
 from time import time
 import os.path
 from itertools import imap
@@ -23,6 +23,7 @@ if __name__ == "__main__":
     parser = OptionParser()
     
     parser.add_option("--input",dest="input",type="str",help="input file")
+    parser.add_option("--output",dest="output",type="str",help="output audio file")
     parser.add_option("--length",dest="length",type="int",default=0,help="maximum length of signal")
     parser.add_option("--fmin",dest="fmin",type="float",default=50,help="minimum frequency")
     parser.add_option("--fmax",dest="fmax",type="float",default=22050,help="maximum frequency")
@@ -69,13 +70,15 @@ if __name__ == "__main__":
     # realize transform from generator
     c = list(c)
     
-    print len(c[0])
+    cl = map(len,c[0])
+    print "c",len(cl),cl
     
     # generator for backward transformation
     outseq = slicq.backward(c)
 
     # make single output array from iterator
     s_r = reblock(outseq,len(s),fulllast=False).next()
+    s_r = s_r.real
     
     t2 = time()
 
@@ -88,6 +91,13 @@ if __name__ == "__main__":
     if False:
         # not implemented yet!
         test_coeff_quality(c,s,g,shift,M,options.sl_len,len(s))
+
+    if options.output:
+        print "Written audio file",options.output
+        sf = Sndfile(options.output,mode='w',format=Format('wav','pcm24'),channels=1,samplerate=fs)
+        sf.write_frames(s_r)
+        sf.close()
+        print "Done"
 
     if options.plot:
         print "Plotting t*f space"

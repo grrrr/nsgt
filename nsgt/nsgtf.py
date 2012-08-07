@@ -19,6 +19,7 @@ def nsgtf_sl(f_slices,g,wins,nn,M=None,real=False,reducedform=False,measurefft=F
     if real:
         if reducedform:
             sl = slice(1,len(g)//2)
+#            sl = slice(2,len(g)//2-1)  # more lossy....
         else:
             sl = slice(0,len(g)//2+1)
     else:

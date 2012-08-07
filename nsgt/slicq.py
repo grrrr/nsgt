@@ -24,6 +24,10 @@ from fscale import OctScale
 
 # one of the more expensive functions (32/400)
 def arrange(cseq,M,fwd):
+    c0 = cseq.next()  # grab first stream element
+    cseq = chain((c0,),cseq)  # push it back in 
+    assert len(c0) == 1
+    M = map(len,c0[0])  # read off M from the coefficients
     ixs = (
            [(slice(3*mkk//4,mkk),slice(0,3*mkk//4)) for mkk in M],  # odd
            [(slice(mkk//4,mkk),slice(0,mkk//4)) for mkk in M]  # even
@@ -76,7 +80,7 @@ class NSGT_sliced:
         
         if matrixform:
             if self.reducedform:
-                self.M[:] = self.M[1:len(self.M)//2].max()
+                self.M[:] = self.M[1:len(self.M)//2-1].max()
             else:
                 self.M[:] = self.M.max()
                 

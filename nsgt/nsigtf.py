@@ -65,8 +65,10 @@ def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=False,measurefft=Fa
         if reducedform:
             # no coefficients for f=0 and f=fs/2
             ln = len(gd)//2-1
+#            ln = len(gd)//2-3
             symm = lambda fc: chain(fc,imap(fftsymm,fc[::-1]))
             sl = lambda x: chain(x[1:len(gd)//2],x[len(gd)//2+1:])
+#            sl = lambda x: chain(x[2:len(gd)//2-1],x[len(gd)//2+2:-1])
         else:
             ln = len(gd)//2+1
             symm = lambda fc: chain(fc,imap(fftsymm,fc[-2:0:-1]))

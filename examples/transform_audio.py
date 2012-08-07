@@ -10,7 +10,7 @@ http://grrrr.org/nsgt
 
 import numpy as N
 from nsgt import NSGT,LogScale,LinScale,MelScale,OctScale
-from scikits.audiolab import Sndfile
+from scikits.audiolab import Sndfile,Format
 from time import time
 import os,os.path
 from itertools import imap
@@ -35,7 +35,8 @@ if __name__ == "__main__":
     from optparse import OptionParser
     parser = OptionParser()
     
-    parser.add_option("--input",dest="input",type="str",help="input file")
+    parser.add_option("--input",dest="input",type="str",help="input audio file")
+    parser.add_option("--output",dest="output",type="str",help="output audio file")
     parser.add_option("--fmin",dest="fmin",type="float",default=80,help="minimum frequency")
     parser.add_option("--fmax",dest="fmax",type="float",default=22050,help="maximum frequency")
     parser.add_option("--bins",dest="bins",type="int",default=24,help="frequency bins (total or per octave)")
@@ -64,6 +65,7 @@ if __name__ == "__main__":
         parser.error('scale unknown')
 
     scl = scale(options.fmin,options.fmax,options.bins)
+    print "scale",scl.F(),scl.Q()
 
     times = []
 
@@ -77,6 +79,9 @@ if __name__ == "__main__":
         
         # forward transform 
         c = nsgt.forward(s)
+
+        c = N.array(c)
+        print "c",len(c),N.array(map(len,c))
     
         # inverse transform 
         s_r = nsgt.backward(c)
@@ -89,7 +94,15 @@ if __name__ == "__main__":
     print "Reconstruction error: %.3e"%rec_err
     print "Calculation time: %.3f +- %.3f s (min=%.3f s)"%(N.mean(times),N.std(times)/2,N.min(times))
 
+    if options.output:
+        print "Written audio file",options.output
+        sf = Sndfile(options.output,mode='w',format=Format('wav','pcm24'),channels=1,samplerate=fs)
+        sf.write_frames(s_r)
+        sf.close()
+        print "Done"
+
     if options.plot:
+        print "Preparing plot"
         import pylab as P
         # interpolate CQT to get a grid
         x = N.linspace(0,Ls,2000)

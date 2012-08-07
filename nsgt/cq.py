@@ -50,7 +50,7 @@ class NSGT:
 
         if matrixform:
             if self.reducedform:
-                self.M[:] = self.M[1:len(self.M)//2].max()
+                self.M[:] = self.M[1:len(self.M)//2-1].max()
             else:
                 self.M[:] = self.M.max()
     
