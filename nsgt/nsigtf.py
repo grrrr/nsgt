@@ -54,23 +54,21 @@ from itertools import izip,chain,imap
 from util import fftp,ifftp,irfftp
 
 #@profile
-def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=False,measurefft=False):
+def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=0,measurefft=False):
     cseq = iter(cseq)
 
     fft = fftp(measure=measurefft)
     ifft = irfftp(measure=measurefft) if real else ifftp(measure=measurefft)
     
     if real:
+        ln = len(gd)//2+1-reducedform*2
         fftsymm = lambda c: N.hstack((c[0],c[-1:0:-1])).conj()
         if reducedform:
             # no coefficients for f=0 and f=fs/2
-            ln = len(gd)//2-1
-#            ln = len(gd)//2-3
             symm = lambda fc: chain(fc,imap(fftsymm,fc[::-1]))
-            sl = lambda x: chain(x[1:len(gd)//2],x[len(gd)//2+1:])
+            sl = lambda x: chain(x[reducedform:len(gd)//2+1-reducedform],x[len(gd)//2+reducedform:len(gd)-reducedform])
 #            sl = lambda x: chain(x[2:len(gd)//2-1],x[len(gd)//2+2:-1])
         else:
-            ln = len(gd)//2+1
             symm = lambda fc: chain(fc,imap(fftsymm,fc[-2:0:-1]))
             sl = lambda x: x
     else:
@@ -132,5 +130,5 @@ def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=False,measurefft=Fa
         yield sig
 
 # non-sliced version
-def nsigtf(c,gd,wins,nn,Ls=None,real=False,reducedform=False,measurefft=False):
+def nsigtf(c,gd,wins,nn,Ls=None,real=False,reducedform=0,measurefft=False):
     return nsigtf_sl((c,),gd,wins,nn,Ls=Ls,real=real,reducedform=reducedform,measurefft=measurefft).next()

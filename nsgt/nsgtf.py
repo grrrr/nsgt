@@ -10,18 +10,15 @@ from itertools import izip
 from util import chkM,fftp,ifftp
 
 #@profile
-def nsgtf_sl(f_slices,g,wins,nn,M=None,real=False,reducedform=False,measurefft=False):
+def nsgtf_sl(f_slices,g,wins,nn,M=None,real=False,reducedform=0,measurefft=False):
     M = chkM(M,g)
     
     fft = fftp(measure=measurefft)
     ifft = ifftp(measure=measurefft)
     
     if real:
-        if reducedform:
-            sl = slice(1,len(g)//2)
-#            sl = slice(2,len(g)//2-1)  # more lossy....
-        else:
-            sl = slice(0,len(g)//2+1)
+        assert 0 <= reducedform <= 2
+        sl = slice(reducedform,len(g)//2+1-reducedform)
     else:
         sl = slice(0,None)
     
@@ -96,5 +93,5 @@ def nsgtf_sl(f_slices,g,wins,nn,M=None,real=False,reducedform=False,measurefft=F
         yield c
         
 # non-sliced version
-def nsgtf(f,g,wins,nn,M=None,real=False,reducedform=False,measurefft=False):
+def nsgtf(f,g,wins,nn,M=None,real=False,reducedform=0,measurefft=False):
     return nsgtf_sl((f,),g,wins,nn,M=M,real=real,reducedform=reducedform,measurefft=measurefft).next()

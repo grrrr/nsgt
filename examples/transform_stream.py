@@ -33,7 +33,7 @@ if __name__ == "__main__":
     parser.add_option("--trlen",dest="tr_area",type="int",default=4096,help="transition area")
     parser.add_option("--real",dest="real",type="int",default=0,help="assume real signal")
     parser.add_option("--matrixform",dest="matrixform",type="int",default=0,help="use regular time division (matrix form)")
-    parser.add_option("--lossy",dest="lossy",type="int",default=0,help="forget bin at f=0 and f=fs/2")
+    parser.add_option("--reducedform",dest="reducedform",type="int",default=0,help="if real==1: omit bins for f=0 and f=fs/2 (lossy=1), or also the transition bands (lossy=2)")
     parser.add_option("--recwnd",dest="recwnd",type="int",default=0,help="use reconstruction window")
     parser.add_option("--plot",dest="plot",type="int",default=0,help="plot transform (needs installed matplotlib and scipy packages)")
 
@@ -58,7 +58,7 @@ if __name__ == "__main__":
         parser.error('scale unknown')
 
     scl = scale(options.fmin,options.fmax,options.bins)
-    slicq = NSGT_sliced(scl,options.sl_len,options.tr_area,fs,real=options.real,recwnd=options.recwnd,matrixform=options.matrixform,reducedform=options.lossy)
+    slicq = NSGT_sliced(scl,options.sl_len,options.tr_area,fs,real=options.real,recwnd=options.recwnd,matrixform=options.matrixform,reducedform=options.reducedform)
 
     t1 = time()
     
@@ -70,8 +70,8 @@ if __name__ == "__main__":
     # realize transform from generator
     c = list(c)
     
-    cl = map(len,c[0])
-    print "c",len(cl),cl
+#    cl = map(len,c[0])
+#    print "c",len(cl),cl
     
     # generator for backward transformation
     outseq = slicq.backward(c)

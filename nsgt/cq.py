@@ -32,9 +32,10 @@ from util import calcwinrange
 from fscale import OctScale
 
 class NSGT:
-    def __init__(self,scale,fs,Ls,real=True,measurefft=False,matrixform=False,reducedform=False,multichannel=False):
+    def __init__(self,scale,fs,Ls,real=True,measurefft=False,matrixform=False,reducedform=0,multichannel=False):
         assert fs > 0
         assert Ls > 0
+        assert 0 <= reducedform <= 2
         
         self.scale = scale
         self.fs = fs
@@ -50,7 +51,8 @@ class NSGT:
 
         if matrixform:
             if self.reducedform:
-                self.M[:] = self.M[1:len(self.M)//2-1].max()
+                rm = self.M[self.reducedform:len(self.M)//2-self.reducedform]
+                self.M[:] = rm.max()
             else:
                 self.M[:] = self.M.max()
     
@@ -83,7 +85,7 @@ class NSGT:
         return self.unchannelize(s)
     
 class CQ_NSGT(NSGT):
-    def __init__(self,fmin,fmax,bins,fs,Ls,real=True,measurefft=False,matrixform=False,reducedform=False,multichannel=False):
+    def __init__(self,fmin,fmax,bins,fs,Ls,real=True,measurefft=False,matrixform=False,reducedform=0,multichannel=False):
         assert fmin > 0
         assert fmax > fmin
         assert bins > 0

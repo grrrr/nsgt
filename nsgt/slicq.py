@@ -54,12 +54,13 @@ def chnmap(gen,seq):
     return izip(*gens)  # packing channels to one generator yielding channel tuples
 
 class NSGT_sliced:
-    def __init__(self,scale,sl_len,tr_area,fs,min_win=16,Qvar=1,real=False,recwnd=False,matrixform=False,reducedform=False,multichannel=False,measurefft=False):
+    def __init__(self,scale,sl_len,tr_area,fs,min_win=16,Qvar=1,real=False,recwnd=False,matrixform=False,reducedform=0,multichannel=False,measurefft=False):
         assert fs > 0
         assert sl_len > 0
         assert tr_area >= 0
         assert sl_len > tr_area*2
         assert min_win > 0
+        assert 0 <= reducedform <= 2
 
         assert sl_len%2 == 0
 
@@ -80,7 +81,8 @@ class NSGT_sliced:
         
         if matrixform:
             if self.reducedform:
-                self.M[:] = self.M[1:len(self.M)//2-1].max()
+                rm = self.M[self.reducedform:len(self.M)//2-self.reducedform]
+                self.M[:] = rm.max()
             else:
                 self.M[:] = self.M.max()
                 
@@ -138,7 +140,7 @@ class NSGT_sliced:
 
 
 class CQ_NSGT_sliced(NSGT_sliced):
-    def __init__(self,fmin,fmax,bins,sl_len,tr_area,fs,min_win=16,Qvar=1,real=False,recwnd=False,matrixform=False,reducedform=False,multichannel=False,measurefft=False):
+    def __init__(self,fmin,fmax,bins,sl_len,tr_area,fs,min_win=16,Qvar=1,real=False,recwnd=False,matrixform=False,reducedform=0,multichannel=False,measurefft=False):
         assert fmin > 0
         assert fmax > fmin
         assert bins > 0

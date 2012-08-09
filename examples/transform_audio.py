@@ -39,11 +39,11 @@ if __name__ == "__main__":
     parser.add_option("--output",dest="output",type="str",help="output audio file")
     parser.add_option("--fmin",dest="fmin",type="float",default=80,help="minimum frequency")
     parser.add_option("--fmax",dest="fmax",type="float",default=22050,help="maximum frequency")
-    parser.add_option("--bins",dest="bins",type="int",default=24,help="frequency bins (total or per octave)")
     parser.add_option("--scale",dest="scale",type="str",default='oct',help="frequency scale (oct,log,lin,mel)")
+    parser.add_option("--bins",dest="bins",type="int",default=24,help="frequency bins (total or per octave)")
     parser.add_option("--real",dest="real",type="int",default=0,help="assume real signal")
     parser.add_option("--matrixform",dest="matrixform",type="int",default=0,help="use regular time division (matrix form)")
-    parser.add_option("--lossy",dest="lossy",type="int",default=0,help="omit bins for f=0 and f=fs/2 (lossy)")
+    parser.add_option("--reducedform",dest="reducedform",type="int",default=0,help="if real==1: omit bins for f=0 and f=fs/2 (lossy=1), or also the transition bands (lossy=2)")
     parser.add_option("--time",dest="time",type="int",default=0,help="time calculation n-fold")
     parser.add_option("--plot",dest="plot",type="int",default=0,help="plot transform (needs installed matplotlib and scipy packages)")
     
@@ -65,7 +65,6 @@ if __name__ == "__main__":
         parser.error('scale unknown')
 
     scl = scale(options.fmin,options.fmax,options.bins)
-    print "scale",scl.F(),scl.Q()
 
     times = []
 
@@ -75,13 +74,13 @@ if __name__ == "__main__":
         # calculate transform parameters
         Ls = len(s)
         
-        nsgt = NSGT(scl,fs,Ls,real=options.real,matrixform=options.matrixform,reducedform=options.lossy)
+        nsgt = NSGT(scl,fs,Ls,real=options.real,matrixform=options.matrixform,reducedform=options.reducedform)
         
         # forward transform 
         c = nsgt.forward(s)
 
-        c = N.array(c)
-        print "c",len(c),N.array(map(len,c))
+#        c = N.array(c)
+#        print "c",len(c),N.array(map(len,c))
     
         # inverse transform 
         s_r = nsgt.backward(c)
