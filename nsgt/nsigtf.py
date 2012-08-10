@@ -67,7 +67,6 @@ def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=0,measurefft=False)
             # no coefficients for f=0 and f=fs/2
             symm = lambda fc: chain(fc,imap(fftsymm,fc[::-1]))
             sl = lambda x: chain(x[reducedform:len(gd)//2+1-reducedform],x[len(gd)//2+reducedform:len(gd)+1-reducedform])
-#            sl = lambda x: chain(x[2:len(gd)//2-1],x[len(gd)//2+2:-1])
         else:
             symm = lambda fc: chain(fc,imap(fftsymm,fc[-2:0:-1]))
             sl = lambda x: x
@@ -100,9 +99,10 @@ def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=0,measurefft=False)
         assert len(c) == ln
 
         fr[:] = 0.
-        fc = map(fft,c)  # do transforms on coefficients
+        fc = map(fft,c)  # do transforms on coefficients - TODO: for matrixform we could do a FFT on the whole matrix along one axis
         
         # The overlap-add procedure including multiplication with the synthesis windows
+        # TODO: stuff loop into theano
         for t,(gdii,wr1,wr2,sl1,sl2,temp) in izip(symm(fc),loopparams):
             t1 = temp[sl1]
             t2 = temp[sl2]

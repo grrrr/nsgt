@@ -52,6 +52,7 @@ def nsgtf_sl(f_slices,g,wins,nn,M=None,real=False,reducedform=0,measurefft=False
         c = [] # Initialization of the result
             
         # The actual transform
+        # TODO: stuff loop into theano
         for mii,gii,gi1,gi2,win_range,Lg,col in loopparams:
 #            Lg = len(gii)            
             # if the number of time channels is too small (mii < Lg), aliasing is introduced
@@ -86,11 +87,13 @@ def nsgtf_sl(f_slices,g,wins,nn,M=None,real=False,reducedform=0,measurefft=False
             
             if col > 1:
                 temp = N.sum(temp.reshape((mii,-1)),axis=1)
-                
-            ci = ifft(temp)
-            c.append(ci)
+            else:
+                temp = temp.copy()
+ 
+            c.append(temp)
             
-        yield c
+        yield map(ifft,c)  # TODO: if matrixform, perform "2D" FFT along one axis
+
         
 # non-sliced version
 def nsgtf(f,g,wins,nn,M=None,real=False,reducedform=0,measurefft=False):
