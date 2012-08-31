@@ -53,6 +53,11 @@ import numpy as N
 from itertools import izip,chain,imap
 from util import fftp,ifftp,irfftp
 
+try:
+    import theano as T
+except ImportError:
+    T = None
+
 #@profile
 def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=0,measurefft=False):
     cseq = iter(cseq)
@@ -82,7 +87,7 @@ def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=0,measurefft=False)
 
     fr = N.empty(nn,dtype=c0[0].dtype)  # Initialize output
     temp0 = N.empty(maxLg,dtype=fr.dtype)  # pre-allocation
-
+    
     loopparams = []
     for gdii,win_range in izip(sl(gd),sl(wins)):
         Lg = len(gdii)
@@ -95,6 +100,30 @@ def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=0,measurefft=False)
         p = (gdii,wr1,wr2,sl1,sl2,temp)
         loopparams.append(p)
 
+    if True or T is None:
+        def loop(fr,fc):
+            # The overlap-add procedure including multiplication with the synthesis windows
+            # TODO: stuff loop into theano
+            for t,(gdii,wr1,wr2,sl1,sl2,temp) in izip(symm(fc),loopparams):
+                t1 = temp[sl1]
+                t2 = temp[sl2]
+                t1[:] = t[sl1]
+                t2[:] = t[sl2]
+                temp *= gdii
+                temp *= len(t)
+    
+                fr[wr1] += t2
+                fr[wr2] += t1
+    
+    #            wr1a,wr1b = wr1
+    #            fr[wr1a] += t2[:wr1a.stop-wr1a.start]
+    #            fr[wr1b] += t2[wr1a.stop-wr1a.start:]
+    #            wr2a,wr2b = wr2
+    #            fr[wr2a] += t1[:wr2a.stop-wr2a.start]
+    #            fr[wr2b] += t1[wr2a.stop-wr2a.start:]
+    else:
+        raise RuntimeError("Theano support not implemented yet")
+
     for c in chain((c0,),cseq):
         assert len(c) == ln
 
@@ -102,24 +131,7 @@ def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=0,measurefft=False)
         fc = map(fft,c)  # do transforms on coefficients - TODO: for matrixform we could do a FFT on the whole matrix along one axis
         
         # The overlap-add procedure including multiplication with the synthesis windows
-        # TODO: stuff loop into theano
-        for t,(gdii,wr1,wr2,sl1,sl2,temp) in izip(symm(fc),loopparams):
-            t1 = temp[sl1]
-            t2 = temp[sl2]
-            t1[:] = t[sl1]
-            t2[:] = t[sl2]
-            temp *= gdii
-            temp *= len(t)
-
-            fr[wr1] += t2
-            fr[wr2] += t1
-
-#            wr1a,wr1b = wr1
-#            fr[wr1a] += t2[:wr1a.stop-wr1a.start]
-#            fr[wr1b] += t2[wr1a.stop-wr1a.start:]
-#            wr2a,wr2b = wr2
-#            fr[wr2a] += t1[:wr2a.stop-wr2a.start]
-#            fr[wr2b] += t1[wr2a.stop-wr2a.start:]
+        loop(fr,fc)
 
         ftr = fr[:nn//2+1] if real else fr
 
