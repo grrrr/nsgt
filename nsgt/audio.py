@@ -6,15 +6,17 @@ Created on 11.01.2012
 
 from scikits.audiolab import Sndfile,Format
 
-def sndreader(sf,blksz=2**16):
+def sndreader(sf,blksz=2**16,maxsz=-1):
     if blksz < 0:
         blksz = sf.nframes
     if sf.channels > 1: 
         channels = lambda s: s.T
     else:
         channels = lambda s: s.reshape((1,-1))
-    for offs in xrange(0,sf.nframes,blksz):
-        yield channels(sf.read_frames(min(sf.nframes-offs,blksz)))
+    if maxsz < 0:
+        maxsz = sf.nframes
+    for offs in xrange(0,maxsz,blksz):
+        yield channels(sf.read_frames(min(maxsz-offs,blksz)))
 
 def sndwriter(sf,blkseq,maxframes=None):
     written = 0
