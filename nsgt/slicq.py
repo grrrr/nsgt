@@ -54,13 +54,14 @@ def chnmap(gen,seq):
     return izip(*gens)  # packing channels to one generator yielding channel tuples
 
 class NSGT_sliced:
-    def __init__(self,scale,sl_len,tr_area,fs,min_win=16,Qvar=1,real=False,recwnd=False,matrixform=False,reducedform=0,multichannel=False,measurefft=False):
+    def __init__(self,scale,sl_len,tr_area,fs,min_win=16,Qvar=1,real=False,recwnd=False,matrixform=False,reducedform=0,multichannel=False,measurefft=False,matrixsize=None):
         assert fs > 0
         assert sl_len > 0
         assert tr_area >= 0
         assert sl_len > tr_area*2
         assert min_win > 0
         assert 0 <= reducedform <= 2
+        assert matrixsize is None or matrixsize > 1
 
         assert sl_len%2 == 0
 
@@ -80,11 +81,14 @@ class NSGT_sliced:
 #        print "rfbas",self.rfbas/float(self.sl_len)*self.fs
         
         if matrixform:
-            if self.reducedform:
-                rm = self.M[self.reducedform:len(self.M)//2+1-self.reducedform]
-                self.M[:] = rm.max()
+            if matrixsize is None:
+                if self.reducedform:
+                    rm = self.M[self.reducedform:len(self.M)//2+1-self.reducedform]
+                    self.M[:] = rm.max()
+                else:
+                    self.M[:] = self.M.max()
             else:
-                self.M[:] = self.M.max()
+                self.M[:] = matrixsize
                 
         if multichannel:
             self.channelize = lambda seq: seq

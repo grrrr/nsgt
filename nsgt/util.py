@@ -125,27 +125,56 @@ def calcwinrange(g,rfbas,Ls):
 try:
     import fftw3
 except ImportError:
-    class fftp:
+    fftw3 = None
+
+#try:
+#    import pyfft.cl as pyfft_cl
+#except ImportError:
+#    pyfft = None
+
+if False and pyfft_cl is not None:
+    # opencl fft # power-2 only, therefore not ready yet
+    from pyfft_cl import Plan
+    import pyopencl as cl
+    import pyopencl.array as cl_array
+    
+    class fftpool:
+        ctx = cl.create_some_context(interactive=False)
+        queue = cl.CommandQueue(ctx)
+
+        def __init__(self,measure):
+            self.pool = {}
+
+    class fftp(fftpool):
         def __init__(self,measure=False):
-            pass
-        def __call__(self,x,outn=None,ref=False):
-            return N.fft.fft(x)
-    class ifftp:
+            fftpool.__init__(self,measure)
+        def __call__(self,x,outn,ref):
+            plan = Plan(x.shape, queue=fftpool.queue)
+            gpu_data = cl_array.to_device(fftpool.ctx,fftpool.queue,x)
+            plan.execute(gpu_data.data)
+            result = gpu_data.get()
+            return result
+            
+    class rfftp(fftpool):
         def __init__(self,measure=False):
+            fftpool.__init__(self,measure)
+        def init(self,n,measure,outn):
             pass
-        def __call__(self,x,outn=None,n=None,ref=False):
-            return N.fft.ifft(x,n=n)
-    class rfftp:
+
+    class ifftp(fftpool):
         def __init__(self,measure=False):
+            fftpool.__init__(self,measure)
+        def init(self,n,measure,outn):
             pass
-        def __call__(self,x,outn=None,ref=False):
-            return N.fft.rfft(x)
-    class irfftp:
+
+    class irfftp(fftpool):
         def __init__(self,measure=False):
+            fftpool.__init__(self,measure)
+        def init(self,n,measure,outn):
             pass
-        def __call__(self,x,outn=None,ref=False):
-            return N.fft.irfft(x,n=outn)
-else:
+
+elif fftw3 is not None:
+    # fftw3 methods
     class fftpool:
         def __init__(self,measure):
             self.measure = measure
@@ -205,6 +234,29 @@ else:
             outp = fftw3.create_aligned_array(outn if outn is not None else (n-1)//2,dtype=float)
             plan = fftw3.Plan(inp,outp, direction='backward', realtypes='halfcomplex c2r', flags=('measure' if measure else 'estimate',))
             return (plan,lambda x: x[:n],lambda x: x/len(x))
+else:
+    # use numpy methods
+    class fftp:
+        def __init__(self,measure=False):
+            pass
+        def __call__(self,x,outn=None,ref=False):
+            return N.fft.fft(x)
+    class ifftp:
+        def __init__(self,measure=False):
+            pass
+        def __call__(self,x,outn=None,n=None,ref=False):
+            return N.fft.ifft(x,n=n)
+    class rfftp:
+        def __init__(self,measure=False):
+            pass
+        def __call__(self,x,outn=None,ref=False):
+            return N.fft.rfft(x)
+    class irfftp:
+        def __init__(self,measure=False):
+            pass
+        def __call__(self,x,outn=None,ref=False):
+            return N.fft.irfft(x,n=outn)
+
 
 import unittest
 
