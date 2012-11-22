@@ -40,8 +40,8 @@ if build_ext is None:
 else:
     cmdclass = {'build_ext': build_ext}
     ext_modules = [
-                   Extension("nsgt._nsgtf_loop", ["nsgt/nsgtf_loop.py"]),
-                   Extension("nsgt._nsigtf_loop", ["nsgt/nsigtf_loop.py"])
+                   Extension("nsgt._nsgtf_loop", ["nsgt/nsgtf_loop.pyx"]),
+                   Extension("nsgt._nsigtf_loop", ["nsgt/nsigtf_loop.pyx"])
     ]
 
 setup(
