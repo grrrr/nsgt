@@ -28,10 +28,25 @@ sudo python setup.py install
 """
 
 from setuptools import setup
+from distutils.extension import Extension
+try:
+    from Cython.Distutils import build_ext
+except:
+    build_ext = None
+
+if build_ext is None:
+    cmdclass = {}
+    ext_modules = []
+else:
+    cmdclass = {'build_ext': build_ext}
+    ext_modules = [
+                   Extension("nsgt._nsgtf_loop", ["nsgt/nsgtf_loop.py"]),
+                   Extension("nsgt._nsigtf_loop", ["nsgt/nsigtf_loop.py"])
+    ]
 
 setup(
     name = "nsgt",
-    version = "0.13",
+    version = "0.14",
     author = "Thomas Grill",
     author_email = "gr@grrrr.org",
     maintainer = "Thomas Grill",
@@ -42,6 +57,8 @@ setup(
     url = "http://grrrr.org/nsgt",
     requires=("numpy",),
     packages=['nsgt'],
+    cmdclass = cmdclass,
+    ext_modules = ext_modules,
     classifiers=[
         "Development Status :: 4 - Beta",
         "Topic :: Scientific/Engineering :: Mathematics",
