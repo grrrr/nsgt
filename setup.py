@@ -33,6 +33,7 @@ try:
     from Cython.Distutils import build_ext
 except:
     build_ext = None
+import numpy
 
 if build_ext is None:
     cmdclass = {}
@@ -56,6 +57,7 @@ setup(
     keywords = "fourier gabor",
     url = "http://grrrr.org/nsgt",
     requires=("numpy",),
+    include_dirs = [numpy.get_include()],
     packages=['nsgt'],
     cmdclass = cmdclass,
     ext_modules = ext_modules,

@@ -8,13 +8,12 @@ import numpy as N
 cimport numpy as N
 
 def nsgtf_loop(loopparams,N.ndarray ft not None,N.ndarray temp0 not None):
-    c = [] # Initialization of the result
+    cdef list c = [] # Initialization of the result
         
     # The actual transform
     # TODO: stuff loop into theano
     cdef int mii,Lg,col
-    cdef N.ndarray gi1,gi2
-    cdef slice win_range
+    cdef N.ndarray gi1,gi2,t1,t2,ftw,temp,win_range
     for mii,_,gi1,gi2,win_range,Lg,col in loopparams:
 #            Lg = len(gii)            
         # if the number of time channels is too small (mii < Lg), aliasing is introduced
