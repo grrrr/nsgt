@@ -24,8 +24,14 @@ try:
 except ImportError:
     T = None
 
+try:
+    import multiprocessing as MP
+except ImportError:
+    MP = None
+
+
 #@profile
-def nsgtf_sl(f_slices,g,wins,nn,M=None,real=False,reducedform=0,measurefft=False):
+def nsgtf_sl(f_slices,g,wins,nn,M=None,real=False,reducedform=0,measurefft=False,multithreading=False):
     M = chkM(M,g)
     
     fft = fftp(measure=measurefft)
@@ -40,7 +46,11 @@ def nsgtf_sl(f_slices,g,wins,nn,M=None,real=False,reducedform=0,measurefft=False
     maxLg = max(int(ceil(float(len(gii))/mii))*mii for mii,gii in izip(M[sl],g[sl]))
     temp0 = None
     
-    
+    if multithreading and MP is not None:
+        mmap = MP.Pool().map
+    else:
+        mmap = map
+
     loopparams = []
     for mii,gii,win_range in izip(M[sl],g[sl],wins[sl]):
         Lg = len(gii)
@@ -71,9 +81,9 @@ def nsgtf_sl(f_slices,g,wins,nn,M=None,real=False,reducedform=0,measurefft=False
             
         # TODO: if matrixform, perform "2D" FFT along one axis
         # this could also be nicely parallalized
-        yield map(ifft,c)  
+        yield mmap(ifft,c)  
 
         
 # non-sliced version
-def nsgtf(f,g,wins,nn,M=None,real=False,reducedform=0,measurefft=False):
-    return nsgtf_sl((f,),g,wins,nn,M=M,real=real,reducedform=reducedform,measurefft=measurefft).next()
+def nsgtf(f,g,wins,nn,M=None,real=False,reducedform=0,measurefft=False,multithreading=False):
+    return nsgtf_sl((f,),g,wins,nn,M=M,real=real,reducedform=reducedform,measurefft=measurefft,multithreading=multithreading).next()

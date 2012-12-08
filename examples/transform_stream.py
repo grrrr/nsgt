@@ -35,6 +35,7 @@ if __name__ == "__main__":
     parser.add_option("--matrixform",dest="matrixform",type="int",default=0,help="use regular time division (matrix form)")
     parser.add_option("--reducedform",dest="reducedform",type="int",default=0,help="if real==1: omit bins for f=0 and f=fs/2 (lossy=1), or also the transition bands (lossy=2)")
     parser.add_option("--recwnd",dest="recwnd",type="int",default=0,help="use reconstruction window")
+    parser.add_option("--multithreading",dest="multithreading",type="int",default=0,help="use multithreading")
     parser.add_option("--plot",dest="plot",type="int",default=0,help="plot transform (needs installed matplotlib and scipy packages)")
 
     (options, args) = parser.parse_args()
@@ -58,7 +59,7 @@ if __name__ == "__main__":
         parser.error('scale unknown')
 
     scl = scale(options.fmin,options.fmax,options.bins)
-    slicq = NSGT_sliced(scl,options.sl_len,options.tr_area,fs,real=options.real,recwnd=options.recwnd,matrixform=options.matrixform,reducedform=options.reducedform)
+    slicq = NSGT_sliced(scl,options.sl_len,options.tr_area,fs,real=options.real,recwnd=options.recwnd,matrixform=options.matrixform,reducedform=options.reducedform,multithreading=options.multithreading)
 
     t1 = time()
     

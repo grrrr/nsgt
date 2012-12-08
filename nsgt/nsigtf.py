@@ -67,9 +67,15 @@ try:
     import theano as T
 except ImportError:
     T = None
+    
+try:
+    import multiprocessing as MP
+except ImportError:
+    MP = None
+    
 
 #@profile
-def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=0,measurefft=False):
+def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=0,measurefft=False,multithreading=False):
     cseq = iter(cseq)
 
     fft = fftp(measure=measurefft)
@@ -98,6 +104,11 @@ def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=0,measurefft=False)
     fr = N.empty(nn,dtype=c0[0].dtype)  # Allocate output
     temp0 = N.empty(maxLg,dtype=fr.dtype)  # pre-allocation
     
+    if multithreading and MP is not None:
+        mmap = MP.Pool().map
+    else:
+        mmap = map
+
     loopparams = []
     for gdii,win_range in izip(sl(gd),sl(wins)):
         Lg = len(gdii)
@@ -109,7 +120,7 @@ def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=0,measurefft=False)
         sl2 = slice(-(Lg//2),None)
         p = (gdii,wr1,wr2,sl1,sl2,temp)
         loopparams.append(p)
-
+        
     # main loop over slices
     for c in chain((c0,),cseq):
         assert len(c) == ln
@@ -117,10 +128,11 @@ def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=0,measurefft=False)
         # do transforms on coefficients
         # TODO: for matrixform we could do a FFT on the whole matrix along one axis
         # this could also be nicely parallalized
-        fc = map(fft,c)  
+        fc = mmap(fft,c)
+        fc = symm(fc)
         
         # The overlap-add procedure including multiplication with the synthesis windows
-        fr = nsigtf_loop(loopparams,fr,fc,symm)
+        fr = nsigtf_loop(loopparams,fr,fc)
 
         ftr = fr[:nn//2+1] if real else fr
 
@@ -131,5 +143,5 @@ def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=0,measurefft=False)
         yield sig
 
 # non-sliced version
-def nsigtf(c,gd,wins,nn,Ls=None,real=False,reducedform=0,measurefft=False):
-    return nsigtf_sl((c,),gd,wins,nn,Ls=Ls,real=real,reducedform=reducedform,measurefft=measurefft).next()
+def nsigtf(c,gd,wins,nn,Ls=None,real=False,reducedform=0,measurefft=False,multithreading=False):
+    return nsigtf_sl((c,),gd,wins,nn,Ls=Ls,real=real,reducedform=reducedform,measurefft=measurefft,multithreading=multithreading).next()

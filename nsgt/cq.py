@@ -32,7 +32,7 @@ from util import calcwinrange
 from fscale import OctScale
 
 class NSGT:
-    def __init__(self,scale,fs,Ls,real=True,measurefft=False,matrixform=False,reducedform=0,multichannel=False):
+    def __init__(self,scale,fs,Ls,real=True,matrixform=False,reducedform=0,multichannel=False,measurefft=False,multithreading=False):
         assert fs > 0
         assert Ls > 0
         assert 0 <= reducedform <= 2
@@ -42,6 +42,7 @@ class NSGT:
         self.Ls = Ls
         self.real = real
         self.measurefft = measurefft
+        self.multithreading = multithreading
         self.reducedform = reducedform
         
         self.frqs,self.q = scale()
@@ -68,8 +69,8 @@ class NSGT:
         # calculate dual windows
         self.gd = nsdual(self.g,self.wins,self.nn,self.M)
         
-        self.fwd = lambda s: nsgtf(s,self.g,self.wins,self.nn,self.M,real=self.real,reducedform=self.reducedform,measurefft=self.measurefft)
-        self.bwd = lambda c: nsigtf(c,self.gd,self.wins,self.nn,self.Ls,real=self.real,reducedform=self.reducedform,measurefft=self.measurefft)
+        self.fwd = lambda s: nsgtf(s,self.g,self.wins,self.nn,self.M,real=self.real,reducedform=self.reducedform,measurefft=self.measurefft,multithreading=self.multithreading)
+        self.bwd = lambda c: nsigtf(c,self.gd,self.wins,self.nn,self.Ls,real=self.real,reducedform=self.reducedform,measurefft=self.measurefft,multithreading=self.multithreading)
         
 
     def forward(self,s):
@@ -85,7 +86,7 @@ class NSGT:
         return self.unchannelize(s)
     
 class CQ_NSGT(NSGT):
-    def __init__(self,fmin,fmax,bins,fs,Ls,real=True,measurefft=False,matrixform=False,reducedform=0,multichannel=False):
+    def __init__(self,fmin,fmax,bins,fs,Ls,real=True,matrixform=False,reducedform=0,multichannel=False,measurefft=False,multithreading=False):
         assert fmin > 0
         assert fmax > fmin
         assert bins > 0
@@ -95,7 +96,7 @@ class CQ_NSGT(NSGT):
         self.bins = bins
 
         scale = OctScale(fmin,fmax,bins)
-        NSGT.__init__(self,scale,fs,Ls,real,measurefft,matrixform,reducedform,multichannel)
+        NSGT.__init__(self,scale,fs,Ls,real,matrixform=matrixform,reducedform=reducedform,multichannel=multichannel,measurefft=measurefft,multithreading=multithreading)
 
 
 import unittest
