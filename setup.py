@@ -25,13 +25,18 @@ python setup.py build
 
 To install the package (with administrator rights):
 sudo python setup.py install
+
+--
+
+Attention: some Cython versions also need the Pyrex module installed!
+
 """
 
 from setuptools import setup
 from distutils.extension import Extension
 try:
     from Cython.Distutils import build_ext
-except:
+except ImportError:
     build_ext = None
 import numpy
 
