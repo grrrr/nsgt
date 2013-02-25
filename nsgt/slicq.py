@@ -24,7 +24,10 @@ from fscale import OctScale
 
 # one of the more expensive functions (32/400)
 def arrange(cseq,M,fwd):
-    c0 = cseq.next()  # grab first stream element
+    try:
+        c0 = cseq.next()  # grab first stream element
+    except StopIteration:
+        return iter(())
     cseq = chain((c0,),cseq)  # push it back in
     M = map(len,c0[0])  # read off M from the coefficients
     ixs = (
@@ -42,7 +45,7 @@ def starzip(iterables):
     def inner(itr, i):
         for t in itr:
             yield t[i]
-    iterables = iter(iterables) 
+    iterables = iter(iterables)
     it = iterables.next()  # we need that to determine the length of one element
     iterables = chain((it,),iterables)
     return [inner(itr,i) for i,itr in enumerate(tee(iterables,len(it)))]
