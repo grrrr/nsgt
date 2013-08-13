@@ -8,6 +8,7 @@ http://grrrr.org
 import numpy as N
 from math import exp,floor,ceil,pi
 from itertools import izip
+from warnings import warn
 
 def hannwin(l):
     r = N.arange(l,dtype=float)
@@ -126,11 +127,12 @@ try:
     import fftw3
 except ImportError:
     fftw3 = None
+    warn("FFTW3 not available")
 
-#try:
-#    import pyfft.cl as pyfft_cl
-#except ImportError:
-#    pyfft = None
+try:
+    import pyfft.cl as pyfft_cl
+except ImportError:
+    pyfft_cl = None
 
 if False and pyfft_cl is not None:
     # opencl fft # power-2 only, therefore not ready yet
