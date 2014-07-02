@@ -28,6 +28,8 @@ All standard disclaimers apply.
 
 """
 
+__version__ = '0.16'
+
 from cq import NSGT,CQ_NSGT
 from slicq import NSGT_sliced,CQ_NSGT_sliced
 from fscale import Scale,OctScale,LogScale,LinScale,MelScale
