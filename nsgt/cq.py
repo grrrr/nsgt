@@ -32,7 +32,7 @@ from util import calcwinrange
 from fscale import OctScale
 
 class NSGT:
-    def __init__(self,scale,fs,Ls,real=True,matrixform=False,reducedform=0,multichannel=False,measurefft=False,multithreading=False):
+    def __init__(self,scale,fs,Ls,real=True,matrixform=False,reducedform=0,multichannel=False,measurefft=False,multithreading=False,dtype=float):
         assert fs > 0
         assert Ls > 0
         assert 0 <= reducedform <= 2
@@ -48,7 +48,7 @@ class NSGT:
         self.frqs,self.q = scale()
 
         # calculate transform parameters
-        self.g,rfbas,self.M = nsgfwin(self.frqs,self.q,self.fs,self.Ls,sliced=False)
+        self.g,rfbas,self.M = nsgfwin(self.frqs,self.q,self.fs,self.Ls,sliced=False,dtype=dtype)
 
         if matrixform:
             if self.reducedform:

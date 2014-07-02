@@ -51,7 +51,7 @@ Edited by Nicki Holighaus 01.03.11
 
 import numpy as N
 from itertools import izip,chain,imap
-from util import fftp,ifftp,irfftp
+from fft import fftp,ifftp,irfftp
 
 try:
     # try to import cython version
@@ -62,11 +62,12 @@ except ImportError:
 if nsigtf_loop is None:
     from nsigtf_loop import nsigtf_loop
 
-# what about theano?
-try:
-    import theano as T
-except ImportError:
-    T = None
+if False:
+    # what about theano?
+    try:
+        import theano as T
+    except ImportError:
+        T = None
     
 try:
     import multiprocessing as MP
@@ -77,9 +78,10 @@ except ImportError:
 #@profile
 def nsigtf_sl(cseq,gd,wins,nn,Ls=None,real=False,reducedform=0,measurefft=False,multithreading=False):
     cseq = iter(cseq)
+    dtype = gd[0].dtype
 
-    fft = fftp(measure=measurefft)
-    ifft = irfftp(measure=measurefft) if real else ifftp(measure=measurefft)
+    fft = fftp(measure=measurefft,dtype=dtype)
+    ifft = irfftp(measure=measurefft,dtype=dtype) if real else ifftp(measure=measurefft,dtype=dtype)
     
     if real:
         ln = len(gd)//2+1-reducedform*2

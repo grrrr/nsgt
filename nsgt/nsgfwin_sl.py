@@ -40,7 +40,7 @@ from math import ceil
 from warnings import warn
 from itertools import chain,izip
 
-def nsgfwin(f,q,sr,Ls,sliced=True,min_win=4,Qvar=1,dowarn=True):
+def nsgfwin(f,q,sr,Ls,sliced=True,min_win=4,Qvar=1,dowarn=True,dtype=N.float64):
     nf = sr/2.
 
     lim = N.argmax(f > 0)
@@ -102,9 +102,9 @@ def nsgfwin(f,q,sr,Ls,sliced=True,min_win=4,Qvar=1,dowarn=True):
 #    print "M",list(M)
     
     if sliced: 
-        g = [blackharr(m) for m in M]
+        g = [blackharr(m).astype(dtype) for m in M]
     else:
-        g = [hannwin(m) for m in M]
+        g = [hannwin(m).astype(dtype) for m in M]
     
     if sliced:
         for kk in (1,lbas+2):
@@ -119,8 +119,8 @@ def nsgfwin(f,q,sr,Ls,sliced=True,min_win=4,Qvar=1,dowarn=True):
         rfbas = N.round(fbas).astype(int)
         
 #    print "rfbas",rfbas
-#    print "g",g    
-    
+#    print "g",g
+
     return g,rfbas,M
 
 

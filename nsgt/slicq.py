@@ -56,7 +56,7 @@ def chnmap(gen,seq):
     return izip(*gens)  # packing channels to one generator yielding channel tuples
 
 class NSGT_sliced:
-    def __init__(self,scale,sl_len,tr_area,fs,min_win=16,Qvar=1,real=False,recwnd=False,matrixform=False,reducedform=0,multichannel=False,measurefft=False,multithreading=False):
+    def __init__(self,scale,sl_len,tr_area,fs,min_win=16,Qvar=1,real=False,recwnd=False,matrixform=False,reducedform=0,multichannel=False,measurefft=False,multithreading=False,dtype=float):
         assert fs > 0
         assert sl_len > 0
         assert tr_area >= 0
@@ -78,7 +78,7 @@ class NSGT_sliced:
         self.scale = scale
         self.frqs,self.q = self.scale()
 
-        self.g,self.rfbas,self.M = nsgfwin(self.frqs,self.q,self.fs,self.sl_len,sliced=True,min_win=min_win,Qvar=Qvar)
+        self.g,self.rfbas,self.M = nsgfwin(self.frqs,self.q,self.fs,self.sl_len,sliced=True,min_win=min_win,Qvar=Qvar,dtype=dtype)
         
 #        print "rfbas",self.rfbas/float(self.sl_len)*self.fs
         

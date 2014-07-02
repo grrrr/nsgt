@@ -7,7 +7,8 @@ Created on 05.11.2011
 import numpy as N
 from math import ceil
 from itertools import izip
-from util import chkM,fftp,ifftp
+from util import chkM
+from fft import fftp,ifftp
 
 try:
     # try to import cython version
@@ -18,11 +19,12 @@ except ImportError:
 if nsgtf_loop is None:
     from nsgtf_loop import nsgtf_loop
 
-# what about theano?
-try:
-    import theano as T
-except ImportError:
-    T = None
+if False:
+    # what about theano?
+    try:
+        import theano as T
+    except ImportError:
+        T = None
 
 try:
     import multiprocessing as MP
@@ -33,9 +35,10 @@ except ImportError:
 #@profile
 def nsgtf_sl(f_slices,g,wins,nn,M=None,real=False,reducedform=0,measurefft=False,multithreading=False):
     M = chkM(M,g)
+    dtype = g[0].dtype
     
-    fft = fftp(measure=measurefft)
-    ifft = ifftp(measure=measurefft)
+    fft = fftp(measure=measurefft,dtype=dtype)
+    ifft = ifftp(measure=measurefft,dtype=dtype)
     
     if real:
         assert 0 <= reducedform <= 2
@@ -80,7 +83,7 @@ def nsgtf_sl(f_slices,g,wins,nn,M=None,real=False,reducedform=0,measurefft=False
         c = nsgtf_loop(loopparams,ft,temp0)
             
         # TODO: if matrixform, perform "2D" FFT along one axis
-        # this could also be nicely parallalized
+        # this could also be nicely parallelized
         yield mmap(ifft,c)  
 
         

@@ -1,15 +1,14 @@
 Python implementation of Non-Stationary Gabor Transform (NSGT)
 derived from MATLAB code by NUHAG, University of Vienna, Austria
 
-Thomas Grill, 2011-2012
+Thomas Grill, 2011-2014
 http://grrrr.org/nsgt
 
 Austrian Research Institute for Artificial Intelligence (OFAI)
 AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 
-
-covered by Creative Commons Attribution-NonCommercial-ShareAlike license (CC BY-NC-SA)
-http://creativecommons.org/licenses/by-nc-sa/3.0/at/deed.en
+covered by the Artistic License 2.0
+http://www.perlfoundation.org/artistic_license_2_0
 
 -----
 
@@ -49,7 +48,7 @@ Todo:
 --
 Original matlab code copyright follows:
 
-AUTHOR(s) : Monika Dšrfler, Gino Angelo Velasco, Nicki Holighaus, 2010-2011
+AUTHOR(s) : Monika DÃ¶rfler, Gino Angelo Velasco, Nicki Holighaus, 2010-2011
 
 COPYRIGHT : (c) NUHAG, Dept.Math., University of Vienna, AUSTRIA
 http://nuhag.eu/
