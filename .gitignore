@@ -1,0 +1,4 @@
+build/
+dist/
+nsgt.egg-info/
+nsgt/*.c
