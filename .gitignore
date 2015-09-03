@@ -2,3 +2,7 @@ build/
 dist/
 nsgt.egg-info/
 nsgt/*.c
+*.pyc
+._*
+.DS_Store
+.settings/
