@@ -1,12 +1,19 @@
-'''
-Created on 22.11.2012
+# -*- coding: utf-8
 
-@author: thomas
-'''
+"""
+Python implementation of Non-Stationary Gabor Transform (NSGT)
+derived from MATLAB code by NUHAG, University of Vienna, Austria
 
-import numpy as N
+Thomas Grill, 2011-2015
+http://grrrr.org/nsgt
 
-def nsgtf_loop(loopparams,ft,temp0):
+Austrian Research Institute for Artificial Intelligence (OFAI)
+AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
+"""
+
+import numpy as np
+
+def nsgtf_loop(loopparams, ft, temp0):
     c = [] # Initialization of the result
         
     # The actual transform
@@ -44,7 +51,7 @@ def nsgtf_loop(loopparams,ft,temp0):
         temp[(Lg+1)//2:-(Lg//2)] = 0  # clear gap (if any)
         
         if col > 1:
-            temp = N.sum(temp.reshape((mii,-1)),axis=1)
+            temp = np.sum(temp.reshape((mii,-1)), axis=1)
         else:
             temp = temp.copy()
 

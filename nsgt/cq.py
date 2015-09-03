@@ -4,7 +4,7 @@
 Python implementation of Non-Stationary Gabor Transform (NSGT)
 derived from MATLAB code by NUHAG, University of Vienna, Austria
 
-Thomas Grill, 2011-2012
+Thomas Grill, 2011-2015
 http://grrrr.org/nsgt
 
 Austrian Research Institute for Artificial Intelligence (OFAI)
@@ -97,29 +97,3 @@ class CQ_NSGT(NSGT):
 
         scale = OctScale(fmin,fmax,bins)
         NSGT.__init__(self,scale,fs,Ls,real,matrixform=matrixform,reducedform=reducedform,multichannel=multichannel,measurefft=measurefft,multithreading=multithreading)
-
-
-import unittest
-norm = lambda x: N.sqrt(N.sum(N.abs(N.square(x))))
-
-class TestNSGT(unittest.TestCase):
-
-    def setUp(self):
-        pass
-
-    def test_oct(self):
-        for _ in xrange(100):
-            sig = N.random.random(100000)
-            fmin = N.random.random()*200+1
-            fmax = N.random.random()*(22048-fmin)+fmin
-            obins = N.random.randint(24)+1
-            print fmin,fmax,obins
-            scale = OctScale(fmin,fmax,obins)
-            nsgt = NSGT(scale,fs=44100,Ls=len(sig))
-            c = nsgt.forward(sig)
-            s_r = nsgt.backward(c)
-            rec_err = norm(sig-s_r)/norm(sig)
-            self.assertAlmostEqual(rec_err,0)
-
-if __name__ == '__main__':
-    unittest.main()

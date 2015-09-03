@@ -4,11 +4,11 @@ Created on 05.11.2011
 @author: thomas
 '''
 
-import numpy as N
+import numpy as np
 from math import ceil
 from itertools import izip
 from util import chkM
-from fft import fftp,ifftp
+from fft import fftp, ifftp
 
 try:
     # try to import cython version
@@ -33,12 +33,12 @@ except ImportError:
 
 
 #@profile
-def nsgtf_sl(f_slices,g,wins,nn,M=None,real=False,reducedform=0,measurefft=False,multithreading=False):
+def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measurefft=False, multithreading=False):
     M = chkM(M,g)
     dtype = g[0].dtype
     
-    fft = fftp(measure=measurefft,dtype=dtype)
-    ifft = ifftp(measure=measurefft,dtype=dtype)
+    fft = fftp(measure=measurefft, dtype=dtype)
+    ifft = ifftp(measure=measurefft, dtype=dtype)
     
     if real:
         assert 0 <= reducedform <= 2
@@ -73,14 +73,14 @@ def nsgtf_sl(f_slices,g,wins,nn,M=None,real=False,reducedform=0,measurefft=False
 
         if temp0 is None:
             # pre-allocate buffer (delayed because of dtype)
-            temp0 = N.empty(maxLg,dtype=ft.dtype)
+            temp0 = np.empty(maxLg, dtype=ft.dtype)
         
         # A small amount of zero-padding might be needed (e.g. for scale frames)
         if nn > Ls:
-            ft = N.concatenate((ft,N.zeros(nn-Ls,dtype=ft.dtype)))
+            ft = np.concatenate((ft, np.zeros(nn-Ls, dtype=ft.dtype)))
         
         # The actual transform
-        c = nsgtf_loop(loopparams,ft,temp0)
+        c = nsgtf_loop(loopparams, ft, temp0)
             
         # TODO: if matrixform, perform "2D" FFT along one axis
         # this could also be nicely parallelized
@@ -88,5 +88,5 @@ def nsgtf_sl(f_slices,g,wins,nn,M=None,real=False,reducedform=0,measurefft=False
 
         
 # non-sliced version
-def nsgtf(f,g,wins,nn,M=None,real=False,reducedform=0,measurefft=False,multithreading=False):
-    return nsgtf_sl((f,),g,wins,nn,M=M,real=real,reducedform=reducedform,measurefft=measurefft,multithreading=multithreading).next()
+def nsgtf(f, g, wins, nn, M=None, real=False, reducedform=0, measurefft=False, multithreading=False):
+    return nsgtf_sl((f,), g, wins, nn, M=M, real=real, reducedform=reducedform, measurefft=measurefft, multithreading=multithreading).next()

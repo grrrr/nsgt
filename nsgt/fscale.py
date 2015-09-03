@@ -69,6 +69,7 @@ def mel2hz(m):
     "\cite{shannon:2003}"
     return (N.power(10.,m/2595.)-1.)*700.
 
+
 class MelScale(Scale):
     def __init__(self,fmin,fmax,bnds):
         Scale.__init__(self,bnds)

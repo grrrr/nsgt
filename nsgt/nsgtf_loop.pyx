@@ -1,19 +1,26 @@
-'''
-Created on 22.11.2012
+# -*- coding: utf-8
 
-@author: thomas
-'''
+"""
+Python implementation of Non-Stationary Gabor Transform (NSGT)
+derived from MATLAB code by NUHAG, University of Vienna, Austria
 
-import numpy as N
-cimport numpy as N
+Thomas Grill, 2011-2015
+http://grrrr.org/nsgt
 
-def nsgtf_loop(loopparams,N.ndarray ft not None,N.ndarray temp0 not None):
+Austrian Research Institute for Artificial Intelligence (OFAI)
+AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
+"""
+
+import numpy as np
+cimport numpy as np
+
+def nsgtf_loop(loopparams, np.ndarray ft not None, N.ndarray temp0 not None):
     cdef list c = [] # Initialization of the result
         
     # The actual transform
     # TODO: stuff loop into theano
     cdef int mii,Lg,col
-    cdef N.ndarray gi1,gi2,t1,t2,ftw,temp,win_range
+    cdef np.ndarray gi1,gi2,t1,t2,ftw,temp,win_range
     for mii,_,gi1,gi2,win_range,Lg,col in loopparams:
 #            Lg = len(gii)            
         # if the number of time channels is too small (mii < Lg), aliasing is introduced
@@ -47,7 +54,7 @@ def nsgtf_loop(loopparams,N.ndarray ft not None,N.ndarray temp0 not None):
         temp[(Lg+1)//2:-(Lg//2)] = 0  # clear gap (if any)
         
         if col > 1:
-            temp = N.sum(temp.reshape((mii,-1)),axis=1)
+            temp = np.sum(temp.reshape((mii, -1)), axis=1)
         else:
             temp = temp.copy()
 

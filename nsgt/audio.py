@@ -1,32 +1,40 @@
-'''
-Created on 11.01.2012
+# -*- coding: utf-8
 
-@author: thomas
-'''
+"""
+Python implementation of Non-Stationary Gabor Transform (NSGT)
+derived from MATLAB code by NUHAG, University of Vienna, Austria
 
-import numpy as N
+Thomas Grill, 2011-2015
+http://grrrr.org/nsgt
+
+Austrian Research Institute for Artificial Intelligence (OFAI)
+AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
+"""
+
+import numpy as np
 import subprocess as sp
-import os.path,re
+import os.path
+import re
 
 try:
-    from scikits.audiolab import Sndfile,Format
+    from scikits.audiolab import Sndfile, Format
 except:
     Sndfile = None
     
-def sndreader(sf,blksz=2**16,dtype=N.float32):
+def sndreader(sf, blksz=2**16, dtype=np.float32):
     if dtype is float:
-        dtype = N.float64 # scikits.audiolab needs numpy types
+        dtype = np.float64 # scikits.audiolab needs numpy types
     if blksz < 0:
         blksz = sf.nframes
     if sf.channels > 1: 
         channels = lambda s: s.T
     else:
         channels = lambda s: s.reshape((1,-1))
-    for offs in xrange(0,sf.nframes,blksz):
-        data = sf.read_frames(min(sf.nframes-offs,blksz),dtype=dtype)
+    for offs in xrange(0, sf.nframes, blksz):
+        data = sf.read_frames(min(sf.nframes-offs, blksz), dtype=dtype)
         yield channels(data)
     
-def sndwriter(sf,blkseq,maxframes=None):
+def sndwriter(sf, blkseq, maxframes=None):
     written = 0
     for b in blkseq:
         b = b.T
@@ -35,7 +43,7 @@ def sndwriter(sf,blkseq,maxframes=None):
         sf.write_frames(b)
         written += len(b)
 
-def findfile(fn, path=os.environ['PATH'].split(os.pathsep),matchFunc=os.path.isfile):
+def findfile(fn, path=os.environ['PATH'].split(os.pathsep), matchFunc=os.path.isfile):
     for dirname in path:
         candidate = os.path.join(dirname, fn)
         if matchFunc(candidate):
@@ -44,7 +52,7 @@ def findfile(fn, path=os.environ['PATH'].split(os.pathsep),matchFunc=os.path.isf
 
 
 class SndReader:
-    def __init__(self,fn,sr=None,chns=None,blksz=2**16,dtype=N.float32):
+    def __init__(self, fn, sr=None, chns=None, blksz=2**16, dtype=np.float32):
         fnd = False
                 
         if not fnd and (Sndfile is not None):
@@ -59,7 +67,7 @@ class SndReader:
                     self.samplerate = sf.samplerate
                     self.frames = sf.nframes
                 
-                    self.rdr = sndreader(sf,blksz,dtype=dtype)
+                    self.rdr = sndreader(sf, blksz, dtype=dtype)
                     fnd = True                
         
         if not fnd:
@@ -86,7 +94,7 @@ class SndReader:
                         data = pipe.stdout.read(blksz*4)
                         if len(data) == 0:
                             break
-                        yield N.fromstring(data, dtype=dtype).reshape((-1,self.channels)).T
+                        yield np.fromstring(data, dtype=dtype).reshape((-1, self.channels)).T
                 self.rdr = rdr()
                 fnd = True                
                 
@@ -98,10 +106,10 @@ class SndReader:
 
 
 class SndWriter:
-    def __init__(self,fn,samplerate,filefmt='wav',datafmt='pcm16',channels=1):
-        fmt = Format(filefmt,datafmt)
-        self.sf = Sndfile(fn,mode='w',format=fmt,channels=channels,samplerate=samplerate)
+    def __init__(self, fn, samplerate, filefmt='wav', datafmt='pcm16', channels=1):
+        fmt = Format(filefmt, datafmt)
+        self.sf = Sndfile(fn, mode='w', format=fmt, channels=channels, samplerate=samplerate)
         
-    def __call__(self,sigblks,maxframes=None):
-        sndwriter(self.sf,sigblks,maxframes=None)
+    def __call__(self, sigblks, maxframes=None):
+        sndwriter(self.sf, sigblks, maxframes=None)
 

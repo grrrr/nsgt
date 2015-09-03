@@ -1,13 +1,20 @@
-'''
-Created on 06.11.2011
+# -*- coding: utf-8
 
-@author: thomas
-'''
+"""
+Python implementation of Non-Stationary Gabor Transform (NSGT)
+derived from MATLAB code by NUHAG, University of Vienna, Austria
 
-import numpy as N
+Thomas Grill, 2011-2015
+http://grrrr.org/nsgt
+
+Austrian Research Institute for Artificial Intelligence (OFAI)
+AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
+"""
+
+import numpy as np
 from itertools import izip
 
-def reblock(sseq,blocksize,dtype=None,fulllast=True,padding=0,multichannel=False):
+def reblock(sseq, blocksize, dtype=None, fulllast=True, padding=0, multichannel=False):
     block = None
     dt = None
     chns = None
@@ -34,12 +41,12 @@ def reblock(sseq,blocksize,dtype=None,fulllast=True,padding=0,multichannel=False
                         dt = dtype
                 chns = len(si)
 
-                block = N.empty((chns,blocksize),dtype=dt)
+                block = np.empty((chns,blocksize), dtype=dt)
                 blockrem = block
                 
             sout = [sj[:blockrem.shape[1]] for sj in si]
             avail = len(sout[0])
-            for blr,souti in izip(blockrem,sout):
+            for blr,souti in izip(blockrem, sout):
                 blr[:avail] = souti # copy data per channel
             si = [sj[avail:] for sj in si]  # move ahead in input block
             blockrem = blockrem[:,avail:]  # move ahead in output block
@@ -60,11 +67,3 @@ def reblock(sseq,blocksize,dtype=None,fulllast=True,padding=0,multichannel=False
             # output only filled part
             ret = block[:,:-len(blockrem[0])]
         yield unchannelize(ret)
-
-
-if __name__ == '__main__':
-    inblk = 17
-    outblk = 13
-    inp = (range(i*inblk,(i+1)*inblk) for i in xrange(10))
-    for o in reblock(inp,outblk,dtype=None,fulllast=True,padding=-1):
-        print len(o),o

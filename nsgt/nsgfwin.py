@@ -1,7 +1,7 @@
 # -*- coding: utf-8
 
 """
-Thomas Grill, 2011-2012
+Thomas Grill, 2011-2015
 http://grrrr.org/nsgt
 
 --
@@ -34,7 +34,7 @@ All standard disclaimers apply.
 EXTERNALS : firwin
 """
 
-import numpy as N
+import numpy as np
 from util import hannwin,_isseq
 
 def nsgfwin(fmin,fmax,bins,sr,Ls,min_win=4):
@@ -44,44 +44,44 @@ def nsgfwin(fmin,fmax,bins,sr,Ls,min_win=4):
     if fmax > nf:
         fmax = nf
     
-    b = N.ceil(N.log2(fmax/fmin))+1
+    b = np.ceil(np.log2(fmax/fmin))+1
 
     if not _isseq(bins):
-        bins = N.ones(b,dtype=int)*bins
+        bins = np.ones(b,dtype=int)*bins
     elif len(bins) < b:
         # TODO: test this branch!
         bins[bins <= 0] = 1
-        bins = N.concatenate((bins,N.ones(b-len(bins),dtype=int)*N.min(bins)))
+        bins = np.concatenate((bins, np.ones(b-len(bins), dtype=int)*np.min(bins)))
     
     fbas = []
     for kk,bkk in enumerate(bins):
-        r = N.arange(kk*bkk,(kk+1)*bkk,dtype=float)
+        r = np.arange(kk*bkk, (kk+1)*bkk, dtype=float)
         # TODO: use N.logspace instead
         fbas.append(2**(r/bkk)*fmin)
-    fbas = N.concatenate(fbas)
+    fbas = np.concatenate(fbas)
 
-    if fbas[N.min(N.where(fbas>=fmax))] >= nf:
-        fbas = fbas[:N.max(N.where(fbas<fmax))+1]
+    if fbas[np.min(np.where(fbas>=fmax))] >= nf:
+        fbas = fbas[:np.max(np.where(fbas<fmax))+1]
     else:
         # TODO: test this branch!
-        fbas = fbas[:N.min(N.where(fbas>=fmax))+1]
+        fbas = fbas[:np.min(np.where(fbas>=fmax))+1]
     
     lbas = len(fbas)
-    fbas = N.concatenate(((0.,),fbas,(nf,),sr-fbas[::-1]))
+    fbas = np.concatenate(((0.,), fbas, (nf,), sr-fbas[::-1]))
     fbas *= float(Ls)/sr
     
     # TODO: put together with array indexing
-    M = N.empty(fbas.shape,int)
-    M[0] = N.round(2.*fmin*Ls/sr)
-    for k in xrange(1,2*lbas+1):
-        M[k] = N.round(fbas[k+1]-fbas[k-1])
-    M[-1] = N.round(Ls-fbas[-2])
+    M = np.empty(fbas.shape, dtype=int)
+    M[0] = np.round(2.*fmin*Ls/sr)
+    for k in xrange(1, 2*lbas+1):
+        M[k] = np.round(fbas[k+1]-fbas[k-1])
+    M[-1] = np.round(Ls-fbas[-2])
     
-    M = N.clip(M,min_win,N.inf).astype(int)    
+    M = np.clip(M, min_win, np.inf).astype(int)    
     g = [hannwin(m) for m in M]
     
     fbas[lbas] = (fbas[lbas-1]+fbas[lbas+1])/2
     fbas[lbas+2] = Ls-fbas[lbas]
-    rfbas = N.round(fbas).astype(int)
+    rfbas = np.round(fbas).astype(int)
     
     return g,rfbas,M

@@ -1,18 +1,24 @@
 # -*- coding: utf-8
 
 """
-Thomas Grill, 2011-2012
-http://grrrr.org
+Python implementation of Non-Stationary Gabor Transform (NSGT)
+derived from MATLAB code by NUHAG, University of Vienna, Austria
+
+Thomas Grill, 2011-2015
+http://grrrr.org/nsgt
+
+Austrian Research Institute for Artificial Intelligence (OFAI)
+AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 """
 
-import numpy as N
+import numpy as np
 from math import exp,floor,ceil,pi
 from itertools import izip
 
 def hannwin(l):
-    r = N.arange(l,dtype=float)
-    r *= N.pi*2./l
-    r = N.cos(r)
+    r = np.arange(l,dtype=float)
+    r *= np.pi*2./l
+    r = np.cos(r)
     r += 1.
     r *= 0.5
     return r
@@ -21,54 +27,54 @@ def blackharr(n,l=None,mod=True):
     if l is None: 
         l = n
     nn = (n//2)*2
-    k = N.arange(n)
+    k = np.arange(n)
     if not mod:
-        bh = 0.35875 - 0.48829*N.cos(k*(2*pi/nn)) + 0.14128*N.cos(k*(4*pi/nn)) -0.01168*N.cos(k*(6*pi/nn))
+        bh = 0.35875 - 0.48829*np.cos(k*(2*pi/nn)) + 0.14128*np.cos(k*(4*pi/nn)) -0.01168*np.cos(k*(6*pi/nn))
     else:
-        bh = 0.35872 - 0.48832*N.cos(k*(2*pi/nn)) + 0.14128*N.cos(k*(4*pi/nn)) -0.01168*N.cos(k*(6*pi/nn))
-    bh = N.hstack((bh,N.zeros(l-n,dtype=bh.dtype)))
-    bh = N.hstack((bh[-n//2:],bh[:-n//2]))
+        bh = 0.35872 - 0.48832*np.cos(k*(2*pi/nn)) + 0.14128*np.cos(k*(4*pi/nn)) -0.01168*np.cos(k*(6*pi/nn))
+    bh = np.hstack((bh,np.zeros(l-n,dtype=bh.dtype)))
+    bh = np.hstack((bh[-n//2:],bh[:-n//2]))
     return bh
 
 def blackharrcw(bandwidth,corr_shift):
     flip = -1 if corr_shift < 0 else 1
     corr_shift *= flip
     
-    M = N.ceil(bandwidth/2+corr_shift-1)*2
-    win = N.concatenate((N.arange(M//2,M),N.arange(0,M//2)))-corr_shift
-    win = (0.35872 - 0.48832*N.cos(win*(2*N.pi/bandwidth))+ 0.14128*N.cos(win*(4*N.pi/bandwidth)) -0.01168*N.cos(win*(6*N.pi/bandwidth)))*(win <= bandwidth)*(win >= 0)
+    M = np.ceil(bandwidth/2+corr_shift-1)*2
+    win = np.concatenate((np.arange(M//2,M), np.arange(0,M//2)))-corr_shift
+    win = (0.35872 - 0.48832*np.cos(win*(2*np.pi/bandwidth))+ 0.14128*np.cos(win*(4*np.pi/bandwidth)) -0.01168*np.cos(win*(6*np.pi/bandwidth)))*(win <= bandwidth)*(win >= 0)
 
     return win[::flip],M
 
 
-def cont_tukey_win(n,sl_len,tr_area):
-    g = N.arange(n)*(sl_len/float(n))
-    g[N.logical_or(g < sl_len/4.-tr_area/2.,g > 3*sl_len/4.+tr_area/2.)] = 0.
-    g[N.logical_and(g > sl_len/4.+tr_area/2.,g < 3*sl_len/4.-tr_area/2.)] = 1.
+def cont_tukey_win(n, sl_len, tr_area):
+    g = np.arange(n)*(sl_len/float(n))
+    g[np.logical_or(g < sl_len/4.-tr_area/2., g > 3*sl_len/4.+tr_area/2.)] = 0.
+    g[np.logical_and(g > sl_len/4.+tr_area/2., g < 3*sl_len/4.-tr_area/2.)] = 1.
     #
-    idxs = N.logical_and(g >= sl_len/4.-tr_area/2.,g <= sl_len/4.+tr_area/2.)
+    idxs = np.logical_and(g >= sl_len/4.-tr_area/2., g <= sl_len/4.+tr_area/2.)
     temp = g[idxs]
     temp -= sl_len/4.+tr_area/2.
     temp *= pi/tr_area
-    g[idxs] = N.cos(temp)*0.5+0.5
+    g[idxs] = np.cos(temp)*0.5+0.5
     #
-    idxs = N.logical_and(g >= 3*sl_len/4.-tr_area/2.,g <= 3*sl_len/4.+tr_area/2.)
+    idxs = np.logical_and(g >= 3*sl_len/4.-tr_area/2., g <= 3*sl_len/4.+tr_area/2.)
     temp = g[idxs]
     temp += -3*sl_len/4.+tr_area/2.
     temp *= pi/tr_area
-    g[idxs] = N.cos(temp)*0.5+0.5
+    g[idxs] = np.cos(temp)*0.5+0.5
     #
     return g
 
-def tgauss(ess_ln,ln=0):
+def tgauss(ess_ln, ln=0):
     if ln < ess_ln: 
         ln = ess_ln
     #
-    g = N.zeros(ln,dtype=float)
+    g = np.zeros(ln, dtype=float)
     sl1 = int(floor(ess_ln/2))
     sl2 = int(ceil(ess_ln/2))+1
-    r = N.arange(-sl1,sl2) # (-floor(ess_len/2):ceil(ess_len/2)-1)
-    r = N.exp((r*(3.8/ess_ln))**2*-pi)
+    r = np.arange(-sl1, sl2) # (-floor(ess_len/2):ceil(ess_len/2)-1)
+    r = np.exp((r*(3.8/ess_ln))**2*-pi)
     r -= exp(-pi*1.9**2)
     #
     g[-sl1:] = r[:sl1]
@@ -82,24 +88,24 @@ def _isseq(x):
         return False
     return True        
 
-def chkM(M,g):
+def chkM(M, g):
     if M is None:
-        M = N.array(map(len,g))
+        M = np.array(map(len, g))
     elif not _isseq(M):
-        M = N.ones(len(g),dtype=int)*M
+        M = np.ones(len(g), dtype=int)*M
     return M
 
-def calcwinrange(g,rfbas,Ls):
-    shift = N.concatenate(((N.mod(-rfbas[-1],Ls),), rfbas[1:]-rfbas[:-1]))
+def calcwinrange(g, rfbas, Ls):
+    shift = np.concatenate(((np.mod(-rfbas[-1],Ls),), rfbas[1:]-rfbas[:-1]))
     
-    timepos = N.cumsum(shift)
+    timepos = np.cumsum(shift)
     nn = timepos[-1]
     timepos -= shift[0] # Calculate positions from shift vector
     
     wins = []
-    for gii,tpii in izip(g,timepos):
+    for gii,tpii in izip(g, timepos):
         Lg = len(gii)
-        win_range = N.arange(-(Lg//2)+tpii,Lg-(Lg//2)+tpii,dtype=int)
+        win_range = np.arange(-(Lg//2)+tpii, Lg-(Lg//2)+tpii, dtype=int)
         win_range %= nn
 
 #        Lg2 = Lg//2

@@ -1,18 +1,18 @@
+#! /usr/bin/env python 
 # -*- coding: utf-8
 
 """
 Python implementation of Non-Stationary Gabor Transform (NSGT)
 derived from MATLAB code by NUHAG, University of Vienna, Austria
 
-Thomas Grill, 2011
+Thomas Grill, 2011-2015
 http://grrrr.org/nsgt
 """
 
-import numpy as N
+import numpy as np
 from nsgt import NSGT,LogScale,LinScale,MelScale,OctScale
 from scikits.audiolab import Sndfile,Format
-from time import time
-import os,os.path
+import os
 from itertools import imap
 
 def cputime():
@@ -22,92 +22,92 @@ def cputime():
 class interpolate:
     def __init__(self,cqt,Ls):
         from scipy.interpolate import interp1d
-        self.intp = [interp1d(N.linspace(0,Ls,len(r)),r) for r in cqt]
+        self.intp = [interp1d(np.linspace(0, Ls, len(r)), r) for r in cqt]
     def __call__(self,x):
         try:
             len(x)
         except:
-            return N.array([i(x) for i in self.intp])
+            return np.array([i(x) for i in self.intp])
         else:
-            return N.array([[i(xi) for i in self.intp] for xi in x])
+            return np.array([[i(xi) for i in self.intp] for xi in x])
 
-if __name__ == "__main__":    
-    from optparse import OptionParser
-    parser = OptionParser()
+
+from argparse import ArgumentParser
+parser = ArgumentParser()
+
+parser.add_argument("input", type=str, help="input audio file")
+parser.add_argument("--output", type=str, help="output audio file")
+parser.add_argument("--fmin", type=float, default=80, help="minimum frequency (default=%(default)s)")
+parser.add_argument("--fmax", type=float, default=22050, help="maximum frequency (default=%(default)s)")
+parser.add_argument("--scale", choices=("oct","log","mel"), default='oct', help="frequency scale (oct,log,mel)")
+parser.add_argument("--bins", type=int, default=24, help="frequency bins (total or per octave, default=%(default)s)")
+parser.add_argument("--real", action='store_true', help="assume real signal")
+parser.add_argument("--matrixform", action='store_true', help="use regular time division (matrix form)")
+parser.add_argument("--reducedform", action='store_true', help="if real==1: omit bins for f=0 and f=fs/2 (lossy=1), or also the transition bands (lossy=2)")
+parser.add_argument("--time", type=int, default=1, help="timing calculation n-fold (default=%(default)s)")
+parser.add_argument("--plot", action='store_true', help="plot results (needs installed matplotlib and scipy packages)")
+
+args = parser.parse_args()
+if not os.path.exists(args.input):
+    parser.error("Input file '%s' not found"%args.input)
+
+# Read audio data
+sf = Sndfile(args.input)
+fs = sf.samplerate
+s = sf.read_frames(sf.nframes)
+if len(s.shape) > 1: 
+    s = np.mean(s, axis=1)
     
-    parser.add_option("--input",dest="input",type="str",help="input audio file")
-    parser.add_option("--output",dest="output",type="str",help="output audio file")
-    parser.add_option("--fmin",dest="fmin",type="float",default=80,help="minimum frequency")
-    parser.add_option("--fmax",dest="fmax",type="float",default=22050,help="maximum frequency")
-    parser.add_option("--scale",dest="scale",type="str",default='oct',help="frequency scale (oct,log,lin,mel)")
-    parser.add_option("--bins",dest="bins",type="int",default=24,help="frequency bins (total or per octave)")
-    parser.add_option("--real",dest="real",type="int",default=0,help="assume real signal")
-    parser.add_option("--matrixform",dest="matrixform",type="int",default=0,help="use regular time division (matrix form)")
-    parser.add_option("--reducedform",dest="reducedform",type="int",default=0,help="if real==1: omit bins for f=0 and f=fs/2 (lossy=1), or also the transition bands (lossy=2)")
-    parser.add_option("--time",dest="time",type="int",default=0,help="time calculation n-fold")
-    parser.add_option("--plot",dest="plot",type="int",default=0,help="plot transform (needs installed matplotlib and scipy packages)")
+scales = {'log':LogScale,'lin':LinScale,'mel':MelScale,'oct':OctScale}
+try:
+    scale = scales[args.scale]
+except KeyError:
+    parser.error('scale unknown')
+
+scl = scale(args.fmin, args.fmax, args.bins)
+
+times = []
+
+for _ in xrange(args.time or 1):
+    t1 = cputime()
     
-    (options, args) = parser.parse_args()
-    if not os.path.exists(options.input):
-        parser.error("file not found")  
-
-    # Read audio data
-    sf = Sndfile(options.input)
-    fs = sf.samplerate
-    s = sf.read_frames(sf.nframes)
-    if len(s.shape) > 1: 
-        s = N.mean(s,axis=1)
-        
-    scales = {'log':LogScale,'lin':LinScale,'mel':MelScale,'oct':OctScale}
-    try:
-        scale = scales[options.scale]
-    except KeyError:
-        parser.error('scale unknown')
-
-    scl = scale(options.fmin,options.fmax,options.bins)
-
-    times = []
-
-    for _ in xrange(options.time or 1):
-        t1 = cputime()
-        
-        # calculate transform parameters
-        Ls = len(s)
-        
-        nsgt = NSGT(scl,fs,Ls,real=options.real,matrixform=options.matrixform,reducedform=options.reducedform)
-        
-        # forward transform 
-        c = nsgt.forward(s)
+    # calculate transform parameters
+    Ls = len(s)
+    
+    nsgt = NSGT(scl, fs, Ls, real=args.real, matrixform=args.matrixform, reducedform=args.reducedform)
+    
+    # forward transform 
+    c = nsgt.forward(s)
 
 #        c = N.array(c)
 #        print "c",len(c),N.array(map(len,c))
-    
-        # inverse transform 
-        s_r = nsgt.backward(c)
- 
-        t2 = cputime()
-        times.append(t2-t1)
 
-    norm = lambda x: N.sqrt(N.sum(N.abs(N.square(x))))
-    rec_err = norm(s-s_r)/norm(s)
-    print "Reconstruction error: %.3e"%rec_err
-    print "Calculation time: %.3f +- %.3f s (min=%.3f s)"%(N.mean(times),N.std(times)/2,N.min(times))
+    # inverse transform 
+    s_r = nsgt.backward(c)
 
-    if options.output:
-        print "Written audio file",options.output
-        sf = Sndfile(options.output,mode='w',format=Format('wav','pcm24'),channels=1,samplerate=fs)
-        sf.write_frames(s_r)
-        sf.close()
-        print "Done"
+    t2 = cputime()
+    times.append(t2-t1)
 
-    if options.plot:
-        print "Preparing plot"
-        import pylab as P
-        # interpolate CQT to get a grid
-        x = N.linspace(0,Ls,2000)
-        hf = -1 if options.real else len(c)/2
-        grid = interpolate(imap(N.abs,c[2:hf]),Ls)(x)
-        # display grid
-        P.imshow(N.log(N.flipud(grid.T)),aspect=float(grid.shape[0])/grid.shape[1]*0.5,interpolation='nearest')
-        print "Plotting"
-        P.show()
+norm = lambda x: np.sqrt(np.sum(np.abs(np.square(x))))
+rec_err = norm(s-s_r)/norm(s)
+print "Reconstruction error: %.3e"%rec_err
+print "Calculation time: %.3f±%.3fs (min=%.3f s)"%(np.mean(times),np.std(times)/2,np.min(times))
+
+if args.output:
+    print "Writing audio file '%s'"%args.output
+    sf = Sndfile(args.output, mode='w', format=Format('wav','pcm24'), channels=1, samplerate=fs)
+    sf.write_frames(s_r)
+    sf.close()
+    print "Done"
+
+if args.plot:
+    print "Preparing plot"
+    import matplotlib.pyplot as pl
+    # interpolate CQT to get a grid
+    x = np.linspace(0, Ls, 2000)
+    hf = -1 if args.real else len(c)//2
+    grid = interpolate(imap(np.abs, c[2:hf]), Ls)(x)
+    # display grid
+    pl.imshow(np.log(np.flipud(grid.T)), aspect=float(grid.shape[0])/grid.shape[1]*0.5, interpolation='nearest')
+    print "Plotting"
+    pl.show()

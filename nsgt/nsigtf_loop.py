@@ -1,17 +1,24 @@
-'''
-Created on 22.11.2012
+# -*- coding: utf-8
 
-@author: thomas
-'''
+"""
+Python implementation of Non-Stationary Gabor Transform (NSGT)
+derived from MATLAB code by NUHAG, University of Vienna, Austria
 
-import numpy as N
+Thomas Grill, 2011-2015
+http://grrrr.org/nsgt
+
+Austrian Research Institute for Artificial Intelligence (OFAI)
+AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
+"""
+
+import numpy as np
 from itertools import izip
 
-def nsigtf_loop(loopparams,fr,fc):
+def nsigtf_loop(loopparams, fr, fc):
     fr[:] = 0.
     # The overlap-add procedure including multiplication with the synthesis windows
     # TODO: stuff loop into theano
-    for t,(gdii,wr1,wr2,sl1,sl2,temp) in izip(fc,loopparams):
+    for t,(gdii,wr1,wr2,sl1,sl2,temp) in izip(fc, loopparams):
         t1 = temp[sl1]
         t2 = temp[sl2]
         t1[:] = t[sl1]

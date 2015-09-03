@@ -1,7 +1,7 @@
 # -*- coding: utf-8
 
 """
-Thomas Grill, 2011-2012
+Thomas Grill, 2011-2015
 http://grrrr.org/nsgt
 
 Austrian Research Institute for Artificial Intelligence (OFAI)
@@ -31,7 +31,7 @@ http://www.univie.ac.at/nonstatgab/
 minor edit by Gino Velasco 23.02.11
 """
 
-import numpy as N
+import numpy as np
 from itertools import izip
 from util import chkM
 
@@ -40,9 +40,9 @@ def nsdual(g,wins,nn,M=None):
     M = chkM(M,g)
 
     # Construct the diagonal of the frame operator matrix explicitly
-    x = N.zeros((nn,),dtype=float)
-    for gi,mii,sl in izip(g,M,wins):
-        xa = N.square(N.fft.fftshift(gi))
+    x = np.zeros((nn,), dtype=float)
+    for gi,mii,sl in izip(g, M, wins):
+        xa = np.square(np.fft.fftshift(gi))
         xa *= mii
         x[sl] += xa
 
@@ -60,5 +60,5 @@ def nsdual(g,wins,nn,M=None):
     # Using the frame operator and the original window sequence, compute 
     # the dual window sequence
 #    gd = [gi/N.fft.ifftshift(N.hstack((x[wi[0][0]],x[wi[0][1]],x[wi[1][0]],x[wi[1][1]]))) for gi,wi in izip(g,wins)]
-    gd = [gi/N.fft.ifftshift(x[wi]) for gi,wi in izip(g,wins)]
+    gd = [gi/np.fft.ifftshift(x[wi]) for gi,wi in izip(g,wins)]
     return gd
