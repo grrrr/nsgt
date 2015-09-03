@@ -14,7 +14,7 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 import numpy as np
 cimport numpy as np
 
-def nsgtf_loop(loopparams, np.ndarray ft not None, N.ndarray temp0 not None):
+def nsgtf_loop(loopparams, np.ndarray ft not None, np.ndarray temp0 not None):
     cdef list c = [] # Initialization of the result
         
     # The actual transform
