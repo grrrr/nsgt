@@ -11,7 +11,6 @@ Austrian Research Institute for Artificial Intelligence (OFAI)
 AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 """
 
-import numpy as np
 from itertools import izip
 
 def nsigtf_loop(loopparams, fr, fc):

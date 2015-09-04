@@ -30,9 +30,9 @@ All standard disclaimers apply.
 
 __version__ = '0.17'
 
-from cq import NSGT,CQ_NSGT
-from slicq import NSGT_sliced,CQ_NSGT_sliced
-from fscale import Scale,OctScale,LogScale,LinScale,MelScale
+from cq import NSGT, CQ_NSGT
+from slicq import NSGT_sliced, CQ_NSGT_sliced
+from fscale import Scale, OctScale, LogScale, LinScale, MelScale
 from warnings import warn
 
 try:

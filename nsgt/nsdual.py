@@ -35,7 +35,7 @@ import numpy as np
 from itertools import izip
 from util import chkM
 
-def nsdual(g,wins,nn,M=None):
+def nsdual(g, wins, nn, M=None):
 
     M = chkM(M,g)
 

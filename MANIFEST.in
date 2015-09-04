@@ -1,5 +1,6 @@
 graft examples 
 graft nsgt
+graft tests
 include *.txt
 prune paper 
 prune nsgt.egg-info 

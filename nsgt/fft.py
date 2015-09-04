@@ -99,7 +99,7 @@ if not realized:
                 fftpool.__init__(self, measure, dtype=dtype)
             def init(self, n, measure, outn):
                 inp = self.fftw.create_aligned_array(n, dtype=self.tpcplx)
-                outp = self.fftw.create_aligned_array(outn if outn is not None else (n-1)//2, dtype=self.tpfloat)
+                outp = self.fftw.create_aligned_array(outn if outn is not None else (n-1)*2, dtype=self.tpfloat)
                 plan = self.fftw.Plan(inp, outp, direction='backward', realtypes='halfcomplex c2r', flags=('measure' if measure else 'estimate',))
                 return (plan,lambda x: x[:n],lambda x: x/len(x))
             

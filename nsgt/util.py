@@ -12,7 +12,7 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 """
 
 import numpy as np
-from math import exp,floor,ceil,pi
+from math import exp, floor, ceil, pi
 from itertools import izip
 
 def hannwin(l):

@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # -*- coding: utf-8
 
 """
@@ -31,13 +32,31 @@ Attention: some Cython versions also need the Pyrex module installed!
 
 """
 
-from setuptools import setup
-from distutils.extension import Extension
+import warnings
+
+try:
+    import setuptools
+except ImportError:
+    warnings.warn("setuptools not found, resorting to distutils: unit test suite can not be run from setup.py")
+    setuptools = None
+
+setup_options = {}
+
+if setuptools is None:
+    from distutils.core import setup
+    from distutils.extension import Extension
+else:
+    from setuptools import setup
+    from setuptools.extension import Extension
+    setup_options['test_suite'] = 'tests'
+    
 try:
     from Cython.Distutils import build_ext
 except ImportError:
     build_ext = None
+    
 import numpy
+
 
 if build_ext is None:
     cmdclass = {}
@@ -65,11 +84,11 @@ setup(
     packages=['nsgt'],
     cmdclass = cmdclass,
     ext_modules = ext_modules,
-    test_suite="nsgt.__init__",
     classifiers=[
         "Development Status :: 4 - Beta",
         "Topic :: Scientific/Engineering :: Mathematics",
         "License :: OSI Approved :: Artistic License",
         "Programming Language :: Python"
-    ]
+    ],
+    **setup_options
 )

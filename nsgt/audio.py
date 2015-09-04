@@ -61,7 +61,7 @@ class SndReader:
             except IOError:
                 pass
             else:
-                if not sr or sr == sf.samplerate:
+                if (sr is None or sr == sf.samplerate) and (chns is None or chns == sf.channels):
                     # no resampling required
                     self.channels = sf.channels
                     self.samplerate = sf.samplerate

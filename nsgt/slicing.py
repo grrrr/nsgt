@@ -14,7 +14,7 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 import numpy as np
 from util import hannwin
 from reblock import reblock
-from itertools import chain,izip,cycle
+from itertools import chain, izip, cycle
 
 def makewnd(sl_len, tr_area):
     hhop = sl_len//4

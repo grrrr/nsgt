@@ -1,14 +1,23 @@
-'''
-Created on 05.11.2011
+# -*- coding: utf-8
 
-@author: Thomas Grill (grrrr.org)
+"""
+Python implementation of Non-Stationary Gabor Transform (NSGT)
+derived from MATLAB code by NUHAG, University of Vienna, Austria
+
+Thomas Grill, 2011-2015
+http://grrrr.org/nsgt
+
+Austrian Research Institute for Artificial Intelligence (OFAI)
+AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
+
+--
 
 % Perfect reconstruction sliCQ
 
 % right now, even slice length (sl_len) is required. Parameters are the
 % same as NSGTF plus slice length, minimal required window length, 
 % Q-factor variation, and test run parameters.
-'''
+"""
 
 import numpy as np
 from itertools import izip, cycle, chain, tee
@@ -28,11 +37,11 @@ def arrange(cseq, M, fwd):
         c0 = cseq.next()  # grab first stream element
     except StopIteration:
         return iter(())
-    cseq = chain((c0,),cseq)  # push it back in
-    M = map(len,c0[0])  # read off M from the coefficients
+    cseq = chain((c0,), cseq)  # push it back in
+    M = map(len, c0[0])  # read off M from the coefficients
     ixs = (
-           [(slice(3*mkk//4,mkk),slice(0,3*mkk//4)) for mkk in M],  # odd
-           [(slice(mkk//4,mkk),slice(0,mkk//4)) for mkk in M]  # even
+           [(slice(3*mkk//4, mkk), slice(0, 3*mkk//4)) for mkk in M],  # odd
+           [(slice(mkk//4, mkk), slice(0, mkk//4)) for mkk in M]  # even
     )
     if fwd:
         ixs = cycle(ixs)
@@ -40,13 +49,14 @@ def arrange(cseq, M, fwd):
         ixs = cycle(ixs[::-1])
 
     return ([
-                [np.concatenate((ckk[ix0],ckk[ix1])) 
+                [np.concatenate((ckk[ix0],ckk[ix1]))
                    for ckk,(ix0,ix1) in izip(ci, ixi)
-                ] 
+                ]
              for ci in cci
-             ] 
+             ]
              for cci,ixi in izip(cseq, ixs)
             )
+
 
 def starzip(iterables):
     def inner(itr, i):
@@ -57,18 +67,20 @@ def starzip(iterables):
     iterables = chain((it,), iterables)
     return [inner(itr, i) for i,itr in enumerate(tee(iterables, len(it)))]
 
+
 def chnmap(gen, seq):
     chns = starzip(seq) # returns a list of generators (one for each channel)
     gens = map(gen, chns) # generators including transformation
     return izip(*gens)  # packing channels to one generator yielding channel tuples
 
+
 class NSGT_sliced:
-    def __init__(self, scale, sl_len, tr_area, fs, 
-                 min_win=16, Qvar=1, 
-                 real=False, recwnd=False, matrixform=False, reducedform=0, 
-                 multichannel=False, 
-                 measurefft=False, 
-                 multithreading=False, 
+    def __init__(self, scale, sl_len, tr_area, fs,
+                 min_win=16, Qvar=1,
+                 real=False, recwnd=False, matrixform=False, reducedform=0,
+                 multichannel=False,
+                 measurefft=False,
+                 multithreading=False,
                  dtype=float):
         assert fs > 0
         assert sl_len > 0

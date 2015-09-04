@@ -37,7 +37,7 @@ EXTERNALS : firwin
 import numpy as np
 from util import hannwin,_isseq
 
-def nsgfwin(fmin,fmax,bins,sr,Ls,min_win=4):
+def nsgfwin(fmin, fmax ,bins, sr, Ls, min_win=4):
 
     nf = sr/2
     
@@ -77,7 +77,7 @@ def nsgfwin(fmin,fmax,bins,sr,Ls,min_win=4):
         M[k] = np.round(fbas[k+1]-fbas[k-1])
     M[-1] = np.round(Ls-fbas[-2])
     
-    M = np.clip(M, min_win, np.inf).astype(int)    
+    M = np.clip(M, min_win, np.inf).astype(int)
     g = [hannwin(m) for m in M]
     
     fbas[lbas] = (fbas[lbas-1]+fbas[lbas+1])/2
