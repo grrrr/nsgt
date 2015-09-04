@@ -10,8 +10,6 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 covered by the Artistic License 2.0
 http://www.perlfoundation.org/artistic_license_2_0
 
------
-
 
 Mandatory dependencies:
 -----------------------
@@ -45,7 +43,9 @@ Todo:
 - Unify nsgfwin sliced/non-sliced
 
 
---
+Source:
+-------
+
 Original matlab code copyright follows:
 
 AUTHOR(s) : Monika Dörfler, Gino Angelo Velasco, Nicki Holighaus, 2010-2011
