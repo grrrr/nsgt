@@ -38,9 +38,6 @@ try:
 except ImportError:
     MP = None
 
-import hashlib, cPickle
-def hashdigest(obj):
-    return hashlib.sha1(cPickle.dumps(obj, protocol=cPickle.HIGHEST_PROTOCOL)).hexdigest()
 
 #@profile
 def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measurefft=False, multithreading=False):
