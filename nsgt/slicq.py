@@ -89,7 +89,8 @@ class NSGT_sliced:
         assert min_win > 0
         assert 0 <= reducedform <= 2
 
-        assert sl_len%2 == 0
+        assert sl_len%4 == 0
+        assert tr_area%2 == 0
 
         self.sl_len = sl_len
         self.tr_area = tr_area
@@ -136,7 +137,7 @@ class NSGT_sliced:
 
         # Compute the slices (zero-padded Tukey window version)
         f_sliced = slicing(sig, self.sl_len, self.tr_area)
-
+        
         cseq = chnmap(self.fwd, f_sliced)
     
         cseq = arrange(cseq, self.M, True)

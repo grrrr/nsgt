@@ -6,15 +6,16 @@ import unittest
 maxlen = 50000
 np.random.seed(666)
 rndsig = np.random.random((maxlen,))
-assert np.allclose(rndsig[:3],[ 0.70043712, 0.84418664, 0.67651434])
-
+#assert np.allclose(rndsig[:3],[ 0.70043712, 0.84418664, 0.67651434])
 
 class TestNSGT_slices(unittest.TestCase):
 
     def runit(self, siglen, fmin, fmax, obins, sllen, trlen, real):
         sig = rndsig[:siglen]
+
         scale = OctScale(fmin, fmax, obins)
         nsgt = NSGT_sliced(scale, fs=44100, sl_len=sllen, tr_area=trlen, real=real)
+
         c = nsgt.forward((sig,))
 
         rc = nsgt.backward(c)
@@ -24,7 +25,8 @@ class TestNSGT_slices(unittest.TestCase):
         close = np.allclose(sig, s_r, atol=1.e-3)
         if not close:
             print "Failing params:", siglen, fmin, fmax, obins, sllen, trlen, real
-            print "Error", s_r[-3:], sig[-3:], np.max(np.abs(s_r-sig))
+            dev = np.abs(s_r-sig)
+            print "Error", np.where(dev>1.e-3), np.max(dev)
         self.assertTrue(close)
 
 
@@ -75,7 +77,7 @@ class TestNSGT_slices(unittest.TestCase):
         fmin = np.random.randint(200)+80
         fmax = max(np.random.randint(22048-fmin)+fmin,10000)
         obins = np.random.randint(24)+1
-        sllen = max(1000,np.random.randint(maxlen))*2
+        sllen = max(1000,np.random.randint(maxlen))//4*4
         trlen = max(2,np.random.randint(sllen//2-2))//2*2
         real = np.random.randint(2)
         self.runit(siglen, fmin, fmax, obins, sllen, trlen, real)
@@ -83,10 +85,10 @@ class TestNSGT_slices(unittest.TestCase):
 if True:
     def load_tests(*_):
         test_cases = unittest.TestSuite()
-        for t in 'test_1d1 test_1d11 test_1 test_1a test_1b test_1c test_1d2 test_1e test_err1 test_err2 test_err3 test_err4 test_err5'.split():
-            test_cases.addTest(TestNSGT_slices(t))
+#        for t in 'test_1d1 test_1d11 test_1 test_1a test_1b test_1c test_1d2 test_1e test_err1 test_err2 test_err3 test_err4 test_err5 test_err6'.split():
+#            test_cases.addTest(TestNSGT_slices(t))
         
-        for _ in range(100):
+        for _ in range(50):
             test_cases.addTest(TestNSGT_slices('gtest_oct'))
         return test_cases
 

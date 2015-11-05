@@ -30,7 +30,10 @@ def makewnd(sl_len, tr_area):
     return tw
 
 def slicing(f, sl_len, tr_area):
-    assert tr_area%2 == 0
+    if tr_area%2 != 0:
+        raise ValueError("Transition area 'tr_area' must be modulo 2")
+    if sl_len%4 != 0:
+        raise ValueError("Slice length 'sl_len' must be modulo 4")
     
     hhop = sl_len//4  # half hopsize
 

@@ -38,6 +38,9 @@ try:
 except ImportError:
     MP = None
 
+import hashlib, cPickle
+def hashdigest(obj):
+    return hashlib.sha1(cPickle.dumps(obj, protocol=cPickle.HIGHEST_PROTOCOL)).hexdigest()
 
 #@profile
 def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measurefft=False, multithreading=False):
@@ -91,7 +94,9 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measureff
             
         # TODO: if matrixform, perform "2D" FFT along one axis
         # this could also be nicely parallelized
-        yield mmap(ifft,c)  
+        y = mmap(ifft,c)
+        
+        yield y
 
         
 # non-sliced version
