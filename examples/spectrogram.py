@@ -49,7 +49,7 @@ parser.add_argument("input", type=str, help="Input file")
 parser.add_argument("--output", type=str, help="Output data file (.npz, .hd5, .pkl)")
 parser.add_argument("--data-times", type=str, default='times', help="Data name for times (default='%(default)s')")
 parser.add_argument("--data-coefs", type=str, default='coefs', help="Data name for coefficients (default='%(default)s')")
-parser.add_argument("--fps", type=float, default=100, help="Approx. time resolution for features in fps (default=%(default)s)")
+parser.add_argument("--fps", type=float, default=0, help="Approx. time resolution for features in fps (default=%(default)s)")
 parser.add_argument("--fps-pooling", choices=('max','mean','median'), default='max', help="Temporal pooling function for features (default='%(default)s')")
 parser.add_argument("--start", type=float, default=0, help="Start time in file in s (default=%(default)s)")
 parser.add_argument("--stop", type=float, default=0, help="Stop time in file in s (default=%(default)s)")
@@ -122,7 +122,8 @@ if args.fps:
     pooled_len = mls.shape[0]//poolf
     mls_dur *= (pooled_len*poolf)/float(len(mls))
     mls = mls[:pooled_len*poolf]
-    mls = np.max(mls.reshape((pooled_len,poolf,)+mls.shape[1:]), axis=1)
+    poolfun = np.__dict__[args.fps_pooling]
+    mls = poolfun(mls.reshape((pooled_len,poolf,)+mls.shape[1:]), axis=1)
     
 times = np.linspace(0, mls_dur, endpoint=True, num=len(mls)+1)
 
