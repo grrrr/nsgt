@@ -47,6 +47,8 @@ parser = ArgumentParser()
 
 parser.add_argument("input", type=str, help="input file")
 parser.add_argument("--output", type=str, help="output data file (.npz, .hd5, .pkl)")
+parser.add_argument("--data-times", type=str, default='times', help="data name for times (default='%(default)s')")
+parser.add_argument("--data-coefs", type=str, default='coefs', help="data name for coefficients (default='%(default)s')")
 parser.add_argument("--length", type=int, default=0, help="maximum length of signal (default=%(default)s)")
 parser.add_argument("--fmin", type=float, default=50, help="minimum frequency (default=%(default)s)")
 parser.add_argument("--fmax", type=float, default=22050, help="maximum frequency (default=%(default)s)")
@@ -105,7 +107,7 @@ dur = len(s)/float(fs)
 time = np.linspace(0, dur, endpoint=False, num=ncoefs)
 
 if args.output:
-    data = dict(features=coefs, time=time)
+    data = {args.data_coefs: coefs, args.data_times: time}
     if args.output.endswith('.pkl') or args.output.endswith('.pck'):
         import cPickle
         with file(args.output, 'wb') as f:
