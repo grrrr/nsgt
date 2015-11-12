@@ -29,6 +29,7 @@ from nsgtf import nsgtf
 from nsigtf import nsigtf
 from util import calcwinrange
 from fscale import OctScale
+from math import ceil
 
 class NSGT:
     def __init__(self, scale, fs, Ls, real=True, matrixform=False, reducedform=0, multichannel=False, measurefft=False, multithreading=False, dtype=float):
@@ -48,6 +49,15 @@ class NSGT:
 
         # calculate transform parameters
         self.g,rfbas,self.M = nsgfwin(self.frqs, self.q, self.fs, self.Ls, sliced=False, dtype=dtype)
+
+        if real:
+            assert 0 <= reducedform <= 2
+            sl = slice(reducedform,len(self.g)//2+1-reducedform)
+        else:
+            sl = slice(0,None)
+
+        # coefficients per slice
+        self.ncoefs = max(int(ceil(float(len(gii))/mii))*mii for mii,gii in zip(self.M[sl],self.g[sl]))        
 
         if matrixform:
             if self.reducedform:
@@ -71,6 +81,14 @@ class NSGT:
         self.fwd = lambda s: nsgtf(s, self.g, self.wins, self.nn, self.M, real=self.real, reducedform=self.reducedform, measurefft=self.measurefft, multithreading=self.multithreading)
         self.bwd = lambda c: nsigtf(c, self.gd, self.wins, self.nn, self.Ls, real=self.real, reducedform=self.reducedform, measurefft=self.measurefft, multithreading=self.multithreading)
         
+    @property
+    def coef_factor(self):
+        return float(self.ncoefs)/self.sl_len
+    
+    @property
+    def slice_coefs(self):
+        return self.ncoefs
+    
 
     def forward(self, s):
         'transform'

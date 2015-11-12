@@ -21,6 +21,7 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 
 import numpy as np
 from itertools import izip, cycle, chain, tee
+from math import ceil
 
 from slicing import slicing
 from unslicing import unslicing
@@ -107,6 +108,14 @@ class NSGT_sliced:
         self.g,self.rfbas,self.M = nsgfwin(self.frqs, self.q, self.fs, self.sl_len, sliced=True, min_win=min_win, Qvar=Qvar, dtype=dtype)
         
 #        print "rfbas",self.rfbas/float(self.sl_len)*self.fs
+        if real:
+            assert 0 <= reducedform <= 2
+            sl = slice(reducedform,len(self.g)//2+1-reducedform)
+        else:
+            sl = slice(0,None)
+
+        # coefficients per slice
+        self.ncoefs = max(int(ceil(float(len(gii))/mii))*mii for mii,gii in zip(self.M[sl],self.g[sl]))
         
         if matrixform:
             if self.reducedform:
@@ -129,7 +138,14 @@ class NSGT_sliced:
         self.fwd = lambda fc: nsgtf_sl(fc, self.g, self.wins, self.nn, self.M, real=self.real, reducedform=self.reducedform, measurefft=self.measurefft, multithreading=self.multithreading)
         self.bwd = lambda cc: nsigtf_sl(cc, self.gd, self.wins, self.nn, self.sl_len ,real=self.real, reducedform=self.reducedform, measurefft=self.measurefft, multithreading=self.multithreading)
 
-
+    @property
+    def coef_factor(self):
+        return float(self.ncoefs)/self.sl_len
+    
+    @property
+    def slice_coefs(self):
+        return self.ncoefs
+    
     def forward(self, sig):
         'transform - s: iterable sequence of sequences' 
         
