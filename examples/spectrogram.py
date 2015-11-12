@@ -45,23 +45,26 @@ def assemble_coeffs(cqt, ncoefs):
 from argparse import ArgumentParser
 parser = ArgumentParser()
 
-parser.add_argument("input", type=str, help="input file")
-parser.add_argument("--output", type=str, help="output data file (.npz, .hd5, .pkl)")
-parser.add_argument("--data-times", type=str, default='times', help="data name for times (default='%(default)s')")
-parser.add_argument("--data-coefs", type=str, default='coefs', help="data name for coefficients (default='%(default)s')")
-parser.add_argument("--length", type=int, default=0, help="maximum length of signal (default=%(default)s)")
-parser.add_argument("--fmin", type=float, default=50, help="minimum frequency (default=%(default)s)")
-parser.add_argument("--fmax", type=float, default=22050, help="maximum frequency (default=%(default)s)")
-parser.add_argument("--scale", choices=('oct','log','mel'), default='log', help="frequency scale (oct,log,lin,mel)")
-parser.add_argument("--bins", type=int, default=50, help="frequency bins (total or per octave, default=%(default)s)")
-parser.add_argument("--sllen", type=int, default=2**16, help="slice length (default=%(default)s)")
-parser.add_argument("--trlen", type=int, default=4096, help="transition area (default=%(default)s)")
-parser.add_argument("--real", action='store_true', help="assume real signal")
-parser.add_argument("--matrixform", action='store_true', help="use regular time division (matrix form)")
-parser.add_argument("--reducedform", type=int, help="if real==1: omit bins for f=0 and f=fs/2 (--reducedform=1), or also the transition bands (--reducedform=2)")
-parser.add_argument("--recwnd", action='store_true', help="use reconstruction window")
-parser.add_argument("--multithreading", action='store_true', help="use multithreading")
-parser.add_argument("--plot", action='store_true', help="plot transform (needs installed matplotlib and scipy packages)")
+parser.add_argument("input", type=str, help="Input file")
+parser.add_argument("--output", type=str, help="Output data file (.npz, .hd5, .pkl)")
+parser.add_argument("--data-times", type=str, default='times', help="Data name for times (default='%(default)s')")
+parser.add_argument("--data-coefs", type=str, default='coefs', help="Data name for coefficients (default='%(default)s')")
+parser.add_argument("--fps", type=float, default=100, help="Approx. time resolution for features in fps (default=%(default)s)")
+parser.add_argument("--fps-pooling", choices=('max','mean','median'), default='max', help="Temporal pooling function for features (default='%(default)s')")
+parser.add_argument("--start", type=float, default=0, help="Start time in file in s (default=%(default)s)")
+parser.add_argument("--stop", type=float, default=0, help="Stop time in file in s (default=%(default)s)")
+parser.add_argument("--fmin", type=float, default=50, help="Minimum frequency in Hz (default=%(default)s)")
+parser.add_argument("--fmax", type=float, default=22050, help="Maximum frequency in Hz (default=%(default)s)")
+parser.add_argument("--scale", choices=('oct','log','mel'), default='log', help="Frequency scale oct, log, lin, or mel (default='%(default)s')")
+parser.add_argument("--bins", type=int, default=50, help="Number of frequency bins (total or per octave, default=%(default)s)")
+parser.add_argument("--sllen", type=int, default=2**16, help="Slice length in samples (default=%(default)s)")
+parser.add_argument("--trlen", type=int, default=4096, help="Transition area in samples (default=%(default)s)")
+parser.add_argument("--real", action='store_true', help="Assume real signal")
+parser.add_argument("--matrixform", action='store_true', help="Use regular time division over frequency bins (matrix form)")
+parser.add_argument("--reducedform", type=int, help="If real, omit bins for f=0 and f=fs/2 (--reducedform=1), or also the transition bands (--reducedform=2)")
+parser.add_argument("--recwnd", action='store_true', help="Use reconstruction window")
+parser.add_argument("--multithreading", action='store_true', help="Use multithreading")
+parser.add_argument("--plot", action='store_true', help="Plot transform (needs installed matplotlib package)")
 
 args = parser.parse_args()
 if not os.path.exists(args.input):
@@ -74,8 +77,14 @@ s = sf.read_frames(sf.nframes)
 if sf.channels > 1: 
     s = np.mean(s, axis=1)
     
-if args.length:
-    s = s[:args.length]
+if args.start:
+    s = s[int(args.start*fs):]
+
+if args.stop:
+    s = s[:int((args.stop-args.start)*fs)]
+
+# duration of signal in s
+dur = len(s)/float(fs)
 
 scales = {'log':LogScale, 'lin':LinScale, 'mel':MelScale, 'oct':OctScale}
 try:
@@ -103,11 +112,23 @@ c = slicq.forward(signal)
 coefs = assemble_coeffs(c, ncoefs)
 mls = np.maximum(np.log10(np.abs(coefs))*20, -100.)
 
-dur = len(s)/float(fs)
-time = np.linspace(0, dur, endpoint=False, num=ncoefs)
+fs_coef = fs*slicq.coef_factor
+mls_dur = len(mls)/fs_coef
 
+if args.fps:
+    # pool features in time
+    coefs_per_sec = fs*slicq.coef_factor
+    poolf = int(coefs_per_sec/args.fps+0.5) # pooling factor
+    pooled_len = mls.shape[0]//poolf
+    mls_dur *= (pooled_len*poolf)/float(len(mls))
+    mls = mls[:pooled_len*poolf]
+    mls = np.max(mls.reshape((pooled_len,poolf,)+mls.shape[1:]), axis=1)
+    
+times = np.linspace(0, mls_dur, endpoint=True, num=len(mls)+1)
+
+# save file
 if args.output:
-    data = {args.data_coefs: coefs, args.data_times: time}
+    data = {args.data_coefs: mls, args.data_times: times}
     if args.output.endswith('.pkl') or args.output.endswith('.pck'):
         import cPickle
         with file(args.output, 'wb') as f:
@@ -126,5 +147,5 @@ if args.plot:
     print "Plotting t*f space"
     import matplotlib.pyplot as pl
     mls_max = np.percentile(mls, 99.9)
-    pl.imshow(mls.T, aspect=0.2/float(dur), interpolation='nearest', origin='bottom', vmin=mls_max-60., vmax=mls_max, extent=(0,1,0,dur))
+    pl.imshow(mls.T, aspect=mls_dur/mls.shape[1]*0.2, interpolation='nearest', origin='bottom', vmin=mls_max-60., vmax=mls_max, extent=(0,mls_dur,0,mls.shape[1]))
     pl.show()
