@@ -58,7 +58,7 @@ parser.add_argument("--fmax", type=float, default=22050, help="Maximum frequency
 parser.add_argument("--scale", choices=('oct','log','mel'), default='log', help="Frequency scale oct, log, lin, or mel (default='%(default)s')")
 parser.add_argument("--bins", type=int, default=50, help="Number of frequency bins (total or per octave, default=%(default)s)")
 parser.add_argument("--sllen", type=int, default=2**16, help="Slice length in samples (default=%(default)s)")
-parser.add_argument("--trlen", type=int, default=4096, help="Transition area in samples (default=%(default)s)")
+parser.add_argument("--trlen", type=int, default=2**14, help="Transition area in samples (default=%(default)s)")
 parser.add_argument("--real", action='store_true', help="Assume real signal")
 parser.add_argument("--matrixform", action='store_true', help="Use regular time division over frequency bins (matrix form)")
 parser.add_argument("--reducedform", type=int, help="If real, omit bins for f=0 and f=fs/2 (--reducedform=1), or also the transition bands (--reducedform=2)")
@@ -70,13 +70,9 @@ args = parser.parse_args()
 if not os.path.exists(args.input):
     parser.error("Input file '%s' not found"%args.input)
 
-# Read audio data
-sf = SndReader(args.input, sr=args.sr, chns=1)
-fs = sf.samplerate
-    
-# duration of signal in s
-dur = sf.frames/float(fs)
+fs = args.sr
 
+# build transform
 scales = {'log':LogScale, 'lin':LinScale, 'mel':MelScale, 'oct':OctScale}
 try:
     scale = scales[args.scale]
@@ -91,20 +87,35 @@ slicq = NSGT_sliced(scl, args.sllen, args.trlen, fs,
                     multithreading=args.multithreading
                     )
 
+# Read audio data
+sf = SndReader(args.input, sr=fs, chns=1)
+    
+# duration of signal in s
+dur = sf.frames/float(fs)
+
 # total number of coefficients to represent input signal
 ncoefs = int(sf.frames*slicq.coef_factor)
 
-# read slices from audio file and mix down signal
+# read slices from audio file and mix down signal, if necessary at all
 signal = (np.mean(s, axis=0) for s in sf())
 
 # generator for forward transformation
 c = slicq.forward(signal)
 
+# add up overlapping coefficient slices
 coefs = assemble_coeffs(c, ncoefs)
-mls = np.maximum(np.log10(np.abs(coefs))*20, -100.)
 
-fs_coef = fs*slicq.coef_factor
-mls_dur = len(mls)/fs_coef
+del sf # not needed any more
+
+# compute magnitude spectrum
+mindb = -100.
+mls = np.abs(coefs)
+np.maximum(np.abs(coefs), 10**(mindb/20.), out=mls)
+np.log10(mls, out=mls)
+mls *= 20.
+
+fs_coef = fs*slicq.coef_factor # frame rate of coefficients
+mls_dur = len(mls)/fs_coef # final duration of MLS
 
 if args.fps:
     # pool features in time
@@ -115,7 +126,7 @@ if args.fps:
     mls = mls[:pooled_len*poolf]
     poolfun = np.__dict__[args.fps_pooling]
     mls = poolfun(mls.reshape((pooled_len,poolf,)+mls.shape[1:]), axis=1)
-    
+
 times = np.linspace(0, mls_dur, endpoint=True, num=len(mls)+1)
 
 # save file
