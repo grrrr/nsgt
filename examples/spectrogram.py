@@ -10,11 +10,10 @@ http://grrrr.org/nsgt
 """
 
 import numpy as np
-from scikits.audiolab import Sndfile
 import os
 from warnings import warn
 
-from nsgt import NSGT_sliced, LogScale, LinScale, MelScale, OctScale
+from nsgt import NSGT_sliced, LogScale, LinScale, MelScale, OctScale, SndReader
 
 
 def assemble_coeffs(cqt, ncoefs):
@@ -47,12 +46,13 @@ parser = ArgumentParser()
 
 parser.add_argument("input", type=str, help="Input file")
 parser.add_argument("--output", type=str, help="Output data file (.npz, .hd5, .pkl)")
+parser.add_argument("--sr", type=int, default=44100, help="Sample rate used for the NSGT (default=%(default)s)")
 parser.add_argument("--data-times", type=str, default='times', help="Data name for times (default='%(default)s')")
+parser.add_argument("--data-frqs", type=str, default='f', help="Data name for frequencies (default='%(default)s')")
+parser.add_argument("--data-qs", type=str, default='q', help="Data name for q factors (default='%(default)s')")
 parser.add_argument("--data-coefs", type=str, default='coefs', help="Data name for coefficients (default='%(default)s')")
 parser.add_argument("--fps", type=float, default=0, help="Approx. time resolution for features in fps (default=%(default)s)")
 parser.add_argument("--fps-pooling", choices=('max','mean','median'), default='max', help="Temporal pooling function for features (default='%(default)s')")
-parser.add_argument("--start", type=float, default=0, help="Start time in file in s (default=%(default)s)")
-parser.add_argument("--stop", type=float, default=0, help="Stop time in file in s (default=%(default)s)")
 parser.add_argument("--fmin", type=float, default=50, help="Minimum frequency in Hz (default=%(default)s)")
 parser.add_argument("--fmax", type=float, default=22050, help="Maximum frequency in Hz (default=%(default)s)")
 parser.add_argument("--scale", choices=('oct','log','mel'), default='log', help="Frequency scale oct, log, lin, or mel (default='%(default)s')")
@@ -71,20 +71,11 @@ if not os.path.exists(args.input):
     parser.error("Input file '%s' not found"%args.input)
 
 # Read audio data
-sf = Sndfile(args.input)
+sf = SndReader(args.input, sr=args.sr, chns=1)
 fs = sf.samplerate
-s = sf.read_frames(sf.nframes)
-if sf.channels > 1: 
-    s = np.mean(s, axis=1)
     
-if args.start:
-    s = s[int(args.start*fs):]
-
-if args.stop:
-    s = s[:int((args.stop-args.start)*fs)]
-
 # duration of signal in s
-dur = len(s)/float(fs)
+dur = sf.frames/float(fs)
 
 scales = {'log':LogScale, 'lin':LinScale, 'mel':MelScale, 'oct':OctScale}
 try:
@@ -101,10 +92,10 @@ slicq = NSGT_sliced(scl, args.sllen, args.trlen, fs,
                     )
 
 # total number of coefficients to represent input signal
-ncoefs = int(len(s)*slicq.coef_factor)
+ncoefs = int(sf.frames*slicq.coef_factor)
 
-# whole signal as sequence
-signal = (s,)
+# read slices from audio file and mix down signal
+signal = (np.mean(s, axis=0) for s in sf())
 
 # generator for forward transformation
 c = slicq.forward(signal)
@@ -129,7 +120,7 @@ times = np.linspace(0, mls_dur, endpoint=True, num=len(mls)+1)
 
 # save file
 if args.output:
-    data = {args.data_coefs: mls, args.data_times: times}
+    data = {args.data_coefs: mls, args.data_times: times, args.data_frqs: slicq.frqs, args.data_qs: slicq.q}
     if args.output.endswith('.pkl') or args.output.endswith('.pck'):
         import cPickle
         with file(args.output, 'wb') as f:
