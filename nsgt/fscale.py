@@ -35,13 +35,23 @@ class Scale:
 
 
 class OctScale(Scale):
-    def __init__(self, fmin, fmax, bpo):
-        bnds = int(np.ceil(np.log2(float(fmax)/fmin)*bpo))+1
-        Scale.__init__(self, bnds)
-        self.fmin = float(fmin)
-        self.fmax = float(fmax)
-        self.bpo = int(bpo)
-        self.pow2n = 2**(1./self.bpo)
+    def __init__(self, fmin, fmax, bpo, beyond=0):
+        """
+        @param fmin: minimum frequency (Hz)
+        @param fmax: maximum frequency (Hz)
+        @param bpo: bands per octave (int)
+        @param beyond: number of frequency bands below fmin and above fmax (int)
+        """
+        lfmin = np.log2(fmin)
+        lfmax = np.log2(fmax)
+        bnds = int(np.ceil((lfmax-lfmin)*bpo))+1
+        Scale.__init__(self, bnds+beyond*2)
+        odiv = (lfmax-lfmin)/(bnds-1)
+        lfmin_ = lfmin-odiv*beyond
+        lfmax_ = lfmax+odiv*beyond
+        self.fmin = 2**lfmin_
+        self.fmax = 2**lfmax_
+        self.pow2n = 2**odiv
         self.q = np.sqrt(self.pow2n)/(self.pow2n-1.)/2.
         
     def F(self, bnd=None):
@@ -52,11 +62,21 @@ class OctScale(Scale):
 
 
 class LogScale(Scale):
-    def __init__(self, fmin, fmax, bnds):
-        Scale.__init__(self, bnds)
-        self.fmin = float(fmin)
-        self.fmax = float(fmax)
-        odiv = np.log2(self.fmax/self.fmin)/(self.bnds-1)
+    def __init__(self, fmin, fmax, bnds, beyond=0):
+        """
+        @param fmin: minimum frequency (Hz)
+        @param fmax: maximum frequency (Hz)
+        @param bnds: number of frequency bands (int)
+        @param beyond: number of frequency bands below fmin and above fmax (int)
+        """
+        Scale.__init__(self, bnds+beyond*2)
+        lfmin = np.log2(fmin)
+        lfmax = np.log2(fmax)
+        odiv = (lfmax-lfmin)/(bnds-1)
+        lfmin_ = lfmin-odiv*beyond
+        lfmax_ = lfmax+odiv*beyond
+        self.fmin = 2**lfmin_
+        self.fmax = 2**lfmax_
         self.pow2n = 2**odiv
         self.q = np.sqrt(self.pow2n)/(self.pow2n-1.)/2.
         
@@ -68,11 +88,19 @@ class LogScale(Scale):
     
 
 class LinScale(Scale):
-    def __init__(self, fmin, fmax, bnds):
-        Scale.__init__(self, bnds)
-        self.fmin = float(fmin)
-        self.fmax = float(fmax)
-        self.df = (self.fmax-self.fmin)/(self.bnds-1)
+    def __init__(self, fmin, fmax, bnds, beyond=0):
+        """
+        @param fmin: minimum frequency (Hz)
+        @param fmax: maximum frequency (Hz)
+        @param bnds: number of frequency bands (int)
+        @param beyond: number of frequency bands below fmin and above fmax (int)
+        """
+        self.df = float(fmax-fmin)/(bnds-1)
+        Scale.__init__(self, bnds+beyond*2)
+        self.fmin = float(fmin)-self.df*beyond
+        if self.fmin <= 0:
+            raise ValueError("Frequencies must be > 0.")
+        self.fmax = float(fmax)+self.df*beyond
 
     def F(self, bnd=None):
         return (bnd if bnd is not None else np.arange(self.bnds))*self.df+self.fmin
@@ -92,13 +120,21 @@ def mel2hz(m):
 
 
 class MelScale(Scale):
-    def __init__(self, fmin, fmax, bnds):
-        Scale.__init__(self,bnds)
+    def __init__(self, fmin, fmax, bnds, beyond=0):
+        """
+        @param fmin: minimum frequency (Hz)
+        @param fmax: maximum frequency (Hz)
+        @param bnds: number of frequency bands (int)
+        @param beyond: number of frequency bands below fmin and above fmax (int)
+        """
+        mmin = hz2mel(fmin)
+        mmax = hz2mel(fmax)
+        Scale.__init__(self, bnds+beyond*2)
         self.fmin = float(fmin)
         self.fmax = float(fmax)
-        self.mmin = hz2mel(self.fmin)
-        self.mmax = hz2mel(self.fmax)
-        self.mbnd = (self.mmax-self.mmin)/(self.bnds-1)  # mels per band
+        self.mbnd = (mmax-mmin)/(bnds-1)  # mels per band
+        self.mmin = mmin-self.mbnd*beyond
+        self.mmax = mmax+self.mbnd*beyond
         
     def F(self, bnd=None):
         if bnd is None:
@@ -112,14 +148,4 @@ class MelScale(Scale):
         odivs = (np.exp(mel/-1127.)-1.)*(-781.177/self.mbnd)
         pow2n = np.power(2, 1./odivs)
         return np.sqrt(pow2n)/(pow2n-1.)/2.
-        
-        
-if __name__ == '__main__':
-    scl = LinScale(50, 10000, 50)
-    f,q = scl()
-    print f
-    print q
-    print [scl.Q1(b) for b in xrange(len(scl))]
-
-    
     

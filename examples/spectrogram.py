@@ -57,8 +57,8 @@ parser.add_argument("--fmin", type=float, default=50, help="Minimum frequency in
 parser.add_argument("--fmax", type=float, default=22050, help="Maximum frequency in Hz (default=%(default)s)")
 parser.add_argument("--scale", choices=('oct','log','mel'), default='log', help="Frequency scale oct, log, lin, or mel (default='%(default)s')")
 parser.add_argument("--bins", type=int, default=50, help="Number of frequency bins (total or per octave, default=%(default)s)")
-parser.add_argument("--sllen", type=int, default=2**16, help="Slice length in samples (default=%(default)s)")
-parser.add_argument("--trlen", type=int, default=2**14, help="Transition area in samples (default=%(default)s)")
+parser.add_argument("--sllen", type=int, default=2**20, help="Slice length in samples (default=%(default)s)")
+parser.add_argument("--trlen", type=int, default=2**18, help="Transition area in samples (default=%(default)s)")
 parser.add_argument("--real", action='store_true', help="Assume real signal")
 parser.add_argument("--matrixform", action='store_true', help="Use regular time division over frequency bins (matrix form)")
 parser.add_argument("--reducedform", type=int, help="If real, omit bins for f=0 and f=fs/2 (--reducedform=1), or also the transition bands (--reducedform=2)")
@@ -79,7 +79,7 @@ try:
 except KeyError:
     parser.error('Scale unknown (--scale option)')
 
-scl = scale(args.fmin, args.fmax, args.bins)
+scl = scale(args.fmin, args.fmax, args.bins, beyond=int(args.reducedform == 2))
 
 slicq = NSGT_sliced(scl, args.sllen, args.trlen, fs, 
                     real=args.real, recwnd=args.recwnd, 
@@ -131,7 +131,14 @@ times = np.linspace(0, mls_dur, endpoint=True, num=len(mls)+1)
 
 # save file
 if args.output:
-    data = {args.data_coefs: mls, args.data_times: times, args.data_frqs: slicq.frqs, args.data_qs: slicq.q}
+    if args.reducedform == 2:
+        frqs = slicq.frqs[1:-1]
+        qs = slicq.q[1:-1]
+    else:
+        frqs = slicq.frqs
+        qs = slicq.q
+    
+    data = {args.data_coefs: mls, args.data_times: times, args.data_frqs: frqs, args.data_qs: qs}
     if args.output.endswith('.pkl') or args.output.endswith('.pck'):
         import cPickle
         with file(args.output, 'wb') as f:
