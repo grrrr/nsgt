@@ -57,6 +57,7 @@ parser.add_argument("--fmin", type=float, default=50, help="Minimum frequency in
 parser.add_argument("--fmax", type=float, default=22050, help="Maximum frequency in Hz (default=%(default)s)")
 parser.add_argument("--scale", choices=('oct','log','mel'), default='log', help="Frequency scale oct, log, lin, or mel (default='%(default)s')")
 parser.add_argument("--bins", type=int, default=50, help="Number of frequency bins (total or per octave, default=%(default)s)")
+parser.add_argument("--mag-scale", choices=('dB','log'), default='dB', help="Magnitude scale dB or log (default='%(default)s')")
 parser.add_argument("--sllen", type=int, default=2**20, help="Slice length in samples (default=%(default)s)")
 parser.add_argument("--trlen", type=int, default=2**18, help="Transition area in samples (default=%(default)s)")
 parser.add_argument("--real", action='store_true', help="Assume real signal")
@@ -117,8 +118,14 @@ mls = np.abs(coefs)
 # mix down multichannel
 mls = np.mean(mls, axis=-1)
 np.maximum(mls, 10**(mindb/20.), out=mls)
-np.log10(mls, out=mls)
-mls *= 20.
+
+if args.mag_scale == 'dB':
+    np.log10(mls, out=mls)
+    mls *= 20.
+elif args.mag_scale == 'log':
+    np.log(mls, out=mls)
+else:
+    raise NotImplementedError("Magnitude scale '%s' not implemented."%args.magscale)
 
 fs_coef = fs*slicq.coef_factor # frame rate of coefficients
 mls_dur = len(mls)/fs_coef # final duration of MLS
