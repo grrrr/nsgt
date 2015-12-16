@@ -24,7 +24,7 @@ def assemble_coeffs(cqt, ncoefs):
     cqt0 = cqt.next()
     cq0 = np.asarray(cqt0).T
     shh = cq0.shape[0]//2
-    out = np.empty((ncoefs,cq0.shape[1]), dtype=cq0.dtype)
+    out = np.empty((ncoefs,cq0.shape[1],cq0.shape[2]), dtype=cq0.dtype)
     
     fr = 0
     sh = max(0, min(shh, ncoefs-fr))
@@ -64,6 +64,7 @@ parser.add_argument("--matrixform", action='store_true', help="Use regular time 
 parser.add_argument("--reducedform", type=int, help="If real, omit bins for f=0 and f=fs/2 (--reducedform=1), or also the transition bands (--reducedform=2)")
 parser.add_argument("--recwnd", action='store_true', help="Use reconstruction window")
 parser.add_argument("--multithreading", action='store_true', help="Use multithreading")
+parser.add_argument("--downmix-after", action='store_true', help="Downmix signal after spectrogram generation")
 parser.add_argument("--plot", action='store_true', help="Plot transform (needs installed matplotlib package)")
 
 args = parser.parse_args()
@@ -84,12 +85,14 @@ scl = scale(args.fmin, args.fmax, args.bins, beyond=int(args.reducedform == 2))
 slicq = NSGT_sliced(scl, args.sllen, args.trlen, fs, 
                     real=args.real, recwnd=args.recwnd, 
                     matrixform=args.matrixform, reducedform=args.reducedform, 
-                    multithreading=args.multithreading
+                    multithreading=args.multithreading,
+                    multichannel=True
                     )
 
 # Read audio data
-sf = SndReader(args.input, sr=fs, chns=1)
-    
+sf = SndReader(args.input, sr=fs, chns=2)
+signal = sf()
+
 # duration of signal in s
 dur = sf.frames/float(fs)
 
@@ -97,7 +100,8 @@ dur = sf.frames/float(fs)
 ncoefs = int(sf.frames*slicq.coef_factor)
 
 # read slices from audio file and mix down signal, if necessary at all
-signal = (np.mean(s, axis=0) for s in sf())
+if not args.downmix_after:
+    signal = ((np.mean(s, axis=0),) for s in signal)
 
 # generator for forward transformation
 c = slicq.forward(signal)
@@ -110,7 +114,9 @@ del sf # not needed any more
 # compute magnitude spectrum
 mindb = -100.
 mls = np.abs(coefs)
-np.maximum(np.abs(coefs), 10**(mindb/20.), out=mls)
+# mix down multichannel
+mls = np.mean(mls, axis=-1)
+np.maximum(mls, 10**(mindb/20.), out=mls)
 np.log10(mls, out=mls)
 mls *= 20.
 
