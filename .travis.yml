@@ -3,4 +3,4 @@ sudo: false
 python:
   - "2.7"
 install:
-  - travis_retry python setup.py dev
+  - travis_retry python setup.py install
