@@ -14,3 +14,11 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 
 Unit test module
 """
+
+import random
+import numpy as np
+
+# seed random generators for unit testing
+random.seed(666)
+np.random.seed(666)
+
