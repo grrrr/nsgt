@@ -37,6 +37,9 @@ class TestFFT(unittest.TestCase):
         self.assertTrue(np.allclose(a, b))
 
 def load_tests(*_):
+    # seed random generators for unit testing
+    np.random.seed(666)
+
     test_cases = unittest.TestSuite()
     for _ in range(100):
         l = int(10*np.random.uniform(2, 5))

@@ -82,15 +82,14 @@ class TestNSGT_slices(unittest.TestCase):
         real = np.random.randint(2)
         self.runit(siglen, fmin, fmax, obins, sllen, trlen, real)
 
-if True:
-    def load_tests(*_):
-        test_cases = unittest.TestSuite()
+def load_tests(*_):
+    test_cases = unittest.TestSuite()
 #        for t in 'test_1d1 test_1d11 test_1 test_1a test_1b test_1c test_1d2 test_1e test_err1 test_err2 test_err3 test_err4 test_err5 test_err6'.split():
 #            test_cases.addTest(TestNSGT_slices(t))
-        
-        for _ in range(50):
-            test_cases.addTest(TestNSGT_slices('gtest_oct'))
-        return test_cases
+    
+    for _ in range(50):
+        test_cases.addTest(TestNSGT_slices('gtest_oct'))
+    return test_cases
 
 if __name__ == '__main__':
     unittest.main()

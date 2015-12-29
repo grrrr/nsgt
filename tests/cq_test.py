@@ -17,6 +17,9 @@ class TestNSGT(unittest.TestCase):
         self.assertTrue(np.allclose(sig, s_r))
 
 def load_tests(*_):
+    # seed random generators for unit testing
+    np.random.seed(666)
+
     test_cases = unittest.TestSuite()
     for _ in range(100):
         test_cases.addTest(TestNSGT('test_oct'))

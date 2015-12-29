@@ -16,6 +16,9 @@ class Test_CQ_NSGT(unittest.TestCase):
         self.assertTrue(np.allclose(s, s_r))
 
 def load_tests(*_):
+    # seed random generators for unit testing
+    np.random.seed(666)
+
     test_cases = unittest.TestSuite()
     for _ in range(100):
         test_cases.addTest(Test_CQ_NSGT('test_transform'))
