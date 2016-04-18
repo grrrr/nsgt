@@ -5,7 +5,7 @@
 Python implementation of Non-Stationary Gabor Transform (NSGT)
 derived from MATLAB code by NUHAG, University of Vienna, Austria
 
-Thomas Grill, 2011-2015
+Thomas Grill, 2011-2016
 http://grrrr.org/nsgt
 """
 
@@ -62,7 +62,7 @@ parser.add_argument("--sllen", type=int, default=2**20, help="Slice length in sa
 parser.add_argument("--trlen", type=int, default=2**18, help="Transition area in samples (default=%(default)s)")
 parser.add_argument("--real", action='store_true', help="Assume real signal")
 parser.add_argument("--matrixform", action='store_true', help="Use regular time division over frequency bins (matrix form)")
-parser.add_argument("--reducedform", type=int, default=0, help="If real, omit bins for f=0 and f=fs/2 (--reducedform=1), or also the transition bands (--reducedform=2)")
+parser.add_argument("--reducedform", type=int, default=0, help="If real, omit bins for f=0 and f=fs/2 (--reducedform=1), or also the transition bands (--reducedform=2) (default=%(default)s)")
 parser.add_argument("--recwnd", action='store_true', help="Use reconstruction window")
 parser.add_argument("--multithreading", action='store_true', help="Use multithreading")
 parser.add_argument("--downmix-after", action='store_true', help="Downmix signal after spectrogram generation")
