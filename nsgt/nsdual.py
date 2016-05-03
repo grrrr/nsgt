@@ -12,15 +12,15 @@ Original matlab code comments follow:
 
 NSDUAL.M - Nicki Holighaus 02.02.11
 
-Computes (for the painless case) the dual frame corresponding to a given 
+Computes (for the painless case) the dual frame corresponding to a given
 non-stationary Gabor frame specified by the windows 'g' and time shifts
 'shift'.
 
 Note, the time shifts corresponding to the dual window sequence is the
 same as the original shift sequence and as such already given.
 
-This routine's output can be used to achieve reconstruction of a signal 
-from its non-stationary Gabor coefficients using the inverse 
+This routine's output can be used to achieve reconstruction of a signal
+from its non-stationary Gabor coefficients using the inverse
 non-stationary Gabor transform 'nsigt'.
 
 More information on Non-stationary Gabor transforms
@@ -32,8 +32,8 @@ minor edit by Gino Velasco 23.02.11
 """
 
 import numpy as np
-from itertools import izip
-from util import chkM
+
+from .util import chkM
 
 def nsdual(g, wins, nn, M=None):
 
@@ -41,7 +41,7 @@ def nsdual(g, wins, nn, M=None):
 
     # Construct the diagonal of the frame operator matrix explicitly
     x = np.zeros((nn,), dtype=float)
-    for gi,mii,sl in izip(g, M, wins):
+    for gi,mii,sl in zip(g, M, wins):
         xa = np.square(np.fft.fftshift(gi))
         xa *= mii
         x[sl] += xa
@@ -57,8 +57,8 @@ def nsdual(g, wins, nn, M=None):
 #        x[w2b] += xa[:w2b.stop-w2b.start]
 ##        xa = xa[w1b.stop-w1b.start:]
 
-    # Using the frame operator and the original window sequence, compute 
+    # Using the frame operator and the original window sequence, compute
     # the dual window sequence
-#    gd = [gi/N.fft.ifftshift(N.hstack((x[wi[0][0]],x[wi[0][1]],x[wi[1][0]],x[wi[1][1]]))) for gi,wi in izip(g,wins)]
-    gd = [gi/np.fft.ifftshift(x[wi]) for gi,wi in izip(g,wins)]
+#    gd = [gi/N.fft.ifftshift(N.hstack((x[wi[0][0]],x[wi[0][1]],x[wi[1][0]],x[wi[1][1]]))) for gi,wi in zip(g,wins)]
+    gd = [gi/np.fft.ifftshift(x[wi]) for gi,wi in zip(g,wins)]
     return gd

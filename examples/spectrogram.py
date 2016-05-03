@@ -1,4 +1,4 @@
-#! /usr/bin/env python 
+#! /usr/bin/env python
 # -*- coding: utf-8
 
 """
@@ -25,7 +25,7 @@ def assemble_coeffs(cqt, ncoefs):
     cq0 = np.asarray(cqt0).T
     shh = cq0.shape[0]//2
     out = np.empty((ncoefs,cq0.shape[1],cq0.shape[2]), dtype=cq0.dtype)
-    
+
     fr = 0
     sh = max(0, min(shh, ncoefs-fr))
     out[fr:fr+sh] = cq0[sh:] # store second half
@@ -37,7 +37,7 @@ def assemble_coeffs(cqt, ncoefs):
         fr += sh
         sh = max(0, min(shh, ncoefs-fr))
         out[fr:fr+sh] = cqi[:sh]
-        
+
     return out[:fr]
 
 
@@ -83,9 +83,9 @@ except KeyError:
 
 scl = scale(args.fmin, args.fmax, args.bins, beyond=int(args.reducedform == 2))
 
-slicq = NSGT_sliced(scl, args.sllen, args.trlen, fs, 
-                    real=args.real, recwnd=args.recwnd, 
-                    matrixform=args.matrixform, reducedform=args.reducedform, 
+slicq = NSGT_sliced(scl, args.sllen, args.trlen, fs,
+                    real=args.real, recwnd=args.recwnd,
+                    matrixform=args.matrixform, reducedform=args.reducedform,
                     multithreading=args.multithreading,
                     multichannel=True
                     )
@@ -150,7 +150,7 @@ if args.output:
     else:
         frqs = slicq.frqs
         qs = slicq.q
-    
+
     data = {args.data_coefs: mls, args.data_times: times, args.data_frqs: frqs, args.data_qs: qs}
     if args.output.endswith('.pkl') or args.output.endswith('.pck'):
         import cPickle
@@ -167,7 +167,7 @@ if args.output:
         warn("Output file format not supported, skipping output.")
 
 if args.plot:
-    print "Plotting t*f space"
+    print("Plotting t*f space")
     import matplotlib.pyplot as pl
     mls_max = np.percentile(mls, 99.9)
     pl.imshow(mls.T, aspect=mls_dur/mls.shape[1]*0.2, interpolation='nearest', origin='bottom', vmin=mls_max-60., vmax=mls_max, extent=(0,mls_dur,0,mls.shape[1]))

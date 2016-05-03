@@ -13,7 +13,6 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 
 import numpy as np
 from math import exp, floor, ceil, pi
-from itertools import izip
 
 def hannwin(l):
     r = np.arange(l,dtype=float)
@@ -24,7 +23,7 @@ def hannwin(l):
     return r
 
 def blackharr(n,l=None,mod=True):
-    if l is None: 
+    if l is None:
         l = n
     nn = (n//2)*2
     k = np.arange(n)
@@ -39,7 +38,7 @@ def blackharr(n,l=None,mod=True):
 def blackharrcw(bandwidth,corr_shift):
     flip = -1 if corr_shift < 0 else 1
     corr_shift *= flip
-    
+
     M = np.ceil(bandwidth/2+corr_shift-1)*2
     win = np.concatenate((np.arange(M//2,M), np.arange(0,M//2)))-corr_shift
     win = (0.35872 - 0.48832*np.cos(win*(2*np.pi/bandwidth))+ 0.14128*np.cos(win*(4*np.pi/bandwidth)) -0.01168*np.cos(win*(6*np.pi/bandwidth)))*(win <= bandwidth)*(win >= 0)
@@ -67,7 +66,7 @@ def cont_tukey_win(n, sl_len, tr_area):
     return g
 
 def tgauss(ess_ln, ln=0):
-    if ln < ess_ln: 
+    if ln < ess_ln:
         ln = ess_ln
     #
     g = np.zeros(ln, dtype=float)
@@ -86,7 +85,7 @@ def _isseq(x):
         len(x)
     except TypeError:
         return False
-    return True        
+    return True
 
 def chkM(M, g):
     if M is None:
@@ -97,13 +96,13 @@ def chkM(M, g):
 
 def calcwinrange(g, rfbas, Ls):
     shift = np.concatenate(((np.mod(-rfbas[-1],Ls),), rfbas[1:]-rfbas[:-1]))
-    
+
     timepos = np.cumsum(shift)
     nn = timepos[-1]
     timepos -= shift[0] # Calculate positions from shift vector
-    
+
     wins = []
-    for gii,tpii in izip(g, timepos):
+    for gii,tpii in zip(g, timepos):
         Lg = len(gii)
         win_range = np.arange(-(Lg//2)+tpii, Lg-(Lg//2)+tpii, dtype=int)
         win_range %= nn
@@ -124,6 +123,6 @@ def calcwinrange(g, rfbas, Ls):
 #            win_range = ((slice(o,oh),slice(0,0)),(slice(oh,oe),slice(0,0)))
 
         wins.append(win_range)
-        
+
     return wins,nn
 
