@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python 
 # -*- coding: utf-8
 
 """
@@ -21,11 +21,11 @@ def assemble_coeffs(cqt, ncoefs):
     Build a sequence of blocks out of incoming overlapping CQT slices
     """
     cqt = iter(cqt)
-    cqt0 = cqt.next()
+    cqt0 = next(cqt)
     cq0 = np.asarray(cqt0).T
     shh = cq0.shape[0]//2
     out = np.empty((ncoefs,cq0.shape[1],cq0.shape[2]), dtype=cq0.dtype)
-
+    
     fr = 0
     sh = max(0, min(shh, ncoefs-fr))
     out[fr:fr+sh] = cq0[sh:] # store second half
@@ -37,7 +37,7 @@ def assemble_coeffs(cqt, ncoefs):
         fr += sh
         sh = max(0, min(shh, ncoefs-fr))
         out[fr:fr+sh] = cqi[:sh]
-
+        
     return out[:fr]
 
 
@@ -83,9 +83,9 @@ except KeyError:
 
 scl = scale(args.fmin, args.fmax, args.bins, beyond=int(args.reducedform == 2))
 
-slicq = NSGT_sliced(scl, args.sllen, args.trlen, fs,
-                    real=args.real, recwnd=args.recwnd,
-                    matrixform=args.matrixform, reducedform=args.reducedform,
+slicq = NSGT_sliced(scl, args.sllen, args.trlen, fs, 
+                    real=args.real, recwnd=args.recwnd, 
+                    matrixform=args.matrixform, reducedform=args.reducedform, 
                     multithreading=args.multithreading,
                     multichannel=True
                     )
@@ -150,18 +150,18 @@ if args.output:
     else:
         frqs = slicq.frqs
         qs = slicq.q
-
+    
     data = {args.data_coefs: mls, args.data_times: times, args.data_frqs: frqs, args.data_qs: qs}
     if args.output.endswith('.pkl') or args.output.endswith('.pck'):
-        import cPickle
+        import pickle
         with file(args.output, 'wb') as f:
-            cPickle.dump(data, f, protocol=cPickle.HIGHEST_PROTOCOL)
+            pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
     elif args.output.endswith('.npz'):
         np.savez(args.output, **data)
     elif args.output.endswith('.hdf5') or args.output.endswith('.h5'):
         import h5py
         with h5py.File(args.output, 'w') as f:
-            for k,v in data.iteritems():
+            for k,v in data.items():
                 f[k] = v
     else:
         warn("Output file format not supported, skipping output.")

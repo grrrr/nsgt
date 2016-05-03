@@ -7,9 +7,9 @@ class Test_reblock(unittest.TestCase):
     def test1(self):
         inblk = 17
         outblk = 13
-        inp = (range(i*inblk,(i+1)*inblk) for i in xrange(10))
+        inp = (list(range(i*inblk,(i+1)*inblk)) for i in range(10))
         resit = reblock(inp, outblk, dtype=None, fulllast=True, padding=-1)
-        res = map(list, resit)
+        res = list(map(list, resit))
         expres = ["0  1  2  3  4  5  6  7  8  9 10 11 12",
                 "13 14 15 16 17 18 19 20 21 22 23 24 25",
                 "26 27 28 29 30 31 32 33 34 35 36 37 38",
@@ -24,7 +24,7 @@ class Test_reblock(unittest.TestCase):
                 "143 144 145 146 147 148 149 150 151 152 153 154 155",
                 "156 157 158 159 160 161 162 163 164 165 166 167 168",
                 "169  -1  -1  -1  -1  -1  -1  -1  -1  -1  -1  -1  -1"]
-        expres = [map(int,s.split()) for s in expres]
+        expres = [list(map(int,s.split())) for s in expres]
         self.assertEqual(res, expres)
 
 if __name__ == '__main__':

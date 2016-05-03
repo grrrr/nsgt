@@ -11,6 +11,8 @@ Austrian Research Institute for Artificial Intelligence (OFAI)
 AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 """
 
+
+
 def nsigtf_loop(loopparams, fr, fc):
     fr[:] = 0.
     # The overlap-add procedure including multiplication with the synthesis windows

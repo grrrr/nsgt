@@ -29,8 +29,8 @@ class Scale:
         return self.F(bnd)*self.dbnd/(self.F(bnd+self.dbnd)-self.F(bnd-self.dbnd))
     
     def __call__(self):
-        f = np.array([self.F(b) for b in xrange(self.bnds)],dtype=float)
-        q = np.array([self.Q(b) for b in xrange(self.bnds)],dtype=float)
+        f = np.array([self.F(b) for b in range(self.bnds)],dtype=float)
+        q = np.array([self.Q(b) for b in range(self.bnds)],dtype=float)
         return f,q
 
 

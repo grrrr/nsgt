@@ -23,21 +23,20 @@ All standard disclaimers apply.
 
 """
 
-from math import ceil
-
 from .nsgfwin_sl import nsgfwin
 from .nsdual import nsdual
 from .nsgtf import nsgtf
 from .nsigtf import nsigtf
 from .util import calcwinrange
 from .fscale import OctScale
+from math import ceil
 
 class NSGT:
     def __init__(self, scale, fs, Ls, real=True, matrixform=False, reducedform=0, multichannel=False, measurefft=False, multithreading=False, dtype=float):
         assert fs > 0
         assert Ls > 0
         assert 0 <= reducedform <= 2
-
+        
         self.scale = scale
         self.fs = fs
         self.Ls = Ls
@@ -45,7 +44,7 @@ class NSGT:
         self.measurefft = measurefft
         self.multithreading = multithreading
         self.reducedform = reducedform
-
+        
         self.frqs,self.q = scale()
 
         # calculate transform parameters
@@ -58,7 +57,7 @@ class NSGT:
             sl = slice(0,None)
 
         # coefficients per slice
-        self.ncoefs = max(int(ceil(float(len(gii))/mii))*mii for mii,gii in zip(self.M[sl],self.g[sl]))
+        self.ncoefs = max(int(ceil(float(len(gii))/mii))*mii for mii,gii in zip(self.M[sl],self.g[sl]))        
 
         if matrixform:
             if self.reducedform:
@@ -66,7 +65,7 @@ class NSGT:
                 self.M[:] = rm.max()
             else:
                 self.M[:] = self.M.max()
-
+    
         if multichannel:
             self.channelize = lambda s: s
             self.unchannelize = lambda s: s
@@ -78,37 +77,37 @@ class NSGT:
         self.wins,self.nn = calcwinrange(self.g, rfbas, self.Ls)
         # calculate dual windows
         self.gd = nsdual(self.g, self.wins, self.nn, self.M)
-
+        
         self.fwd = lambda s: nsgtf(s, self.g, self.wins, self.nn, self.M, real=self.real, reducedform=self.reducedform, measurefft=self.measurefft, multithreading=self.multithreading)
         self.bwd = lambda c: nsigtf(c, self.gd, self.wins, self.nn, self.Ls, real=self.real, reducedform=self.reducedform, measurefft=self.measurefft, multithreading=self.multithreading)
-
+        
     @property
     def coef_factor(self):
         return float(self.ncoefs)/self.sl_len
-
+    
     @property
     def slice_coefs(self):
         return self.ncoefs
-
+    
 
     def forward(self, s):
         'transform'
         s = self.channelize(s)
-        c = map(self.fwd, s)
+        c = list(map(self.fwd, s))
         return self.unchannelize(c)
 
     def backward(self, c):
         'inverse transform'
         c = self.channelize(c)
-        s = map(self.bwd,c)
+        s = list(map(self.bwd,c))
         return self.unchannelize(s)
-
+    
 class CQ_NSGT(NSGT):
     def __init__(self, fmin, fmax, bins, fs, Ls, real=True, matrixform=False, reducedform=0, multichannel=False, measurefft=False, multithreading=False):
         assert fmin > 0
         assert fmax > fmin
         assert bins > 0
-
+        
         self.fmin = fmin
         self.fmax = fmax
         self.bins = bins

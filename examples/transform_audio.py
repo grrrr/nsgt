@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python 
 # -*- coding: utf-8
 
 """
@@ -13,7 +13,7 @@ import numpy as np
 from nsgt import NSGT,LogScale,LinScale,MelScale,OctScale
 from scikits.audiolab import Sndfile,Format
 import os
-from itertools import imap
+
 
 def cputime():
     utime, stime, cutime, cstime, elapsed_time = os.times()
@@ -55,9 +55,9 @@ if not os.path.exists(args.input):
 sf = Sndfile(args.input)
 fs = sf.samplerate
 s = sf.read_frames(sf.nframes)
-if len(s.shape) > 1:
+if len(s.shape) > 1: 
     s = np.mean(s, axis=1)
-
+    
 scales = {'log':LogScale,'lin':LinScale,'mel':MelScale,'oct':OctScale}
 try:
     scale = scales[args.scale]
@@ -70,19 +70,19 @@ times = []
 
 for _ in range(args.time or 1):
     t1 = cputime()
-
+    
     # calculate transform parameters
     Ls = len(s)
-
+    
     nsgt = NSGT(scl, fs, Ls, real=args.real, matrixform=args.matrixform, reducedform=args.reducedform)
-
-    # forward transform
+    
+    # forward transform 
     c = nsgt.forward(s)
 
 #        c = N.array(c)
-#        print("c",len(c),N.array(map(len,c)))
+#        print "c",len(c),N.array(map(len,c))
 
-    # inverse transform
+    # inverse transform 
     s_r = nsgt.backward(c)
 
     t2 = cputime()
@@ -106,7 +106,7 @@ if args.plot:
     # interpolate CQT to get a grid
     x = np.linspace(0, Ls, 2000)
     hf = -1 if args.real else len(c)//2
-    grid = interpolate(imap(np.abs, c[2:hf]), Ls)(x)
+    grid = interpolate(map(np.abs, c[2:hf]), Ls)(x)
     # display grid
     pl.imshow(np.log(np.flipud(grid.T)), aspect=float(grid.shape[0])/grid.shape[1]*0.5, interpolation='nearest')
     print("Plotting")

@@ -20,57 +20,57 @@ class TestNSGT_slices(unittest.TestCase):
 
         rc = nsgt.backward(c)
 
-        s_r = np.concatenate(map(list,rc))[:len(sig)]
+        s_r = np.concatenate(list(map(list,rc)))[:len(sig)]
         
         close = np.allclose(sig, s_r, atol=1.e-3)
         if not close:
-            print "Failing params:", siglen, fmin, fmax, obins, sllen, trlen, real
+            print("Failing params:", siglen, fmin, fmax, obins, sllen, trlen, real)
             dev = np.abs(s_r-sig)
-            print "Error", np.where(dev>1.e-3), np.max(dev)
+            print("Error", np.where(dev>1.e-3), np.max(dev))
         self.assertTrue(close)
 
 
     def test_1d1(self):
-        self.runit(*map(int,"100000 100 18200 2 20000 5000 1".split()))
+        self.runit(*list(map(int,"100000 100 18200 2 20000 5000 1".split())))
         
     def test_1d11(self):
-        self.runit(*map(int,"100000 80 18200 6 20000 5000 1".split()))
+        self.runit(*list(map(int,"100000 80 18200 6 20000 5000 1".split())))
         
     def test_1(self):
-        self.runit(*map(int,"100000 99 19895 6 84348 5928 1".split()))
+        self.runit(*list(map(int,"100000 99 19895 6 84348 5928 1".split())))
         
     def test_1a(self):
-        self.runit(*map(int,"100000 99 19895 6 84348 5928 0".split()))
+        self.runit(*list(map(int,"100000 99 19895 6 84348 5928 0".split())))
         
     def test_1b(self):
-        self.runit(*map(int,"100000 100 20000 6 80000 5000 1".split()))
+        self.runit(*list(map(int,"100000 100 20000 6 80000 5000 1".split())))
         
     def test_1c(self):
-        self.runit(*map(int,"100000 100 19000 6 80000 5000 1".split()))
+        self.runit(*list(map(int,"100000 100 19000 6 80000 5000 1".split())))
         
     def test_1d2(self):
-        self.runit(*map(int,"100000 100 18100 6 20000 5000 1".split()))
+        self.runit(*list(map(int,"100000 100 18100 6 20000 5000 1".split())))
         
     def test_1e(self):
-        self.runit(*map(int,"100000 100 18000 6 20000 5000 1".split()))
+        self.runit(*list(map(int,"100000 100 18000 6 20000 5000 1".split())))
         
     def test_err1(self):
-        self.runit(*map(int,"30549 104 11970 25 7286 2030 1".split()))
+        self.runit(*list(map(int,"30549 104 11970 25 7286 2030 1".split())))
         
     def test_err2(self):
-        self.runit(*map(int,"19746 88 19991 21 12674 4030 0".split()))
+        self.runit(*list(map(int,"19746 88 19991 21 12674 4030 0".split())))
         
     def test_err3(self):
-        self.runit(*map(int,"92507 114 18387 20 29306 11848 1".split()))
+        self.runit(*list(map(int,"92507 114 18387 20 29306 11848 1".split())))
         
     def test_err4(self):
-        self.runit(*map(int,"20724 191 2843 16 22354 6590 1".split()))
+        self.runit(*list(map(int,"20724 191 2843 16 22354 6590 1".split())))
         
     def test_err5(self):
-        self.runit(*map(int,"10712 97 19363 3 10238 1876 1".split()))
+        self.runit(*list(map(int,"10712 97 19363 3 10238 1876 1".split())))
         
     def test_err6(self):
-        self.runit(*map(int,"262597 100 15786 16 2858 556 1".split()))
+        self.runit(*list(map(int,"262597 100 15786 16 2858 556 1".split())))
         
     def gtest_oct(self):
         siglen = int(10**np.random.uniform(4,6))

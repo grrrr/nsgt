@@ -43,19 +43,19 @@ except ImportError:
 def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measurefft=False, multithreading=False):
     M = chkM(M,g)
     dtype = g[0].dtype
-
+    
     fft = fftp(measure=measurefft, dtype=dtype)
     ifft = ifftp(measure=measurefft, dtype=dtype)
-
+    
     if real:
         assert 0 <= reducedform <= 2
         sl = slice(reducedform,len(g)//2+1-reducedform)
     else:
         sl = slice(0,None)
-
+    
     maxLg = max(int(ceil(float(len(gii))/mii))*mii for mii,gii in zip(M[sl],g[sl]))
     temp0 = None
-
+    
     if multithreading and MP is not None:
         mmap = MP.Pool().map
     else:
@@ -74,28 +74,28 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measureff
     # main loop over slices
     for f in f_slices:
         Ls = len(f)
-
-        # some preparation
+        
+        # some preparation    
         ft = fft(f)
 
         if temp0 is None:
             # pre-allocate buffer (delayed because of dtype)
             temp0 = np.empty(maxLg, dtype=ft.dtype)
-
+        
         # A small amount of zero-padding might be needed (e.g. for scale frames)
         if nn > Ls:
             ft = np.concatenate((ft, np.zeros(nn-Ls, dtype=ft.dtype)))
-
+        
         # The actual transform
         c = nsgtf_loop(loopparams, ft, temp0)
-
+            
         # TODO: if matrixform, perform "2D" FFT along one axis
         # this could also be nicely parallelized
         y = mmap(ifft,c)
-
+        
         yield y
 
-
+        
 # non-sliced version
 def nsgtf(f, g, wins, nn, M=None, real=False, reducedform=0, measurefft=False, multithreading=False):
-    return nsgtf_sl((f,), g, wins, nn, M=M, real=real, reducedform=reducedform, measurefft=measurefft, multithreading=multithreading).next()
+    return next(nsgtf_sl((f,), g, wins, nn, M=M, real=real, reducedform=reducedform, measurefft=measurefft, multithreading=multithreading))

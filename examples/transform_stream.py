@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python 
 # -*- coding: utf-8
 
 """
@@ -48,9 +48,9 @@ if not os.path.exists(args.input):
 sf = Sndfile(args.input)
 fs = sf.samplerate
 s = sf.read_frames(sf.nframes)
-if sf.channels > 1:
+if sf.channels > 1: 
     s = np.mean(s, axis=1)
-
+    
 if args.length:
     s = s[:args.length]
 
@@ -61,9 +61,9 @@ except KeyError:
     parser.error('scale unknown')
 
 scl = scale(args.fmin, args.fmax, args.bins)
-slicq = NSGT_sliced(scl, args.sllen, args.trlen, fs,
-                    real=args.real, recwnd=args.recwnd,
-                    matrixform=args.matrixform, reducedform=args.reducedform,
+slicq = NSGT_sliced(scl, args.sllen, args.trlen, fs, 
+                    real=args.real, recwnd=args.recwnd, 
+                    matrixform=args.matrixform, reducedform=args.reducedform, 
                     multithreading=args.multithreading
                     )
 
@@ -81,7 +81,7 @@ c = list(c)
 outseq = slicq.backward(c)
 
 # make single output array from iterator
-s_r = reblock(outseq, len(s), fulllast=False).next()
+s_r = next(reblock(outseq, len(s), fulllast=False))
 s_r = s_r.real
 
 t2 = cputime()

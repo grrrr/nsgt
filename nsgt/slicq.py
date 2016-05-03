@@ -15,7 +15,7 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 % Perfect reconstruction sliCQ
 
 % right now, even slice length (sl_len) is required. Parameters are the
-% same as NSGTF plus slice length, minimal required window length,
+% same as NSGTF plus slice length, minimal required window length, 
 % Q-factor variation, and test run parameters.
 """
 
@@ -35,11 +35,11 @@ from .fscale import OctScale
 # one of the more expensive functions (32/400)
 def arrange(cseq, M, fwd):
     try:
-        c0 = cseq.next()  # grab first stream element
+        c0 = next(cseq)  # grab first stream element
     except StopIteration:
         return iter(())
     cseq = chain((c0,), cseq)  # push it back in
-    M = map(len, c0[0])  # read off M from the coefficients
+    M = list(map(len, c0[0]))  # read off M from the coefficients
     ixs = (
            [(slice(3*mkk//4, mkk), slice(0, 3*mkk//4)) for mkk in M],  # odd
            [(slice(mkk//4, mkk), slice(0, mkk//4)) for mkk in M]  # even
@@ -64,14 +64,14 @@ def starzip(iterables):
         for t in itr:
             yield t[i]
     iterables = iter(iterables)
-    it = iterables.next()  # we need that to determine the length of one element
+    it = next(iterables)  # we need that to determine the length of one element
     iterables = chain((it,), iterables)
     return [inner(itr, i) for i,itr in enumerate(tee(iterables, len(it)))]
 
 
 def chnmap(gen, seq):
     chns = starzip(seq) # returns a list of generators (one for each channel)
-    gens = map(gen, chns) # generators including transformation
+    gens = list(map(gen, chns)) # generators including transformation
     return zip(*gens)  # packing channels to one generator yielding channel tuples
 
 
@@ -106,7 +106,7 @@ class NSGT_sliced:
         self.frqs,self.q = self.scale()
 
         self.g,self.rfbas,self.M = nsgfwin(self.frqs, self.q, self.fs, self.sl_len, sliced=True, min_win=min_win, Qvar=Qvar, dtype=dtype)
-
+        
 #        print "rfbas",self.rfbas/float(self.sl_len)*self.fs
         if real:
             assert 0 <= reducedform <= 2
@@ -116,14 +116,14 @@ class NSGT_sliced:
 
         # coefficients per slice
         self.ncoefs = max(int(ceil(float(len(gii))/mii))*mii for mii,gii in zip(self.M[sl],self.g[sl]))
-
+        
         if matrixform:
             if self.reducedform:
                 rm = self.M[self.reducedform:len(self.M)//2+1-self.reducedform]
                 self.M[:] = rm.max()
             else:
                 self.M[:] = self.M.max()
-
+                
         if multichannel:
             self.channelize = lambda seq: seq
             self.unchannelize = lambda seq: seq
@@ -132,55 +132,55 @@ class NSGT_sliced:
             self.unchannelize = lambda seq: (it[0] for it in seq)
 
         self.wins,self.nn = calcwinrange(self.g, self.rfbas, self.sl_len)
-
+        
         self.gd = nsdual(self.g, self.wins, self.nn, self.M)
-
+        
         self.fwd = lambda fc: nsgtf_sl(fc, self.g, self.wins, self.nn, self.M, real=self.real, reducedform=self.reducedform, measurefft=self.measurefft, multithreading=self.multithreading)
         self.bwd = lambda cc: nsigtf_sl(cc, self.gd, self.wins, self.nn, self.sl_len ,real=self.real, reducedform=self.reducedform, measurefft=self.measurefft, multithreading=self.multithreading)
 
     @property
     def coef_factor(self):
         return float(self.ncoefs)/self.sl_len
-
+    
     @property
     def slice_coefs(self):
         return self.ncoefs
-
+    
     def forward(self, sig):
-        'transform - s: iterable sequence of sequences'
-
+        'transform - s: iterable sequence of sequences' 
+        
         sig = self.channelize(sig)
 
         # Compute the slices (zero-padded Tukey window version)
         f_sliced = slicing(sig, self.sl_len, self.tr_area)
-
+        
         cseq = chnmap(self.fwd, f_sliced)
-
+    
         cseq = arrange(cseq, self.M, True)
-
+        
         cseq = self.unchannelize(cseq)
-
+        
         return cseq
 
 
     def backward(self, cseq):
         'inverse transform - c: iterable sequence of coefficients'
-
+                
         cseq = self.channelize(cseq)
-
+        
         cseq = arrange(cseq, self.M, False)
 
         frec_sliced = chnmap(self.bwd, cseq)
-
+        
         # Glue the parts back together
         ftype = float if self.real else complex
         sig = unslicing(frec_sliced, self.sl_len, self.tr_area, dtype=ftype, usewindow=self.userecwnd)
-
+        
         sig = self.unchannelize(sig)
-
+        
         # discard first two blocks (padding)
-        sig.next()
-        sig.next()
+        next(sig)
+        next(sig)
         return sig
 
 
