@@ -55,7 +55,7 @@ parser.add_argument("--fps", type=float, default=0, help="Approx. time resolutio
 parser.add_argument("--fps-pooling", choices=('max','mean','median'), default='max', help="Temporal pooling function for features (default='%(default)s')")
 parser.add_argument("--fmin", type=float, default=50, help="Minimum frequency in Hz (default=%(default)s)")
 parser.add_argument("--fmax", type=float, default=22050, help="Maximum frequency in Hz (default=%(default)s)")
-parser.add_argument("--scale", choices=('oct','log','mel'), default='log', help="Frequency scale oct, log, lin, or mel (default='%(default)s')")
+parser.add_argument("--scale", choices=('oct','log','mel','lin'), default='log', help="Frequency scale oct, log, lin, or mel (default='%(default)s')")
 parser.add_argument("--bins", type=int, default=50, help="Number of frequency bins (total or per octave, default=%(default)s)")
 parser.add_argument("--mag-scale", choices=('dB','log'), default='dB', help="Magnitude scale dB or log (default='%(default)s')")
 parser.add_argument("--sllen", type=int, default=2**20, help="Slice length in samples (default=%(default)s)")
