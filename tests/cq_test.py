@@ -14,7 +14,7 @@ class TestNSGT(unittest.TestCase):
         nsgt = NSGT(scale, fs=44100, Ls=len(sig))
         c = nsgt.forward(sig)
         s_r = nsgt.backward(c)
-        self.assertTrue(np.allclose(sig, s_r))
+        self.assertTrue(np.allclose(sig, s_r, atol=1e-07))
 
 def load_tests(*_):
     # seed random generators for unit testing

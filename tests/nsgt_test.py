@@ -13,7 +13,7 @@ class Test_CQ_NSGT(unittest.TestCase):
         # inverse transform 
         s_r = nsgt.backward(c)
         
-        self.assertTrue(np.allclose(s, s_r))
+        self.assertTrue(np.allclose(s, s_r, atol=1e-07))
 
 def load_tests(*_):
     # seed random generators for unit testing
