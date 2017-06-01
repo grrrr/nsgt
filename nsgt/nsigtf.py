@@ -58,12 +58,9 @@ from nsgt.utilities.fft import fftp, ifftp, irfftp
 
 try:
     # try to import cython version
-    from _nsigtf_loop import nsigtf_loop
+    from nsgt.cython.nsgtf_loop import nsigtf_loop
 except ImportError:
-    nsigtf_loop = None
-
-if nsigtf_loop is None:
-    from nsgt.depreciated.nsigtf_loop import nsigtf_loop
+    from nsgt.nsigtf_loop import nsigtf_loop
 
 # if False:
 #     # what about theano?
@@ -146,7 +143,8 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False,
 
 
 # non-sliced version
-def nsigtf(c, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft=False, multithreading=False):
+def nsigtf(c, gd, wins, nn, Ls=None, real=False,
+           reducedform=0, measurefft=False, multithreading=False):
     return nsigtf_sl((c,), gd=gd, wins=wins, nn=nn, Ls=Ls, real=real,
                      reducedform=reducedform, measurefft=measurefft,
                      multithreading=multithreading).next()

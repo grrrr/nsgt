@@ -21,12 +21,9 @@ from nsgt.utilities.utils import chkM
 
 try:
     # try to import cython version
-    from _nsgtf_loop import nsgtf_loop
+    from nsgt.cython.nsgtf_loop import nsgtf_loop
 except ImportError:
-    nsgtf_loop = None
-
-if nsgtf_loop is None:
-    from nsgt.depreciated.nsgtf_loop import nsgtf_loop
+    from nsgt.nsgtf_loop import nsgtf_loop
 
 # if False:
 #     # what about theano?
