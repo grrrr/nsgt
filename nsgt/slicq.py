@@ -79,6 +79,24 @@ def chnmap(gen, seq):
 
 
 class NsgtSliced(object):
+    """
+
+    Args:
+        scale:
+        sl_len:
+        tr_area:
+        fs:
+        min_win:
+        Qvar:
+        real:
+        recwnd:
+        matrixform:
+        reducedform:
+        multichannel:
+        measurefft:
+        multithreading:
+        dtype:
+    """
     def __init__(self, scale, sl_len, tr_area, fs,
                  min_win=16, Qvar=1,
                  real=False, recwnd=False, matrixform=False, reducedform=0,
@@ -187,6 +205,25 @@ class NsgtSliced(object):
 
 
 class CqNsgtSliced(NsgtSliced):
+    """
+
+    Args:
+        fmin:
+        fmax:
+        bins:
+        sl_len:
+        tr_area:
+        fs:
+        min_win:
+        Qvar:
+        real:
+        recwnd:
+        matrixform:
+        reducedform:
+        multichannel:
+        measurefft:
+        multithreading:
+    """
     def __init__(self, fmin, fmax, bins, sl_len, tr_area,
                  fs, min_win=16, Qvar=1, real=False, recwnd=False,
                  matrixform=False, reducedform=0, multichannel=False,

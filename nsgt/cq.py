@@ -32,6 +32,20 @@ from nsgt.utilities.utils import calcwinrange
 
 
 class NSGT(object):
+    """
+
+    Args:
+        scale:
+        fs:
+        Ls:
+        real:
+        matrixform:
+        reducedform:
+        multichannel:
+        measurefft:
+        multithreading:
+        dtype:
+    """
     def __init__(self, scale, fs, Ls, real=True, matrixform=False,
                  reducedform=0, multichannel=False, measurefft=False,
                  multithreading=False, dtype=float):
@@ -109,6 +123,21 @@ class NSGT(object):
 
 
 class CqNSGT(NSGT):
+    """
+
+    Args:
+        fmin:
+        fmax:
+        bins:
+        fs:
+        Ls:
+        real:
+        matrixform:
+        reducedform:
+        multichannel:
+        measurefft:
+        multithreading:
+    """
     def __init__(self, fmin, fmax, bins, fs, Ls, real=True,
                  matrixform=False, reducedform=0, multichannel=False,
                  measurefft=False, multithreading=False):
