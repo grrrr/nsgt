@@ -35,7 +35,7 @@ Directly from GitHub:
 
 ``pip install git+git://github.com/grrrr/nsgt@master``
 
-Note: if using Python3 on macOS or Linux, you may wish to replace `pip` with `pip3`.
+Note: if you are using Python3 on macOS or Linux, you may wish to replace `pip` with `pip3`.
 
 ToDO:
 -----
