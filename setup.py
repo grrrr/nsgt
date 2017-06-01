@@ -32,6 +32,7 @@ Attention: some Cython versions also need the Pyrex module installed!
 
 """
 
+import numpy
 import warnings
 
 try:
@@ -57,7 +58,6 @@ try:
 except ImportError:
     build_ext = None
 
-import numpy
 
 if build_ext is None:
     cmdclass = {}
