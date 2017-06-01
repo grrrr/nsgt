@@ -117,20 +117,20 @@ def calcwinrange(g, rfbas, Ls):
         win_range = np.arange(-(Lg // 2) + tpii, Lg - (Lg // 2) + tpii, dtype=int)
         win_range %= nn
 
-        #        Lg2 = Lg//2
-        #        oh = tpii
-        #        o = oh-Lg2
-        #        oe = oh+Lg2
+        # Lg2 = Lg//2
+        # oh = tpii
+        # o = oh-Lg2
+        # oe = oh+Lg2
         #
-        #        if o < 0:
-        #            # wraparound is in first half
-        #            win_range = ((slice(o+nn,nn),slice(0,oh)),(slice(oh,oe),slice(0,0)))
-        #        elif oe > nn:
-        #            # wraparound is in second half
-        #            win_range = ((slice(o,oh),slice(0,0)),(slice(oh,nn),slice(0,oe-nn)))
-        #        else:
-        #            # no wraparound
-        #            win_range = ((slice(o,oh),slice(0,0)),(slice(oh,oe),slice(0,0)))
+        # if o < 0:
+        #    # wraparound is in first half
+        #    win_range = ((slice(o+nn,nn),slice(0,oh)),(slice(oh,oe),slice(0,0)))
+        # elif oe > nn:
+        #    # wraparound is in second half
+        #    win_range = ((slice(o,oh),slice(0,0)),(slice(oh,nn),slice(0,oe-nn)))
+        # else:
+        #    # no wraparound
+        #    win_range = ((slice(o,oh),slice(0,0)),(slice(oh,oe),slice(0,0)))
 
         wins.append(win_range)
 
