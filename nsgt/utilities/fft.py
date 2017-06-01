@@ -122,7 +122,7 @@ if not realized:
         from pyfftw.interfaces import numpy_fft as np_fft
     except ImportError:
         # Fall back to numpy methods
-        warn("`nsgt.fft` failed to load `pyfftw` and `fftw3`."
+        warn("Failed to load `pyfftw` and `fftw3`."
              " Falling back to numpy.fft")
         import numpy.fft as np_fft
 
