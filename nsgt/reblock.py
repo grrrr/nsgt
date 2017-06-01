@@ -14,11 +14,12 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 import numpy as np
 from itertools import izip
 
+
 def reblock(sseq, blocksize, dtype=None, fulllast=True, padding=0, multichannel=False):
     block = None
     dt = None
     chns = None
-    
+
     if multichannel:
         channelize = lambda s: s
         unchannelize = lambda s: s
@@ -30,27 +31,27 @@ def reblock(sseq, blocksize, dtype=None, fulllast=True, padding=0, multichannel=
         # iterate through sequence of sequences
 
         si = channelize(si)
-        
+
         while True:
             if block is None:
                 if dt is None:
                     # output dtype still undefined
                     if dtype is None:
-                        dt = type(si[0][0]) # take type is first input element
+                        dt = type(si[0][0])  # take type is first input element
                     else:
                         dt = dtype
                 chns = len(si)
 
-                block = np.empty((chns,blocksize), dtype=dt)
+                block = np.empty((chns, blocksize), dtype=dt)
                 blockrem = block
-                
+
             sout = [sj[:blockrem.shape[1]] for sj in si]
             avail = len(sout[0])
-            for blr,souti in izip(blockrem, sout):
-                blr[:avail] = souti # copy data per channel
+            for blr, souti in izip(blockrem, sout):
+                blr[:avail] = souti  # copy data per channel
             si = [sj[avail:] for sj in si]  # move ahead in input block
-            blockrem = blockrem[:,avail:]  # move ahead in output block
-            
+            blockrem = blockrem[:, avail:]  # move ahead in output block
+
             if blockrem.shape[1] == 0:
                 # output block is full
                 yield unchannelize(block)
@@ -58,12 +59,12 @@ def reblock(sseq, blocksize, dtype=None, fulllast=True, padding=0, multichannel=
             if len(si[0]) == 0:
                 # input block is exhausted
                 break
-            
+
     if block is not None:
         if fulllast:
             blockrem[:] = padding  # zero padding
             ret = block
         else:
             # output only filled part
-            ret = block[:,:-len(blockrem[0])]
+            ret = block[:, :-len(blockrem[0])]
         yield unchannelize(ret)

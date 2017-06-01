@@ -15,14 +15,14 @@ import numpy as np
 from warnings import warn
 
 realized = False
-        
+
 if not realized:
     # try to use FFT3 if available, else use numpy.fftpack
     try:
         import fftw3
     except ImportError:
         fftw3 = None
-    
+
     try:
         import fftw3f
     except ImportError:
@@ -44,9 +44,9 @@ if not realized:
                     self.tpcplx = np.complex128
                     self.fftw = fftw3
                 else:
-                    raise TypeError("nsgt.fftpool: dtype '%s' not supported"%repr(self.dtype))
+                    raise TypeError("nsgt.fftpool: dtype '%s' not supported" % repr(self.dtype))
                 self.pool = {}
-                
+
             def __call__(self, x, outn=None, ref=False):
                 lx = len(x)
                 try:
@@ -54,7 +54,7 @@ if not realized:
                 except KeyError:
                     transform = self.init(lx, measure=self.measure, outn=outn)
                     self.pool[lx] = transform
-                plan,pre,post = transform
+                plan, pre, post = transform
                 if pre is not None:
                     x = pre(x)
                 plan.inarray[:] = x
@@ -66,67 +66,88 @@ if not realized:
                 if post is not None:
                     tx = post(tx)
                 return tx
-    
+
+
         class fftp(fftpool):
             def __init__(self, measure=False, dtype=float):
                 fftpool.__init__(self, measure, dtype=dtype)
+
             def init(self, n, measure, outn):
                 inp = self.fftw.create_aligned_array(n, dtype=self.tpcplx)
                 outp = self.fftw.create_aligned_array(n, dtype=self.tpcplx)
                 plan = self.fftw.Plan(inp, outp, direction='forward', flags=('measure' if measure else 'estimate',))
-                return (plan,None,None)
-    
+                return (plan, None, None)
+
+
         class rfftp(fftpool):
             def __init__(self, measure=False, dtype=float):
                 fftpool.__init__(self, measure, dtype=dtype)
+
             def init(self, n, measure, outn):
                 inp = self.fftw.create_aligned_array(n, dtype=self.tpfloat)
-                outp = self.fftw.create_aligned_array(n//2+1, dtype=self.tpcplx)
-                plan = self.fftw.Plan(inp, outp, direction='forward', realtypes='halfcomplex r2c',flags=('measure' if measure else 'estimate',))
-                return (plan,None,None)
-    
+                outp = self.fftw.create_aligned_array(n // 2 + 1, dtype=self.tpcplx)
+                plan = self.fftw.Plan(inp, outp, direction='forward', realtypes='halfcomplex r2c',
+                                      flags=('measure' if measure else 'estimate',))
+                return (plan, None, None)
+
+
         class ifftp(fftpool):
             def __init__(self, measure=False, dtype=float):
                 fftpool.__init__(self, measure, dtype=dtype)
+
             def init(self, n, measure, outn):
                 inp = self.fftw.create_aligned_array(n, dtype=self.tpcplx)
                 outp = self.fftw.create_aligned_array(n, dtype=self.tpcplx)
                 plan = self.fftw.Plan(inp, outp, direction='backward', flags=('measure' if measure else 'estimate',))
-                return (plan,None,lambda x: x/len(x))
-    
+                return (plan, None, lambda x: x / len(x))
+
+
         class irfftp(fftpool):
             def __init__(self, measure=False, dtype=float):
                 fftpool.__init__(self, measure, dtype=dtype)
+
             def init(self, n, measure, outn):
                 inp = self.fftw.create_aligned_array(n, dtype=self.tpcplx)
-                outp = self.fftw.create_aligned_array(outn if outn is not None else (n-1)*2, dtype=self.tpfloat)
-                plan = self.fftw.Plan(inp, outp, direction='backward', realtypes='halfcomplex c2r', flags=('measure' if measure else 'estimate',))
-                return (plan,lambda x: x[:n],lambda x: x/len(x))
-            
+                outp = self.fftw.create_aligned_array(outn if outn is not None else (n - 1) * 2, dtype=self.tpfloat)
+                plan = self.fftw.Plan(inp, outp, direction='backward', realtypes='halfcomplex c2r',
+                                      flags=('measure' if measure else 'estimate',))
+                return (plan, lambda x: x[:n], lambda x: x / len(x))
+
+
         realized = True
-        
 
 if not realized:
     # fall back to numpy methods
     warn("nsgt.fft falling back to numpy.fft")
-    
+
+
     class fftp:
         def __init__(self, measure=False, dtype=float):
             pass
-        def __call__(self,x, outn=None, ref=False):
+
+        def __call__(self, x, outn=None, ref=False):
             return np.fft.fft(x)
+
+
     class ifftp:
         def __init__(self, measure=False, dtype=float):
             pass
-        def __call__(self,x, outn=None, n=None, ref=False):
-            return np.fft.ifft(x,n=n)
+
+        def __call__(self, x, outn=None, n=None, ref=False):
+            return np.fft.ifft(x, n=n)
+
+
     class rfftp:
         def __init__(self, measure=False, dtype=float):
             pass
-        def __call__(self,x, outn=None, ref=False):
+
+        def __call__(self, x, outn=None, ref=False):
             return np.fft.rfft(x)
+
+
     class irfftp:
         def __init__(self, measure=False, dtype=float):
             pass
-        def __call__(self,x,outn=None,ref=False):
-            return np.fft.irfft(x,n=outn)
+
+        def __call__(self, x, outn=None, ref=False):
+            return np.fft.irfft(x, n=outn)
