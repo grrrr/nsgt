@@ -50,7 +50,7 @@ def slicing(f, sl_len, tr_area):
                    padding=0., multichannel=True)
 
     # get first block to deduce number of channels
-    fseq0 = fseq.next()
+    fseq0 = next(fseq)
     chns = len(fseq0)
     pad = np.zeros((chns, hhop), dtype=fseq0.dtype)
     # assemble a stream of front padding, already retrieved first block,
@@ -66,7 +66,7 @@ def slicing(f, sl_len, tr_area):
         past.append(fi)
         if len(past) == 4:
             f_slice = np.empty((chns, sl_len), dtype=fi.dtype)
-            sl = slices.next()
+            sl = next(slices)
             for sli, pi, twi in izip(sl, past, tw):
                 f_slice[:, sli] = pi  # signal
                 f_slice[:, sli] *= twi  # multiply with part of window function

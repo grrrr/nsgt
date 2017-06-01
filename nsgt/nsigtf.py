@@ -102,7 +102,7 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False,
 
     maxLg = max(len(gdii) for gdii in sl(gd))
     # get first slice
-    c0 = cseq.next()
+    c0 = next(cseq)
 
     fr = np.empty(nn, dtype=c0[0].dtype)  # Allocate output
     temp0 = np.empty(maxLg, dtype=fr.dtype)  # pre-allocation
@@ -145,6 +145,6 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False,
 # non-sliced version
 def nsigtf(c, gd, wins, nn, Ls=None, real=False,
            reducedform=0, measurefft=False, multithreading=False):
-    return nsigtf_sl((c,), gd=gd, wins=wins, nn=nn, Ls=Ls, real=real,
-                     reducedform=reducedform, measurefft=measurefft,
-                     multithreading=multithreading).next()
+    return next(nsigtf_sl((c,), gd=gd, wins=wins, nn=nn, Ls=Ls, real=real,
+                          reducedform=reducedform, measurefft=measurefft,
+                          multithreading=multithreading))

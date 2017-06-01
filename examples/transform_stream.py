@@ -84,7 +84,7 @@ c = list(c)
 outseq = slicq.backward(c)
 
 # make single output array from iterator
-s_r = reblock(outseq, len(s), fulllast=False).next()
+s_r = next(reblock(outseq, len(s), fulllast=False))
 s_r = s_r.real
 
 t2 = cputime()

@@ -98,12 +98,12 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measureff
 # non-sliced version
 def nsgtf(f, g, wins, nn, M=None, real=False, reducedform=0,
           measurefft=False, multithreading=False):
-    return nsgtf_sl(f_slices=(f,),
-                    g=g,
-                    wins=wins,
-                    nn=nn,
-                    M=M,
-                    real=real,
-                    reducedform=reducedform,
-                    measurefft=measurefft,
-                    multithreading=multithreading).next()
+    return next(nsgtf_sl(f_slices=(f,),
+                         g=g,
+                         wins=wins,
+                         nn=nn,
+                         M=M,
+                         real=real,
+                         reducedform=reducedform,
+                         measurefft=measurefft,
+                         multithreading=multithreading))

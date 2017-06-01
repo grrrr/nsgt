@@ -37,7 +37,7 @@ from nsgt.utilities.utils import calcwinrange
 def arrange(cseq, M, fwd):
     # one of the more expensive functions (32/400)
     try:
-        c0 = cseq.next()  # grab first stream element
+        c0 = next(cseq)  # grab first stream element
     except StopIteration:
         return iter(())
     cseq = chain((c0,), cseq)  # push it back in
@@ -67,7 +67,7 @@ def starzip(iterables):
             yield t[i]
 
     iterables = iter(iterables)
-    it = iterables.next()  # we need that to determine the length of one element
+    it = next(iterables)  # we need that to determine the length of one element
     iterables = chain((it,), iterables)
     return [inner(itr, i) for i, itr in enumerate(tee(iterables, len(it)))]
 
@@ -189,8 +189,8 @@ class NSGT_sliced(object):
         sig = self.unchannelize(sig)
 
         # discard first two blocks (padding)
-        sig.next()
-        sig.next()
+        next(sig)
+        next(sig)
         return sig
 
 
