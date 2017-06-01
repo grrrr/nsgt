@@ -69,7 +69,7 @@ setup(
     url="http://grrrr.org/nsgt",
     requires=["numpy"],
     include_dirs=[numpy.get_include()],
-    packages=find_packages(exclude=["nsgt/cython"]),
+    packages=['nsgt'],
     cmdclass=cmdclass,
     ext_modules=ext_modules,
     classifiers=[
