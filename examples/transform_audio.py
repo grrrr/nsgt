@@ -47,7 +47,7 @@ if not os.path.exists(args.input):
 # ------------------------------------------------------------
 
 
-s, fs = load_audio(args.input)
+s, fs = load_audio(args.input, method=-1)
 
 scales = {'log': LogScale, 'lin': LinScale, 'mel': MelScale, 'oct': OctScale}
 try:

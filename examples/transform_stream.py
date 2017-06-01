@@ -52,7 +52,7 @@ if not os.path.exists(args.input):
 # ------------------------------------------------------------
 
 
-s, fs = load_audio(path=args.input)
+s, fs = load_audio(path=args.input, method=-1)
 
 if args.length:
     s = s[:args.length]
