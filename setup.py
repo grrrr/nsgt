@@ -71,7 +71,7 @@ else:
 
 setup(
     name="nsgt",
-    version="0.17",
+    version="0.1.7",
     author="Thomas Grill",
     author_email="gr@grrrr.org",
     maintainer="Thomas Grill",
