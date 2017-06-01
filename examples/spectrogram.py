@@ -93,9 +93,11 @@ if not os.path.exists(args.input):
 
 fs = args.sr
 
+
 # ------------------------------------------------------------
 # Build transform
 # ------------------------------------------------------------
+
 
 scales = {'log': LogScale, 'lin': LinScale, 'mel': MelScale, 'oct': OctScale}
 try:
@@ -109,8 +111,8 @@ slicq = NSGT_sliced(scl, args.sllen, args.trlen, fs,
                     real=args.real, recwnd=args.recwnd,
                     matrixform=args.matrixform, reducedform=args.reducedform,
                     multithreading=args.multithreading,
-                    multichannel=True
-                    )
+                    multichannel=True)
+
 
 # ------------------------------------------------------------
 # Load Audio
@@ -167,6 +169,7 @@ if args.fps:
     mls = poolfun(mls.reshape((pooled_len, poolf,) + mls.shape[1:]), axis=1)
 
 times = np.linspace(0, mls_dur, endpoint=True, num=len(mls) + 1)
+
 
 # ------------------------------------------------------------
 # Output

@@ -11,12 +11,12 @@ http://grrrr.org/nsgt
 
 import os
 import numpy as np
-from examples.e_utils import load_audio, save_audio, cputime
-
 from argparse import ArgumentParser
 from nsgt.reblock import reblock
 from nsgt.slicq import NSGT_sliced
+from examples.e_utils import load_audio, save_audio, cputime
 from nsgt.fscale import LogScale, LinScale, MelScale, OctScale
+
 
 # ------------------------------------------------------------
 # Generate Args
@@ -46,6 +46,7 @@ args = parser.parse_args()
 if not os.path.exists(args.input):
     parser.error("Input file '%s' not found" % args.input)
 
+
 # ------------------------------------------------------------
 # Load Audio
 # ------------------------------------------------------------
@@ -65,9 +66,10 @@ except KeyError:
 scl = scale(args.fmin, args.fmax, args.bins)
 slicq = NSGT_sliced(scl, args.sllen, args.trlen, fs,
                     real=args.real, recwnd=args.recwnd,
-                    matrixform=args.matrixform, reducedform=args.reducedform,
-                    multithreading=args.multithreading
-                    )
+                    matrixform=args.matrixform,
+                    reducedform=args.reducedform,
+                    multithreading=args.multithreading)
+
 
 # ------------------------------------------------------------
 # Test
@@ -75,22 +77,15 @@ slicq = NSGT_sliced(scl, args.sllen, args.trlen, fs,
 
 
 t1 = cputime()
-
 signal = (s,)
+c = slicq.forward(signal)  # generator for forward transformation
+c = list(c)  # realize transform from generator
 
-# generator for forward transformation
-c = slicq.forward(signal)
-
-# realize transform from generator
-c = list(c)
-
-# generator for backward transformation
-outseq = slicq.backward(c)
+outseq = slicq.backward(c) # generator for backward transformation
 
 # make single output array from iterator
 s_r = next(reblock(outseq, len(s), fulllast=False))
 s_r = s_r.real
-
 t2 = cputime()
 
 norm = lambda x: np.sqrt(np.sum(np.abs(np.square(np.abs(x)))))

@@ -17,9 +17,11 @@ from nsgt.utilities.compat import imap, xrange
 from examples.e_utils import load_audio, save_audio, cputime
 from nsgt.fscale import LogScale, LinScale, MelScale, OctScale
 
+
 # ------------------------------------------------------------
 # Generate Args
 # ------------------------------------------------------------
+
 
 parser = ArgumentParser()
 parser.add_argument("input", type=str, help="input audio file")
@@ -39,6 +41,7 @@ args = parser.parse_args()
 if not os.path.exists(args.input):
     parser.error("Input file '%s' not found" % args.input)
 
+
 # ------------------------------------------------------------
 # Load Audio
 # ------------------------------------------------------------
@@ -52,6 +55,7 @@ except KeyError:
     parser.error('scale unknown')
 
 scl = scale(args.fmin, args.fmax, args.bins)
+
 
 # ------------------------------------------------------------
 # Test
@@ -72,6 +76,7 @@ norm = lambda x: np.sqrt(np.sum(np.abs(np.square(x))))
 rec_err = norm(s - s_r) / norm(s)
 print("Reconstruction error: %.3e" % rec_err)
 print("Calculation time: %.3f±%.3fs (min=%.3f s)" % (np.mean(times), np.std(times) / 2, np.min(times)))
+
 
 # ------------------------------------------------------------
 # Output
