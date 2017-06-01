@@ -23,15 +23,16 @@ except ImportError:
     raise ImportError("`scikits.audiolab` is not installed.")
 
 
-def findfile(fn, path=os.environ['PATH'].split(os.pathsep), matchFunc=os.path.isfile):
-    for dirname in path:
-        candidate = os.path.join(dirname, fn)
-        if matchFunc(candidate):
-            return candidate
-    return None
-
-
 class SndReader(object):
+
+    @staticmethod
+    def find_file(fn, path=os.environ['PATH'].split(os.pathsep), matchFunc=os.path.isfile):
+        for dirname in path:
+            candidate = os.path.join(dirname, fn)
+            if matchFunc(candidate):
+                return candidate
+        return None
+
     @staticmethod
     def sndreader(sf, blksz=2 ** 16, dtype=np.float32):
         if dtype is float:
@@ -64,7 +65,7 @@ class SndReader(object):
                     fnd = True
 
         if not fnd:
-            ffmpeg = findfile('ffmpeg') or findfile('avconv')
+            ffmpeg = self.find_file('ffmpeg') or find_file('avconv')
             if ffmpeg is not None:
                 pipe = sp.Popen([ffmpeg, '-i', fn, '-'], stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
                 fmtout = pipe.stderr.read()
