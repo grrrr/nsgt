@@ -67,15 +67,11 @@ def nsgfwin(f, q, sr, Ls, sliced=True, min_win=4, Qvar=1, dowarn=True, dtype=np.
 
     fbas = f
     lbas = len(fbas)
-
     frqs = np.concatenate(((0.,), fbas, (nf,)))
-
     fbas = np.concatenate((frqs, sr - frqs[-2:0:-1]))
 
     # at this point: fbas.... frequencies in Hz
-
     fbas *= float(Ls) / sr
-
     # print("fbas", fbas)
 
     # Omega[k] in the paper
@@ -100,8 +96,6 @@ def nsgfwin(f, q, sr, Ls, sliced=True, min_win=4, Qvar=1, dowarn=True, dtype=np.
         M[-1] = np.round(Ls - fbas[-2])
 
     np.clip(M, min_win, np.inf, out=M)
-
-    # print("M", list(M))
     if sliced:
         g = [blackharr(m).astype(dtype) for m in M]
     else:
@@ -147,16 +141,11 @@ def nsgfwin_new(f, q, sr, Ls, sliced=True, min_win=4, Qvar=1, dowarn=True):
 
     fbas = f
     lbas = len(fbas)
-
     frqs = np.concatenate(((0.,), fbas, (nf,)))
-
     fbas = np.concatenate((frqs, sr - frqs[-2:0:-1]))
 
     # at this point: fbas.... frequencies in Hz
-
     fbas *= float(Ls) / sr
-
-    # print "fbas",fbas
 
     # Omega[k] in the paper
     if sliced:
@@ -184,7 +173,6 @@ def nsgfwin_new(f, q, sr, Ls, sliced=True, min_win=4, Qvar=1, dowarn=True):
 
     if sliced:
         # g = [blackharr(m) for m in M]
-
         rfbas = np.concatenate((np.floor(fbas[:lbas + 2]), np.ceil(fbas[lbas + 2:])))
         corr_shift = fbas - rfbas
 

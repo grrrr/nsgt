@@ -23,30 +23,6 @@ except:
     Sndfile = None
 
 
-def sndreader(sf, blksz=2 ** 16, dtype=np.float32):
-    if dtype is float:
-        dtype = np.float64  # scikits.audiolab needs numpy types
-    if blksz < 0:
-        blksz = sf.nframes
-    if sf.channels > 1:
-        channels = lambda s: s.T
-    else:
-        channels = lambda s: s.reshape((1, -1))
-    for offs in xrange(0, sf.nframes, blksz):
-        data = sf.read_frames(min(sf.nframes - offs, blksz), dtype=dtype)
-        yield channels(data)
-
-
-def sndwriter(sf, blkseq, maxframes=None):
-    written = 0
-    for b in blkseq:
-        b = b.T
-        if maxframes is not None:
-            b = b[:maxframes - written]
-        sf.write_frames(b)
-        written += len(b)
-
-
 def findfile(fn, path=os.environ['PATH'].split(os.pathsep), matchFunc=os.path.isfile):
     for dirname in path:
         candidate = os.path.join(dirname, fn)
@@ -55,7 +31,22 @@ def findfile(fn, path=os.environ['PATH'].split(os.pathsep), matchFunc=os.path.is
     return None
 
 
-class SndReader:
+class SndReader(object):
+
+    @staticmethod
+    def sndreader(sf, blksz=2 ** 16, dtype=np.float32):
+        if dtype is float:
+            dtype = np.float64  # scikits.audiolab needs numpy types
+        if blksz < 0:
+            blksz = sf.nframes
+        if sf.channels > 1:
+            channels = lambda s: s.T
+        else:
+            channels = lambda s: s.reshape((1, -1))
+        for offs in xrange(0, sf.nframes, blksz):
+            data = sf.read_frames(min(sf.nframes - offs, blksz), dtype=dtype)
+            yield channels(data)
+
     def __init__(self, fn, sr=None, chns=None, blksz=2**16, dtype=np.float32):
         fnd = False
 
@@ -70,8 +61,7 @@ class SndReader:
                     self.channels = sf.channels
                     self.samplerate = sf.samplerate
                     self.frames = sf.nframes
-
-                    self.rdr = sndreader(sf, blksz, dtype=dtype)
+                    self.rdr = self.sndreader(sf, blksz, dtype=dtype)
                     fnd = True
 
         if not fnd:
@@ -119,5 +109,15 @@ class SndWriter:
         fmt = Format(filefmt, datafmt)
         self.sf = Sndfile(fn, mode='w', format=fmt, channels=channels, samplerate=samplerate)
 
+    @staticmethod
+    def sndwriter(sf, blkseq, maxframes=None):
+        written = 0
+        for b in blkseq:
+            b = b.T
+            if maxframes is not None:
+                b = b[:maxframes - written]
+            sf.write_frames(b)
+            written += len(b)
+
     def __call__(self, sigblks, maxframes=None):
-        sndwriter(self.sf, sigblks, maxframes=None)
+        self.sndwriter(self.sf, sigblks, maxframes=None)

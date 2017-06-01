@@ -11,11 +11,13 @@ Austrian Research Institute for Artificial Intelligence (OFAI)
 AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 """
 
-import numpy as np
 from math import ceil
-from nsgt.fft import fftp, ifftp
-from nsgt.utilities.utils import chkM
+
+import numpy as np
+
 from nsgt.utilities.compat import izip
+from nsgt.utilities.fft import fftp, ifftp
+from nsgt.utilities.utils import chkM
 
 try:
     # try to import cython version

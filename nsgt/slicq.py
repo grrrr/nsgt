@@ -109,8 +109,10 @@ class NSGT_sliced:
         self.scale = scale
         self.frqs, self.q = self.scale()
 
-        self.g, self.rfbas, self.M = nsgfwin(self.frqs, self.q, self.fs, self.sl_len, sliced=True, min_win=min_win,
-                                             Qvar=Qvar, dtype=dtype)
+        self.g, self.rfbas, self.M = nsgfwin(self.frqs, self.q, self.fs,
+                                             self.sl_len, sliced=True,
+                                             min_win=min_win, Qvar=Qvar,
+                                             dtype=dtype)
 
         if real:
             assert 0 <= reducedform <= 2
@@ -119,7 +121,8 @@ class NSGT_sliced:
             sl = slice(0, None)
 
         # coefficients per slice
-        self.ncoefs = max(int(ceil(float(len(gii)) / mii)) * mii for mii, gii in zip(self.M[sl], self.g[sl]))
+        self.ncoefs = max(int(ceil(float(len(gii)) / mii)) * mii
+                          for mii, gii in zip(self.M[sl], self.g[sl]))
 
         if matrixform:
             if self.reducedform:
@@ -207,7 +210,7 @@ class CQ_NSGT_sliced(NSGT_sliced):
 
         scale = OctScale(fmin, fmax, bins)
         NSGT_sliced.__init__(self, scale=scale, sl_len=sl_len, tr_area=tr_area,
-                             fs=fs, min_win=min_win, Qvar=Qvar, real=real, recwnd=recwnd,
-                             matrixform=matrixform, reducedform=reducedform,
-                             multichannel=multichannel, measurefft=measurefft,
-                             multithreading=multithreading)
+                             fs=fs, min_win=min_win, Qvar=Qvar, real=real,
+                             recwnd=recwnd, matrixform=matrixform,
+                             reducedform=reducedform, multichannel=multichannel,
+                             measurefft=measurefft, multithreading=multithreading)

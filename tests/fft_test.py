@@ -1,6 +1,9 @@
-import numpy as np
-from nsgt.fft import rfftp, irfftp, fftp, ifftp
 import unittest
+
+import numpy as np
+
+from nsgt.utilities.fft import rfftp, irfftp, fftp, ifftp
+
 
 class TestFFT(unittest.TestCase):
     def __init__(self, methodName, n=10000):

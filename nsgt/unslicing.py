@@ -45,11 +45,8 @@ def unslicing(frec_sliced, sl_len, tr_area, dtype=float, usewindow=True):
 
     # get first slice to deduce channels
     firstquad = islices.next()
-
     chns = len(firstquad[0])  # number of channels in first quad
-
     islices = chain((firstquad,), islices)
-
     output = [np.zeros((chns, hhop), dtype=dtype) for _ in xrange(4)]
 
     for quad in islices:

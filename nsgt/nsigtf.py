@@ -49,10 +49,12 @@ http://www.univie.ac.at/nonstatgab/
 Edited by Nicki Holighaus 01.03.11
 """
 
-import numpy as np
 from itertools import chain
+
+import numpy as np
+
 from nsgt.utilities.compat import izip, imap
-from nsgt.fft import fftp, ifftp, irfftp
+from nsgt.utilities.fft import fftp, ifftp, irfftp
 
 try:
     # try to import cython version
