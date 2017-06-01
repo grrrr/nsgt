@@ -69,7 +69,7 @@ setup(
     url="http://grrrr.org/nsgt",
     requires=["numpy", "librosa"],
     include_dirs=[numpy.get_include()],
-    packages=['nsgt'],
+    packages=find_packages(exclude=("tests", "tests.*", "examples", "examples.*")),
     cmdclass=cmdclass,
     ext_modules=ext_modules,
     classifiers=[
