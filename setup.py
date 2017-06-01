@@ -18,7 +18,7 @@ http://www.perlfoundation.org/artistic_license_2_0
 
 Installation:
 
-In the console (terminal application) change to the folder containing this readme.md file.
+In the console (terminal application) change to the folder containing this README.md file.
 
 To build the package run the following command:
 python setup.py build
