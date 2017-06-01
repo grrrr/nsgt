@@ -28,7 +28,7 @@ All standard disclaimers apply.
 
 """
 
-from nsgt.cq import NSGT, CQ_NSGT
+from nsgt.cq import NSGT, CqNSGT
 from nsgt.slicq import NSGT_sliced, CQ_NSGT_sliced
 from nsgt.fscale import Scale, OctScale, LogScale, LinScale, MelScale
 

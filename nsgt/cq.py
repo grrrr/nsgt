@@ -108,7 +108,7 @@ class NSGT(object):
         return self.unchannelize(s)
 
 
-class CQ_NSGT(NSGT):
+class CqNSGT(NSGT):
     def __init__(self, fmin, fmax, bins, fs, Ls, real=True,
                  matrixform=False, reducedform=0, multichannel=False,
                  measurefft=False, multithreading=False):

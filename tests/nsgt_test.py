@@ -1,12 +1,12 @@
 import numpy as np
-from nsgt import CQ_NSGT
+from nsgt import CqNSGT
 import unittest
 
 
 class Test_CQ_NSGT(unittest.TestCase):
     def test_transform(self, length=100000, fmin=50, fmax=22050, bins=12, fs=44100):
         s = np.random.random(length)
-        nsgt = CQ_NSGT(fmin, fmax, bins, fs, length)
+        nsgt = CqNSGT(fmin, fmax, bins, fs, length)
 
         # forward transform 
         c = nsgt.forward(s)

@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 from nsgt.fscale import OctScale
-from nsgt.slicq import NSGT_sliced
+from nsgt.slicq import NsgtSliced
 
 # reproducible noise signal
 maxlen = 50000
@@ -14,7 +14,7 @@ class TestNSGT_slices(unittest.TestCase):
         sig = rndsig[:siglen]
 
         scale = OctScale(fmin, fmax, obins)
-        nsgt = NSGT_sliced(scale, fs=44100, sl_len=sllen, tr_area=trlen, real=real)
+        nsgt = NsgtSliced(scale, fs=44100, sl_len=sllen, tr_area=trlen, real=real)
 
         c = nsgt.forward((sig,))
 
