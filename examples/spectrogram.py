@@ -13,7 +13,7 @@ import os
 import numpy as np
 from warnings import warn
 from argparse import ArgumentParser
-from nsgt.slicq import NSGT_sliced
+from nsgt.slicq import NsgtSliced
 from nsgt.fscale import LogScale, LinScale, MelScale, OctScale
 
 from nsgt.utilities.audio import SndReader
@@ -107,11 +107,11 @@ except KeyError:
 
 scl = scale(args.fmin, args.fmax, args.bins, beyond=int(args.reducedform == 2))
 
-slicq = NSGT_sliced(scl, args.sllen, args.trlen, fs,
-                    real=args.real, recwnd=args.recwnd,
-                    matrixform=args.matrixform, reducedform=args.reducedform,
-                    multithreading=args.multithreading,
-                    multichannel=True)
+slicq = NsgtSliced(scl, args.sllen, args.trlen, fs,
+                   real=args.real, recwnd=args.recwnd,
+                   matrixform=args.matrixform, reducedform=args.reducedform,
+                   multithreading=args.multithreading,
+                   multichannel=True)
 
 
 # ------------------------------------------------------------

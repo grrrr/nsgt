@@ -29,7 +29,7 @@ All standard disclaimers apply.
 """
 
 from nsgt.cq import NSGT, CqNSGT
-from nsgt.slicq import NSGT_sliced, CQ_NSGT_sliced
+from nsgt.slicq import NsgtSliced, CqNsgtSliced
 from nsgt.fscale import Scale, OctScale, LogScale, LinScale, MelScale
 
 __version_info__ = (0, 1, 7)

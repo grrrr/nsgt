@@ -78,7 +78,7 @@ def chnmap(gen, seq):
     return izip(*gens)  # packing channels to one generator yielding channel tuples
 
 
-class NSGT_sliced(object):
+class NsgtSliced(object):
     def __init__(self, scale, sl_len, tr_area, fs,
                  min_win=16, Qvar=1,
                  real=False, recwnd=False, matrixform=False, reducedform=0,
@@ -186,7 +186,7 @@ class NSGT_sliced(object):
         return sig
 
 
-class CQ_NSGT_sliced(NSGT_sliced):
+class CqNsgtSliced(NsgtSliced):
     def __init__(self, fmin, fmax, bins, sl_len, tr_area,
                  fs, min_win=16, Qvar=1, real=False, recwnd=False,
                  matrixform=False, reducedform=0, multichannel=False,
@@ -200,8 +200,8 @@ class CQ_NSGT_sliced(NSGT_sliced):
         self.bins = bins  # bins per octave
 
         scale = OctScale(fmin, fmax, bins)
-        NSGT_sliced.__init__(self, scale=scale, sl_len=sl_len, tr_area=tr_area,
-                             fs=fs, min_win=min_win, Qvar=Qvar, real=real,
-                             recwnd=recwnd, matrixform=matrixform,
-                             reducedform=reducedform, multichannel=multichannel,
-                             measurefft=measurefft, multithreading=multithreading)
+        NsgtSliced.__init__(self, scale=scale, sl_len=sl_len, tr_area=tr_area,
+                            fs=fs, min_win=min_win, Qvar=Qvar, real=real,
+                            recwnd=recwnd, matrixform=matrixform,
+                            reducedform=reducedform, multichannel=multichannel,
+                            measurefft=measurefft, multithreading=multithreading)

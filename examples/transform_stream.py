@@ -13,7 +13,7 @@ import os
 import numpy as np
 from argparse import ArgumentParser
 from nsgt.reblock import reblock
-from nsgt.slicq import NSGT_sliced
+from nsgt.slicq import NsgtSliced
 from examples.e_utils import load_audio, save_audio, cputime
 from nsgt.fscale import LogScale, LinScale, MelScale, OctScale
 
@@ -64,11 +64,11 @@ except KeyError:
     parser.error('scale unknown')
 
 scl = scale(args.fmin, args.fmax, args.bins)
-slicq = NSGT_sliced(scl, args.sllen, args.trlen, fs,
-                    real=args.real, recwnd=args.recwnd,
-                    matrixform=args.matrixform,
-                    reducedform=args.reducedform,
-                    multithreading=args.multithreading)
+slicq = NsgtSliced(scl, args.sllen, args.trlen, fs,
+                   real=args.real, recwnd=args.recwnd,
+                   matrixform=args.matrixform,
+                   reducedform=args.reducedform,
+                   multithreading=args.multithreading)
 
 
 # ------------------------------------------------------------
