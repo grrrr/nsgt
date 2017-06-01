@@ -28,7 +28,6 @@ def reblock(sseq, blocksize, dtype=None, fulllast=True,
 
     for si in sseq:
         # iterate through sequence of sequences
-
         si = channelize(si)
 
         while True:
