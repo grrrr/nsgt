@@ -12,9 +12,10 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 """
 
 import numpy as np
-from util import hannwin
-from reblock import reblock
-from itertools import chain, izip, cycle
+from nsgt.reblock import reblock
+from itertools import chain, cycle
+from nsgt.utilities.utils import hannwin
+from nsgt.utilities.compat import izip, xrange
 
 
 def makewnd(sl_len, tr_area):

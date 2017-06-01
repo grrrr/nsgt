@@ -20,21 +20,23 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 """
 
 import numpy as np
-from itertools import izip, cycle, chain, tee
 from math import ceil
 
-from slicing import slicing
-from unslicing import unslicing
-from nsdual import nsdual
-from nsgfwin_sl import nsgfwin
-from nsgtf import nsgtf_sl
-from nsigtf import nsigtf_sl
-from util import calcwinrange
-from fscale import OctScale
+from nsgt.slicing import slicing
+from nsgt.unslicing import unslicing
+from nsgt.nsdual import nsdual
+from nsgt.nsgfwin_sl import nsgfwin
+from nsgt.nsgtf import nsgtf_sl
+from nsgt.nsigtf import nsigtf_sl
+from nsgt.fscale import OctScale
+
+from nsgt.utilities.compat import izip
+from itertools import cycle, chain, tee
+from nsgt.utilities.utils import calcwinrange
 
 
-# one of the more expensive functions (32/400)
 def arrange(cseq, M, fwd):
+    # one of the more expensive functions (32/400)
     try:
         c0 = cseq.next()  # grab first stream element
     except StopIteration:
@@ -110,7 +112,6 @@ class NSGT_sliced:
         self.g, self.rfbas, self.M = nsgfwin(self.frqs, self.q, self.fs, self.sl_len, sliced=True, min_win=min_win,
                                              Qvar=Qvar, dtype=dtype)
 
-        #        print "rfbas",self.rfbas/float(self.sl_len)*self.fs
         if real:
             assert 0 <= reducedform <= 2
             sl = slice(reducedform, len(self.g) // 2 + 1 - reducedform)
@@ -180,7 +181,8 @@ class NSGT_sliced:
 
         # Glue the parts back together
         ftype = float if self.real else complex
-        sig = unslicing(frec_sliced, self.sl_len, self.tr_area, dtype=ftype, usewindow=self.userecwnd)
+        sig = unslicing(frec_sliced, self.sl_len, self.tr_area,
+                        dtype=ftype, usewindow=self.userecwnd)
 
         sig = self.unchannelize(sig)
 
@@ -191,8 +193,10 @@ class NSGT_sliced:
 
 
 class CQ_NSGT_sliced(NSGT_sliced):
-    def __init__(self, fmin, fmax, bins, sl_len, tr_area, fs, min_win=16, Qvar=1, real=False, recwnd=False,
-                 matrixform=False, reducedform=0, multichannel=False, measurefft=False, multithreading=False):
+    def __init__(self, fmin, fmax, bins, sl_len, tr_area,
+                 fs, min_win=16, Qvar=1, real=False, recwnd=False,
+                 matrixform=False, reducedform=0, multichannel=False,
+                 measurefft=False, multithreading=False):
         assert fmin > 0
         assert fmax > fmin
         assert bins > 0
@@ -202,6 +206,8 @@ class CQ_NSGT_sliced(NSGT_sliced):
         self.bins = bins  # bins per octave
 
         scale = OctScale(fmin, fmax, bins)
-        NSGT_sliced.__init__(self, scale, sl_len, tr_area, fs, min_win, Qvar, real, recwnd, matrixform=matrixform,
-                             reducedform=reducedform, multichannel=multichannel, measurefft=measurefft,
+        NSGT_sliced.__init__(self, scale=scale, sl_len=sl_len, tr_area=tr_area,
+                             fs=fs, min_win=min_win, Qvar=Qvar, real=real, recwnd=recwnd,
+                             matrixform=matrixform, reducedform=reducedform,
+                             multichannel=multichannel, measurefft=measurefft,
                              multithreading=multithreading)

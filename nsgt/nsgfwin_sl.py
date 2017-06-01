@@ -35,10 +35,11 @@ EXTERNALS : firwin
 """
 
 import numpy as np
-from util import hannwin, blackharr, blackharrcw
 from math import ceil
 from warnings import warn
-from itertools import chain, izip
+from itertools import chain
+from nsgt.utilities.compat import izip, xrange
+from nsgt.utilities.utils import hannwin, blackharr, blackharrcw
 
 
 def nsgfwin(f, q, sr, Ls, sliced=True, min_win=4, Qvar=1, dowarn=True, dtype=np.float64):
@@ -75,7 +76,7 @@ def nsgfwin(f, q, sr, Ls, sliced=True, min_win=4, Qvar=1, dowarn=True, dtype=np.
 
     fbas *= float(Ls) / sr
 
-    #    print "fbas",fbas
+    # print("fbas", fbas)
 
     # Omega[k] in the paper
     if sliced:
@@ -85,9 +86,9 @@ def nsgfwin(f, q, sr, Ls, sliced=True, min_win=4, Qvar=1, dowarn=True, dtype=np.
         for k in chain(xrange(2, lbas), (lbas + 1,)):
             M[k] = fbas[k + 1] - fbas[k - 1]
         M[lbas] = fbas[lbas] / q[lbas - 1]  # (2**(1./bins[-1])-2**(-1./bins[-1]))
-        #        M[lbas+1] = fbas[lbas]/q[lbas-1] #(2**(1./bins[-1])-2**(-1./bins[-1]))
+        # M[lbas+1] = fbas[lbas]/q[lbas-1] #(2**(1./bins[-1])-2**(-1./bins[-1]))
         M[lbas + 2:2 * (lbas + 1)] = M[lbas:0:-1]
-        #        M[-1] = M[1]
+        # M[-1] = M[1]
         M *= Qvar / 4.
         M = np.round(M).astype(int)
         M *= 4
@@ -100,8 +101,7 @@ def nsgfwin(f, q, sr, Ls, sliced=True, min_win=4, Qvar=1, dowarn=True, dtype=np.
 
     np.clip(M, min_win, np.inf, out=M)
 
-    #    print "M",list(M)
-
+    # print("M", list(M))
     if sliced:
         g = [blackharr(m).astype(dtype) for m in M]
     else:
@@ -118,9 +118,6 @@ def nsgfwin(f, q, sr, Ls, sliced=True, min_win=4, Qvar=1, dowarn=True, dtype=np.
         fbas[lbas] = (fbas[lbas - 1] + fbas[lbas + 1]) / 2
         fbas[lbas + 2] = Ls - fbas[lbas]
         rfbas = np.round(fbas).astype(int)
-
-    #    print "rfbas",rfbas
-    #    print "g",g
 
     return g, rfbas, M
 
@@ -159,7 +156,7 @@ def nsgfwin_new(f, q, sr, Ls, sliced=True, min_win=4, Qvar=1, dowarn=True):
 
     fbas *= float(Ls) / sr
 
-    #    print "fbas",fbas
+    # print "fbas",fbas
 
     # Omega[k] in the paper
     if sliced:
@@ -169,13 +166,13 @@ def nsgfwin_new(f, q, sr, Ls, sliced=True, min_win=4, Qvar=1, dowarn=True):
         for k in chain(xrange(2, lbas), (lbas + 1,)):
             M[k] = fbas[k + 1] - fbas[k - 1]
         M[lbas] = fbas[lbas] / q[lbas - 1]  # (2**(1./bins[-1])-2**(-1./bins[-1]))
-        #        M[lbas+1] = fbas[lbas]/q[lbas-1] #(2**(1./bins[-1])-2**(-1./bins[-1]))
+        # M[lbas+1] = fbas[lbas]/q[lbas-1] #(2**(1./bins[-1])-2**(-1./bins[-1]))
         M[lbas + 2:2 * (lbas + 1)] = M[lbas:0:-1]
-    #        M[-1] = M[1]
+        # M[-1] = M[1]
 
-    ###        M *= Qvar/4.
-    ###        M = N.round(M).astype(int)
-    ###        M *= 4
+        # M *= Qvar/4.
+        # M = N.round(M).astype(int)
+        # M *= 4
     else:
         M = np.zeros(fbas.shape, dtype=int)
         M[0] = np.round(2 * fbas[1])
@@ -186,15 +183,14 @@ def nsgfwin_new(f, q, sr, Ls, sliced=True, min_win=4, Qvar=1, dowarn=True):
     np.clip(M, min_win, np.inf, out=M)
 
     if sliced:
-        ###        g = [blackharr(m) for m in M]
+        # g = [blackharr(m) for m in M]
 
         rfbas = np.concatenate((np.floor(fbas[:lbas + 2]), np.ceil(fbas[lbas + 2:])))
         corr_shift = fbas - rfbas
 
-        #        shift = N.concatenate(([(-rfbas[-1])%Ls],N.diff(rfbas)))
-
-        g, M = np.array([blackharrcw(m * Qvar, csh) for m, csh in izip(M, corr_shift)]).T  ####
-        #        M = N.ceil(M/4).astype(int)*4  # bailing out for some strange reason....
+        # shift = N.concatenate(([(-rfbas[-1])%Ls],N.diff(rfbas)))
+        g, M = np.array([blackharrcw(m * Qvar, csh) for m, csh in izip(M, corr_shift)]).T
+        # M = N.ceil(M/4).astype(int)*4  # bailing out for some strange reason....
         M = np.array([ceil(m / 4) * 4 for m in M], dtype=int)
     else:
         g = [hannwin(m) for m in M]
@@ -210,8 +206,5 @@ def nsgfwin_new(f, q, sr, Ls, sliced=True, min_win=4, Qvar=1, dowarn=True):
         fbas[lbas] = (fbas[lbas - 1] + fbas[lbas + 1]) / 2
         fbas[lbas + 2] = Ls - fbas[lbas]
         rfbas = np.round(fbas).astype(int)
-
-    #    print "rfbas",rfbas
-    #    print "g",g
 
     return g, rfbas, M

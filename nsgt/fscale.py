@@ -12,7 +12,7 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 """
 
 import numpy as np
-
+from nsgt.utilities.compat import xrange
 
 class Scale:
     dbnd = 1.e-8

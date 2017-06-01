@@ -10,10 +10,9 @@ http://grrrr.org/nsgt
 Austrian Research Institute for Artificial Intelligence (OFAI)
 AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 """
-
 import numpy as np
 from math import exp, floor, ceil, pi
-from itertools import izip
+from nsgt.utilities.compat import izip
 
 
 def hannwin(l):
@@ -58,19 +57,18 @@ def cont_tukey_win(n, sl_len, tr_area):
     g = np.arange(n) * (sl_len / float(n))
     g[np.logical_or(g < sl_len / 4. - tr_area / 2., g > 3 * sl_len / 4. + tr_area / 2.)] = 0.
     g[np.logical_and(g > sl_len / 4. + tr_area / 2., g < 3 * sl_len / 4. - tr_area / 2.)] = 1.
-    #
+
     idxs = np.logical_and(g >= sl_len / 4. - tr_area / 2., g <= sl_len / 4. + tr_area / 2.)
     temp = g[idxs]
     temp -= sl_len / 4. + tr_area / 2.
     temp *= pi / tr_area
     g[idxs] = np.cos(temp) * 0.5 + 0.5
-    #
+
     idxs = np.logical_and(g >= 3 * sl_len / 4. - tr_area / 2., g <= 3 * sl_len / 4. + tr_area / 2.)
     temp = g[idxs]
     temp += -3 * sl_len / 4. + tr_area / 2.
     temp *= pi / tr_area
     g[idxs] = np.cos(temp) * 0.5 + 0.5
-    #
     return g
 
 

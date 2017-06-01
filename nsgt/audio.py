@@ -11,10 +11,11 @@ Austrian Research Institute for Artificial Intelligence (OFAI)
 AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 """
 
+import re
+import os.path
 import numpy as np
 import subprocess as sp
-import os.path
-import re
+from nsgt.utilities.compat import xrange, reduce
 
 try:
     from scikits.audiolab import Sndfile, Format
@@ -55,10 +56,10 @@ def findfile(fn, path=os.environ['PATH'].split(os.pathsep), matchFunc=os.path.is
 
 
 class SndReader:
-    def __init__(self, fn, sr=None, chns=None, blksz=2 ** 16, dtype=np.float32):
+    def __init__(self, fn, sr=None, chns=None, blksz=2**16, dtype=np.float32):
         fnd = False
 
-        if not fnd and (Sndfile is not None):
+        if not fnd and Sndfile is not None:
             try:
                 sf = Sndfile(fn)
             except IOError:
@@ -93,7 +94,7 @@ class SndReader:
                                  '-ar', str(self.samplerate),
                                  '-ac', str(self.channels),
                                  '-'],
-                                #                    bufsize=self.samplerate*self.channels*4*50,
+                                # bufsize=self.samplerate*self.channels*4*50,
                                 stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
 
                 def rdr():

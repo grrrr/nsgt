@@ -12,13 +12,12 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 """
 
 import numpy as np
-from itertools import izip
+from nsgt.utilities.compat import izip
 
 
-def reblock(sseq, blocksize, dtype=None, fulllast=True, padding=0, multichannel=False):
-    block = None
-    dt = None
-    chns = None
+def reblock(sseq, blocksize, dtype=None, fulllast=True,
+            padding=0, multichannel=False):
+    block, dt, chns = None, None, None
 
     if multichannel:
         channelize = lambda s: s

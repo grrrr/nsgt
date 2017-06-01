@@ -22,18 +22,18 @@ code in any manner as long as this notice is preserved.
 All standard disclaimers apply.
 
 """
-
-from nsgfwin_sl import nsgfwin
-from nsdual import nsdual
-from nsgtf import nsgtf
-from nsigtf import nsigtf
-from util import calcwinrange
-from fscale import OctScale
 from math import ceil
+from nsgt.nsgfwin_sl import nsgfwin
+from nsgt.nsdual import nsdual
+from nsgt.nsgtf import nsgtf
+from nsgt.nsigtf import nsigtf
+from nsgt.fscale import OctScale
+from nsgt.utilities.utils import calcwinrange
 
 
 class NSGT:
-    def __init__(self, scale, fs, Ls, real=True, matrixform=False, reducedform=0, multichannel=False, measurefft=False,
+    def __init__(self, scale, fs, Ls, real=True, matrixform=False,
+                 reducedform=0, multichannel=False, measurefft=False,
                  multithreading=False, dtype=float):
         assert fs > 0
         assert Ls > 0
@@ -50,7 +50,8 @@ class NSGT:
         self.frqs, self.q = scale()
 
         # calculate transform parameters
-        self.g, rfbas, self.M = nsgfwin(self.frqs, self.q, self.fs, self.Ls, sliced=False, dtype=dtype)
+        self.g, rfbas, self.M = nsgfwin(self.frqs, self.q, self.fs,
+                                        self.Ls, sliced=False, dtype=dtype)
 
         if real:
             assert 0 <= reducedform <= 2
@@ -108,7 +109,8 @@ class NSGT:
 
 
 class CQ_NSGT(NSGT):
-    def __init__(self, fmin, fmax, bins, fs, Ls, real=True, matrixform=False, reducedform=0, multichannel=False,
+    def __init__(self, fmin, fmax, bins, fs, Ls, real=True,
+                 matrixform=False, reducedform=0, multichannel=False,
                  measurefft=False, multithreading=False):
         assert fmin > 0
         assert fmax > fmin
@@ -119,5 +121,6 @@ class CQ_NSGT(NSGT):
         self.bins = bins
 
         scale = OctScale(fmin, fmax, bins)
-        NSGT.__init__(self, scale, fs, Ls, real, matrixform=matrixform, reducedform=reducedform,
-                      multichannel=multichannel, measurefft=measurefft, multithreading=multithreading)
+        NSGT.__init__(self, scale, fs, Ls, real, matrixform=matrixform,
+                      reducedform=reducedform, multichannel=multichannel,
+                      measurefft=measurefft, multithreading=multithreading)

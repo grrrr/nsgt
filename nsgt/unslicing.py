@@ -12,13 +12,14 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 """
 
 import numpy as np
-from itertools import izip, cycle, chain
-from util import hannwin
+from itertools import cycle, chain
+from nsgt.utilities.utils import hannwin
+from nsgt.utilities.compat import izip, xrange
 
 
 def slicequads(frec_sliced, hhop):
-    slices = [[slice(hhop * ((i + 3 - k * 2) % 4), hhop * ((i + 3 - k * 2) % 4 + 1)) for i in range(4)] for k in
-              range(2)]
+    slices = [[slice(hhop * ((i + 3 - k * 2) % 4), hhop * ((i + 3 - k * 2) % 4 + 1))
+               for i in range(4)] for k in range(2)]
     slices = cycle(slices)
 
     for fsl, sl in izip(frec_sliced, slices):
@@ -63,5 +64,4 @@ def unslicing(frec_sliced, sl_len, tr_area, dtype=float, usewindow=True):
     for _ in range(2):
         # absolutely last two should be padding (and discarded by the receiver)
         yield output.pop(0)
-
         # two more buffers remaining (and zero)

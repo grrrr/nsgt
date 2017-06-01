@@ -35,7 +35,8 @@ EXTERNALS : firwin
 """
 
 import numpy as np
-from util import hannwin, _isseq
+from nsgt.utilities.compat import xrange
+from nsgt.utilities.utils import hannwin, _isseq
 
 
 def nsgfwin(fmin, fmax, bins, sr, Ls, min_win=4):
