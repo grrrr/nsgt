@@ -1,7 +1,7 @@
 language: python
 sudo: false
 python:
-  - "2.7"
+  - "2.7.12"
 install:
   - pip install pyfftw3
   - python setup.py install
