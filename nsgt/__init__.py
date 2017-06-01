@@ -27,15 +27,15 @@ code in any manner as long as this notice is preserved.
 All standard disclaimers apply.
 
 """
-
-__version__ = '0.17'
-
-from cq import NSGT, CQ_NSGT
-from slicq import NSGT_sliced, CQ_NSGT_sliced
-from fscale import Scale, OctScale, LogScale, LinScale, MelScale
 from warnings import warn
+from nsgt.cq import NSGT, CQ_NSGT
+from nsgt.slicq import NSGT_sliced, CQ_NSGT_sliced
+from nsgt.fscale import Scale, OctScale, LogScale, LinScale, MelScale
 
 try:
-    from audio import SndReader, SndWriter
+    from nsgt.utilities.audio import SndReader, SndWriter
 except ImportError:
     warn("Audio IO routines (scikits.audio module) could not be imported")
+
+__version_info__ = (0, 1, 7)
+__version__ = '.'.join(map(str, __version_info__))
