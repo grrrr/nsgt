@@ -67,7 +67,7 @@ setup(
     license="Artistic License",
     keywords="fourier gabor",
     url="http://grrrr.org/nsgt",
-    requires=["numpy"],
+    requires=["numpy", "librosa"],
     include_dirs=[numpy.get_include()],
     packages=['nsgt'],
     cmdclass=cmdclass,

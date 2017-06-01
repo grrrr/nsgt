@@ -13,30 +13,13 @@ import os
 import numpy as np
 from nsgt.cq import NSGT
 from argparse import ArgumentParser
-from scikits.audiolab import Sndfile, Format
+from nsgt.utilities.compat import imap, xrange
+from examples.e_utils import load_audio, save_audio, cputime
 from nsgt.fscale import LogScale, LinScale, MelScale, OctScale
 
-from nsgt.utilities.compat import imap, xrange
-
-
-def cputime():
-    utime, stime, cutime, cstime, elapsed_time = os.times()
-    return utime
-
-
-class interpolate(object):
-    def __init__(self, cqt, Ls):
-        from scipy.interpolate import interp1d
-        self.intp = [interp1d(np.linspace(0, Ls, len(r)), r) for r in cqt]
-
-    def __call__(self, x):
-        try:
-            len(x)
-        except:
-            return np.array([i(x) for i in self.intp])
-        else:
-            return np.array([[i(xi) for i in self.intp] for xi in x])
-
+# ------------------------------------------------------------
+# Generate Args
+# ------------------------------------------------------------
 
 parser = ArgumentParser()
 parser.add_argument("input", type=str, help="input audio file")
@@ -56,12 +39,11 @@ args = parser.parse_args()
 if not os.path.exists(args.input):
     parser.error("Input file '%s' not found" % args.input)
 
-# Read audio data
-sf = Sndfile(args.input)
-fs = sf.samplerate
-s = sf.read_frames(sf.nframes)
-if len(s.shape) > 1:
-    s = np.mean(s, axis=1)
+# ------------------------------------------------------------
+# Load Audio
+# ------------------------------------------------------------
+
+s, fs = load_audio(args.input)
 
 scales = {'log': LogScale, 'lin': LinScale, 'mel': MelScale, 'oct': OctScale}
 try:
@@ -71,21 +53,18 @@ except KeyError:
 
 scl = scale(args.fmin, args.fmax, args.bins)
 
-times = []
+# ------------------------------------------------------------
+# Test
+# ------------------------------------------------------------
 
+
+times = list()
 for _ in xrange(args.time or 1):
     t1 = cputime()
-
-    # calculate transform parameters
-    Ls = len(s)
-
+    Ls = len(s)  # calculate transform parameters
     nsgt = NSGT(scl, fs, Ls, real=args.real, matrixform=args.matrixform, reducedform=args.reducedform)
-
-    # forward transform 
-    c = nsgt.forward(s)
-    # inverse transform
-    s_r = nsgt.backward(c)
-
+    c = nsgt.forward(s)  # forward transform
+    s_r = nsgt.backward(c)  # inverse transform
     t2 = cputime()
     times.append(t2 - t1)
 
@@ -94,23 +73,36 @@ rec_err = norm(s - s_r) / norm(s)
 print("Reconstruction error: %.3e" % rec_err)
 print("Calculation time: %.3f±%.3fs (min=%.3f s)" % (np.mean(times), np.std(times) / 2, np.min(times)))
 
+# ------------------------------------------------------------
+# Output
+# ------------------------------------------------------------
+
+
 if args.output:
-    print("Writing audio file '%s'" % args.output)
-    sf = Sndfile(args.output, mode='w', format=Format('wav', 'pcm24'), channels=1, samplerate=fs)
-    sf.write_frames(s_r)
-    sf.close()
-    print
-    "Done"
+    save_audio(path=args.output, sr=fs, data=s_r)
 
 if args.plot:
     print("Preparing plot")
     import matplotlib.pyplot as plt
 
+
+    class Interpolate(object):
+        def __init__(self, cqt, Ls):
+            from scipy.interpolate import interp1d
+            self.intp = [interp1d(np.linspace(0, Ls, len(r)), r) for r in cqt]
+
+        def __call__(self, x):
+            try:
+                len(x)
+            except TypeError:
+                return np.array([i(x) for i in self.intp])
+            else:
+                return np.array([[i(xi) for i in self.intp] for xi in x])
+
     # interpolate CQT to get a grid
     x = np.linspace(0, Ls, 2000)
     hf = -1 if args.real else len(c) // 2
-    grid = interpolate(imap(np.abs, c[2:hf]), Ls)(x)
-    # display grid
+    grid = Interpolate(imap(np.abs, c[2:hf]), Ls)(x)
     plt.imshow(np.log(np.flipud(grid.T)),
                aspect=float(grid.shape[0]) / grid.shape[1] * 0.5,
                interpolation='nearest')

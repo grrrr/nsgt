@@ -14,8 +14,14 @@ import numpy as np
 from warnings import warn
 from argparse import ArgumentParser
 from nsgt.slicq import NSGT_sliced
-from nsgt.utilities.audio import SndReader
 from nsgt.fscale import LogScale, LinScale, MelScale, OctScale
+
+from nsgt.utilities.audio import SndReader
+
+
+# ------------------------------------------------------------
+# Helper Function
+# ------------------------------------------------------------
 
 
 def assemble_coeffs(cqt, ncoefs):
@@ -41,6 +47,11 @@ def assemble_coeffs(cqt, ncoefs):
         out[fr:fr + sh] = cqi[:sh]
 
     return out[:fr]
+
+
+# ------------------------------------------------------------
+# Generate Args
+# ------------------------------------------------------------
 
 
 parser = ArgumentParser()
@@ -82,7 +93,10 @@ if not os.path.exists(args.input):
 
 fs = args.sr
 
-# build transform
+# ------------------------------------------------------------
+# Build transform
+# ------------------------------------------------------------
+
 scales = {'log': LogScale, 'lin': LinScale, 'mel': MelScale, 'oct': OctScale}
 try:
     scale = scales[args.scale]
@@ -98,7 +112,11 @@ slicq = NSGT_sliced(scl, args.sllen, args.trlen, fs,
                     multichannel=True
                     )
 
-# Read audio data
+# ------------------------------------------------------------
+# Load Audio
+# ------------------------------------------------------------
+
+
 sf = SndReader(args.input, sr=fs, chns=2)
 signal = sf()
 
@@ -149,6 +167,11 @@ if args.fps:
     mls = poolfun(mls.reshape((pooled_len, poolf,) + mls.shape[1:]), axis=1)
 
 times = np.linspace(0, mls_dur, endpoint=True, num=len(mls) + 1)
+
+# ------------------------------------------------------------
+# Output
+# ------------------------------------------------------------
+
 
 # save file
 if args.output:

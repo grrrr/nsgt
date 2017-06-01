@@ -11,17 +11,16 @@ http://grrrr.org/nsgt
 
 import os
 import numpy as np
-from scikits.audiolab import Sndfile, Format
+from examples.e_utils import load_audio, save_audio, cputime
 
 from argparse import ArgumentParser
 from nsgt.reblock import reblock
 from nsgt.slicq import NSGT_sliced
 from nsgt.fscale import LogScale, LinScale, MelScale, OctScale
 
-
-def cputime():
-    utime, stime, cutime, cstime, elapsed_time = os.times()
-    return utime
+# ------------------------------------------------------------
+# Generate Args
+# ------------------------------------------------------------
 
 
 parser = ArgumentParser()
@@ -47,12 +46,12 @@ args = parser.parse_args()
 if not os.path.exists(args.input):
     parser.error("Input file '%s' not found" % args.input)
 
-# Read audio data
-sf = Sndfile(args.input)
-fs = sf.samplerate
-s = sf.read_frames(sf.nframes)
-if sf.channels > 1:
-    s = np.mean(s, axis=1)
+# ------------------------------------------------------------
+# Load Audio
+# ------------------------------------------------------------
+
+
+s, fs = load_audio(path=args.input)
 
 if args.length:
     s = s[:args.length]
@@ -69,6 +68,11 @@ slicq = NSGT_sliced(scl, args.sllen, args.trlen, fs,
                     matrixform=args.matrixform, reducedform=args.reducedform,
                     multithreading=args.multithreading
                     )
+
+# ------------------------------------------------------------
+# Test
+# ------------------------------------------------------------
+
 
 t1 = cputime()
 
@@ -99,11 +103,15 @@ print("Calculation time: %.3fs" % (t2 - t1))
 #     # not implemented yet!
 #     test_coeff_quality(c, s, g, shift, M, options.sl_len, len(s))
 
+
+# ------------------------------------------------------------
+# Output
+# ------------------------------------------------------------
+
+
 if args.output:
     print("Writing audio file '%s'" % args.output)
-    sf = Sndfile(args.output, mode='w', format=Format('wav', 'pcm24'), channels=1, samplerate=fs)
-    sf.write_frames(s_r)
-    sf.close()
+    save_audio(path=args.output, sr=fs, data=s_r)
 
 if args.plot:
     print("Plotting t*f space")
