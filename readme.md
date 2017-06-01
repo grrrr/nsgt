@@ -1,3 +1,6 @@
+NSGT
+====
+
 Python implementation of Non-Stationary Gabor Transform (NSGT)
 derived from MATLAB code by NUHAG, University of Vienna, Austria
 
@@ -36,7 +39,7 @@ To install the package (with administrator rights):
 sudo python setup.py install
 
 
-Todo:
+ToDO:
 -----
 
 - Quality measurement for coefficients of sliced transform
