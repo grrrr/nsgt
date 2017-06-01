@@ -12,11 +12,16 @@ http://grrrr.org/nsgt
 import os
 import numpy as np
 from warnings import warn
-from argparse import ArgumentParser
 from nsgt.slicq import NsgtSliced
+from argparse import ArgumentParser
+from nsgt.utilities.audio import SndReader
 from nsgt.fscale import LogScale, LinScale, MelScale, OctScale
 
-from nsgt.utilities.audio import SndReader
+
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
 
 # ------------------------------------------------------------
@@ -187,10 +192,8 @@ if args.output:
 
     data = {args.data_coefs: mls, args.data_times: times, args.data_frqs: frqs, args.data_qs: qs}
     if args.output.endswith('.pkl') or args.output.endswith('.pck'):
-        import cPickle
-
         with open(args.output, 'wb') as f:
-            cPickle.dump(data, f, protocol=cPickle.HIGHEST_PROTOCOL)
+            pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
     elif args.output.endswith('.npz'):
         np.savez(args.output, **data)
     elif args.output.endswith('.hdf5') or args.output.endswith('.h5'):
