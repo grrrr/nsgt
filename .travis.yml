@@ -3,7 +3,7 @@ sudo: false
 python:
   - "2.7.12"
 install:
-  - sudo apt-get install libfftw3-dev
+  - apt-get install libfftw3-dev
   - pip install pyfftw
   - python setup.py install
 script: 
