@@ -96,13 +96,13 @@ class NSGT(object):
         return self.ncoefs
 
     def forward(self, s):
-        'transform'
+        """transform"""
         s = self.channelize(s)
         c = map(self.fwd, s)
         return self.unchannelize(c)
 
     def backward(self, c):
-        'inverse transform'
+        """inverse transform"""
         c = self.channelize(c)
         s = map(self.bwd, c)
         return self.unchannelize(s)
