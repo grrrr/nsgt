@@ -112,12 +112,12 @@ class LinScale(Scale):
 
 
 def hz2mel(f):
-    "\cite{shannon:2003}"
+    """\cite{shannon:2003}"""
     return np.log10(f / 700. + 1.) * 2595.
 
 
 def mel2hz(m):
-    "\cite{shannon:2003}"
+    """\cite{shannon:2003}"""
     return (np.power(10., m / 2595.) - 1.) * 700.
 
 
