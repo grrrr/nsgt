@@ -36,38 +36,25 @@ import numpy
 import warnings
 
 try:
-    import setuptools
+    from setuptools import setup, find_packages
+    from setuptools.extension import Extension
 except ImportError:
     warnings.warn("setuptools not found, resorting to distutils: "
                   "unit test suite can not be run from setup.py")
-    setuptools = None
-
-setup_options = {}
-
-if setuptools is None:
     from distutils.core import setup
     from distutils.extension import Extension
-else:
-    from setuptools import setup
-    from setuptools.extension import Extension
-
-    setup_options['test_suite'] = 'tests'
 
 try:
     from Cython.Distutils import build_ext
-except ImportError:
-    build_ext = None
 
-
-if build_ext is None:
-    cmdclass = {}
-    ext_modules = []
-else:
     cmdclass = {'build_ext': build_ext}
     ext_modules = [
         Extension("nsgt._nsgtf_loop", ["nsgt/nsgtf_loop.pyx"]),
         Extension("nsgt._nsigtf_loop", ["nsgt/nsigtf_loop.pyx"])
     ]
+except ImportError:
+    cmdclass = {}
+    ext_modules = []
 
 setup(
     name="nsgt",
@@ -82,7 +69,7 @@ setup(
     url="http://grrrr.org/nsgt",
     requires=["numpy"],
     include_dirs=[numpy.get_include()],
-    packages=['nsgt'],
+    packages=find_packages(exclude=["nsgt/cython"]),
     cmdclass=cmdclass,
     ext_modules=ext_modules,
     classifiers=[
@@ -91,5 +78,5 @@ setup(
         "License :: OSI Approved :: Artistic License",
         "Programming Language :: Python"
     ],
-    **setup_options
+    **{'test_suite': 'tests'}  # test options
 )
