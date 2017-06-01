@@ -31,7 +31,7 @@ from nsgt.fscale import OctScale
 from nsgt.utilities.utils import calcwinrange
 
 
-class NSGT:
+class NSGT(object):
     def __init__(self, scale, fs, Ls, real=True, matrixform=False,
                  reducedform=0, multichannel=False, measurefft=False,
                  multithreading=False, dtype=float):

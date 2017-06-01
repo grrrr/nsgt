@@ -21,7 +21,6 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 
 import numpy as np
 from math import ceil
-
 from nsgt.slicing import slicing
 from nsgt.unslicing import unslicing
 from nsgt.nsdual import nsdual
@@ -79,7 +78,7 @@ def chnmap(gen, seq):
     return izip(*gens)  # packing channels to one generator yielding channel tuples
 
 
-class NSGT_sliced:
+class NSGT_sliced(object):
     def __init__(self, scale, sl_len, tr_area, fs,
                  min_win=16, Qvar=1,
                  real=False, recwnd=False, matrixform=False, reducedform=0,
