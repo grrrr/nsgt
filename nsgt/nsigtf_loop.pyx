@@ -19,9 +19,9 @@ def nsigtf_loop(loopparams, np.ndarray fr not None, fc):
     fr[:] = 0.
     # The overlap-add procedure including multiplication with the synthesis windows
     # TODO: stuff loop into theano
-    cdef np.ndarray gdii,t,temp,t1,t2,wr1,wr2
-    cdef slice sl1,sl2
-    for t,(gdii,wr1,wr2,sl1,sl2,temp) in izip(fc, loopparams):
+    cdef np.ndarray gdii, t, temp, t1, t2, wr1, wr2
+    cdef slice sl1, sl2
+    for t, (gdii, wr1, wr2, sl1, sl2, temp) in izip(fc, loopparams):
         t1 = temp[sl1]
         t2 = temp[sl2]
         t1[:] = t[sl1]

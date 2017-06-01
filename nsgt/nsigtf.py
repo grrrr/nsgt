@@ -49,101 +49,105 @@ http://www.univie.ac.at/nonstatgab/
 Edited by Nicki Holighaus 01.03.11
 """
 
+from itertools import chain
+
 import numpy as np
-from itertools import izip, chain, imap
-from fft import fftp, ifftp, irfftp
+
+from nsgt.utilities.compat import izip, imap
+from nsgt.utilities.fft import fftp, ifftp, irfftp
 
 try:
     # try to import cython version
-    from _nsigtf_loop import nsigtf_loop
+    from nsgt.cython.nsgtf_loop import nsigtf_loop
 except ImportError:
-    nsigtf_loop = None
+    from nsgt.nsigtf_loop import nsigtf_loop
 
-if nsigtf_loop is None:
-    from nsigtf_loop import nsigtf_loop
+# if False:
+#     # what about theano?
+#     try:
+#         import theano as T
+#     except ImportError:
+#         T = None
 
-if False:
-    # what about theano?
-    try:
-        import theano as T
-    except ImportError:
-        T = None
-    
 try:
-    import multiprocessing as MP
+    import multiprocessing as mp
 except ImportError:
-    MP = None
-    
+    mp = None
 
-#@profile
-def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft=False, multithreading=False):
+
+# @profile
+def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False,
+              reducedform=0, measurefft=False, multithreading=False):
     cseq = iter(cseq)
     dtype = gd[0].dtype
 
     fft = fftp(measure=measurefft, dtype=dtype)
-    ifft = irfftp(measure=measurefft, dtype=dtype) if real else ifftp(measure=measurefft, dtype=dtype)
-    
     if real:
-        ln = len(gd)//2+1-reducedform*2
-        fftsymm = lambda c: np.hstack((c[0],c[-1:0:-1])).conj()
+        ifft = irfftp(measure=measurefft, dtype=dtype)
+    else:
+        ifft = ifftp(measure=measurefft, dtype=dtype)
+
+    if real:
+        ln = len(gd) // 2 + 1 - reducedform * 2
+        fftsymm = lambda c: np.hstack((c[0], c[-1:0:-1])).conj()
         if reducedform:
             # no coefficients for f=0 and f=fs/2
-            symm = lambda fc: chain(fc, imap(fftsymm,fc[::-1]))
-            sl = lambda x: chain(x[reducedform:len(gd)//2+1-reducedform],x[len(gd)//2+reducedform:len(gd)+1-reducedform])
+            symm = lambda fc: chain(fc, imap(fftsymm, fc[::-1]))
+            sl = lambda x: chain(x[reducedform:len(gd) // 2 + 1 - reducedform],
+                                 x[len(gd) // 2 + reducedform:len(gd) + 1 - reducedform])
         else:
-            symm = lambda fc: chain(fc,imap(fftsymm,fc[-2:0:-1]))
+            symm = lambda fc: chain(fc, imap(fftsymm, fc[-2:0:-1]))
             sl = lambda x: x
     else:
         ln = len(gd)
         symm = lambda fc: fc
         sl = lambda x: x
-        
-    maxLg = max(len(gdii) for gdii in sl(gd))
 
+    maxLg = max(len(gdii) for gdii in sl(gd))
     # get first slice
-    c0 = cseq.next()
+    c0 = next(cseq)
 
     fr = np.empty(nn, dtype=c0[0].dtype)  # Allocate output
     temp0 = np.empty(maxLg, dtype=fr.dtype)  # pre-allocation
-    
-    if multithreading and MP is not None:
-        mmap = MP.Pool().map
+
+    if multithreading and mp is not None:
+        mmap = mp.Pool().map
     else:
         mmap = map
 
     loopparams = []
-    for gdii,win_range in izip(sl(gd), sl(wins)):
+    for gdii, win_range in izip(sl(gd), sl(wins)):
         Lg = len(gdii)
         temp = temp0[:Lg]
-        wr1 = win_range[:(Lg)//2]
-        wr2 = win_range[-((Lg+1)//2):]
-#        wr1,wr2 = win_range
-        sl1 = slice(None, (Lg+1)//2)
-        sl2 = slice(-(Lg//2), None)
-        p = (gdii,wr1,wr2,sl1,sl2,temp)
+        wr1 = win_range[:Lg // 2]
+        wr2 = win_range[-((Lg + 1) // 2):]
+        # wr1, wr2 = win_range
+        sl1 = slice(None, (Lg + 1) // 2)
+        sl2 = slice(-(Lg // 2), None)
+        p = (gdii, wr1, wr2, sl1, sl2, temp)
         loopparams.append(p)
-        
-    # main loop over slices
-    for c in chain((c0,),cseq):
-        assert len(c) == ln
 
+    # main loop over slices
+    for c in chain((c0,), cseq):
+        assert len(c) == ln
         # do transforms on coefficients
         # TODO: for matrixform we could do a FFT on the whole matrix along one axis
         # this could also be nicely parallalized
         fc = mmap(fft, c)
         fc = symm(fc)
-        
+
         # The overlap-add procedure including multiplication with the synthesis windows
         fr = nsigtf_loop(loopparams, fr, fc)
-
-        ftr = fr[:nn//2+1] if real else fr
-
+        ftr = fr[:nn // 2 + 1] if real else fr
         sig = ifft(ftr, outn=nn)
-
-        sig = sig[:Ls] # Truncate the signal to original length (if given)
+        sig = sig[:Ls]  # Truncate the signal to original length (if given)
 
         yield sig
 
+
 # non-sliced version
-def nsigtf(c, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft=False, multithreading=False):
-    return nsigtf_sl((c,), gd, wins, nn, Ls=Ls, real=real, reducedform=reducedform, measurefft=measurefft, multithreading=multithreading).next()
+def nsigtf(c, gd, wins, nn, Ls=None, real=False,
+           reducedform=0, measurefft=False, multithreading=False):
+    return next(nsigtf_sl((c,), gd=gd, wins=wins, nn=nn, Ls=Ls, real=real,
+                          reducedform=reducedform, measurefft=measurefft,
+                          multithreading=multithreading))

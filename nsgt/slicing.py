@@ -12,56 +12,63 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 """
 
 import numpy as np
-from util import hannwin
-from reblock import reblock
-from itertools import chain, izip, cycle
+from nsgt.reblock import reblock
+from itertools import chain, cycle
+from nsgt.utilities.utils import hannwin
+from nsgt.utilities.compat import izip, xrange
+
 
 def makewnd(sl_len, tr_area):
-    hhop = sl_len//4
-    htr = tr_area//2
-    # build window function within one slice (centered with transition areas around sl_len/4 and 3*sl_len/4    
-    w = hannwin(2*tr_area)  # window is shifted
+    hhop = sl_len // 4
+    htr = tr_area // 2
+    # build window function within one slice (centered with
+    # transition areas around sl_len/4 and 3*sl_len/4
+    w = hannwin(2 * tr_area)  # window is shifted
     tw = np.empty(sl_len, dtype=float)
-    tw[:hhop-htr] = 0
-    tw[hhop-htr:hhop+htr] = w[tr_area:]
-    tw[hhop+htr:3*hhop-htr] = 1
-    tw[3*hhop-htr:3*hhop+htr] = w[:tr_area]
-    tw[3*hhop+htr:] = 0
+    tw[:hhop - htr] = 0
+    tw[hhop - htr:hhop + htr] = w[tr_area:]
+    tw[hhop + htr:3 * hhop - htr] = 1
+    tw[3 * hhop - htr:3 * hhop + htr] = w[:tr_area]
+    tw[3 * hhop + htr:] = 0
     return tw
 
+
 def slicing(f, sl_len, tr_area):
-    if tr_area%2 != 0:
+    if tr_area % 2 != 0:
         raise ValueError("Transition area 'tr_area' must be modulo 2")
-    if sl_len%4 != 0:
+    if sl_len % 4 != 0:
         raise ValueError("Slice length 'sl_len' must be modulo 4")
-    
-    hhop = sl_len//4  # half hopsize
+
+    hhop = sl_len // 4  # half hopsize
 
     tw = makewnd(sl_len, tr_area)
     # four parts of slice with centered window function
-    tw = [tw[o:o+hhop] for o in xrange(0, sl_len, hhop)]
-    
-    # stream of hopsize/2 blocks with leading and trailing zero blocks
-    fseq = reblock(f, hhop, dtype=float, fulllast=True, padding=0., multichannel=True)
-    
-    # get first block to deduce number of channels
-    fseq0 = fseq.next()
-    chns = len(fseq0)
-    pad = np.zeros((chns,hhop), dtype=fseq0.dtype)
-    # assemble a stream of front padding, already retrieved first block, the block stream and some tail padding
-    fseq = chain((pad,pad,fseq0), fseq, (pad,pad,pad))
+    tw = [tw[o:o + hhop] for o in xrange(0, sl_len, hhop)]
 
-    slices = [[slice(hhop*((i+3-k*2)%4), hhop*((i+3-k*2)%4+1)) for i in range(4)] for k in range(2)]
+    # stream of hopsize/2 blocks with leading and trailing zero blocks
+    fseq = reblock(f, hhop, dtype=float, fulllast=True,
+                   padding=0., multichannel=True)
+
+    # get first block to deduce number of channels
+    fseq0 = next(fseq)
+    chns = len(fseq0)
+    pad = np.zeros((chns, hhop), dtype=fseq0.dtype)
+    # assemble a stream of front padding, already retrieved first block,
+    # the block stream and some tail padding
+    fseq = chain((pad, pad, fseq0), fseq, (pad, pad, pad))
+
+    slices = [[slice(hhop * ((i + 3 - k * 2) % 4), hhop * ((i + 3 - k * 2) % 4 + 1))
+               for i in range(4)] for k in range(2)]
     slices = cycle(slices)
-    
-    past = []
+
+    past = list()
     for fi in fseq:
         past.append(fi)
         if len(past) == 4:
-            f_slice = np.empty((chns,sl_len), dtype=fi.dtype)
-            sl = slices.next()
-            for sli,pi,twi in izip(sl, past, tw):
-                f_slice[:,sli] = pi    # signal
-                f_slice[:,sli] *= twi  # multiply with part of window function
+            f_slice = np.empty((chns, sl_len), dtype=fi.dtype)
+            sl = next(slices)
+            for sli, pi, twi in izip(sl, past, tw):
+                f_slice[:, sli] = pi  # signal
+                f_slice[:, sli] *= twi  # multiply with part of window function
             yield f_slice
             past = past[2:]  # pop the two oldest slices

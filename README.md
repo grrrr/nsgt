@@ -1,3 +1,6 @@
+NSGT
+====
+
 Python implementation of Non-Stationary Gabor Transform (NSGT)
 derived from MATLAB code by NUHAG, University of Vienna, Austria
 
@@ -15,6 +18,7 @@ Mandatory dependencies:
 -----------------------
 Numerical Python (http://numpy.scipy.org)
 
+
 Optional dependencies:
 -----------------------
 PyFFTW3 (https://launchpad.net/pyfftw)
@@ -27,16 +31,13 @@ is needed for using the built-in audio import/streaming functionality
 Installation:
 -------------
 
-In the console (terminal application) change to the folder containing this readme.txt file.
+Directly from GitHub:
 
-To build the package run the following command:
-python setup.py build
+``pip install git+git://github.com/grrrr/nsgt@master``
 
-To install the package (with administrator rights):
-sudo python setup.py install
+Note: if you are using Python3 on macOS or Linux, you may wish to replace `pip` with `pip3`.
 
-
-Todo:
+ToDO:
 -----
 
 - Quality measurement for coefficients of sliced transform

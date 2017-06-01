@@ -1,7 +1,7 @@
 graft examples 
 graft nsgt
 graft tests
-include *.txt
+include *.md
 prune paper 
 prune nsgt.egg-info 
 exclude *.lprof
