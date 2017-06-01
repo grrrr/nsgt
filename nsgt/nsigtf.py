@@ -82,7 +82,10 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False,
     dtype = gd[0].dtype
 
     fft = fftp(measure=measurefft, dtype=dtype)
-    ifft = irfftp(measure=measurefft, dtype=dtype) if real else ifftp(measure=measurefft, dtype=dtype)
+    if real:
+        ifft = irfftp(measure=measurefft, dtype=dtype)
+    else:
+        ifft = ifftp(measure=measurefft, dtype=dtype)
 
     if real:
         ln = len(gd) // 2 + 1 - reducedform * 2
@@ -116,7 +119,7 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False,
     for gdii, win_range in izip(sl(gd), sl(wins)):
         Lg = len(gdii)
         temp = temp0[:Lg]
-        wr1 = win_range[:(Lg) // 2]
+        wr1 = win_range[:Lg // 2]
         wr2 = win_range[-((Lg + 1) // 2):]
         # wr1, wr2 = win_range
         sl1 = slice(None, (Lg + 1) // 2)
