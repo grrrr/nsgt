@@ -157,35 +157,27 @@ class NSGT_sliced(object):
         return self.ncoefs
 
     def forward(self, sig):
-        'transform - s: iterable sequence of sequences'
+        """transform - s: iterable sequence of sequences"""
 
         sig = self.channelize(sig)
-
         # Compute the slices (zero-padded Tukey window version)
         f_sliced = slicing(sig, self.sl_len, self.tr_area)
-
         cseq = chnmap(self.fwd, f_sliced)
-
         cseq = arrange(cseq, self.M, True)
-
         cseq = self.unchannelize(cseq)
-
         return cseq
 
     def backward(self, cseq):
-        'inverse transform - c: iterable sequence of coefficients'
+        """inverse transform - c: iterable sequence of coefficients"""
 
         cseq = self.channelize(cseq)
-
         cseq = arrange(cseq, self.M, False)
-
         frec_sliced = chnmap(self.bwd, cseq)
 
         # Glue the parts back together
         ftype = float if self.real else complex
         sig = unslicing(frec_sliced, self.sl_len, self.tr_area,
                         dtype=ftype, usewindow=self.userecwnd)
-
         sig = self.unchannelize(sig)
 
         # discard first two blocks (padding)
