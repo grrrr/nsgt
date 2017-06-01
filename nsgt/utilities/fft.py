@@ -18,6 +18,7 @@ realized = False
 
 if not realized:
     # try to use FFT3 if available, else use numpy.fftpack
+    # ToDo: Depreciate. `pyfftw.interfaces` (below) should be just as fast as `fftw3` (if not faster).
     try:
         import fftw3
     except ImportError:
@@ -117,8 +118,13 @@ if not realized:
         realized = True
 
 if not realized:
-    # fall back to numpy methods
-    warn("nsgt.fft falling back to numpy.fft")
+    try:
+        from pyfftw.interfaces import numpy_fft as np_fft
+    except ImportError:
+        # Fall back to numpy methods
+        warn("`nsgt.fft` failed to load `pyfftw` and `fftw3`."
+             " Falling back to numpy.fft")
+        import numpy.fft as np_fft
 
 
     class fftp:
@@ -126,7 +132,7 @@ if not realized:
             pass
 
         def __call__(self, x, outn=None, ref=False):
-            return np.fft.fft(x)
+            return np_fft.fft(x)
 
 
     class ifftp:
@@ -134,7 +140,7 @@ if not realized:
             pass
 
         def __call__(self, x, outn=None, n=None, ref=False):
-            return np.fft.ifft(x, n=n)
+            return np_fft.ifft(x, n=n)
 
 
     class rfftp:
@@ -142,7 +148,7 @@ if not realized:
             pass
 
         def __call__(self, x, outn=None, ref=False):
-            return np.fft.rfft(x)
+            return np_fft.rfft(x)
 
 
     class irfftp:
@@ -150,4 +156,4 @@ if not realized:
             pass
 
         def __call__(self, x, outn=None, ref=False):
-            return np.fft.irfft(x, n=outn)
+            return np_fft.irfft(x, n=outn)

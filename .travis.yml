@@ -3,7 +3,7 @@ sudo: false
 python:
   - "2.7.12"
 install:
-  - pip install pyfftw3
+  - pip install pyfftw
   - python setup.py install
 script: 
   - python setup.py test
