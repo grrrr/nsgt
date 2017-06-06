@@ -28,7 +28,7 @@ All standard disclaimers apply.
 
 """
 
-__version__ = '0.17'
+__version__ = '0.18'
 
 from .cq import NSGT, CQ_NSGT
 from .slicq import NSGT_sliced, CQ_NSGT_sliced
