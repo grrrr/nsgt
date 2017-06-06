@@ -34,6 +34,7 @@ from .fscale import OctScale
 
 # one of the more expensive functions (32/400)
 def arrange(cseq, M, fwd):
+    cseq = iter(cseq)
     try:
         c0 = next(cseq)  # grab first stream element
     except StopIteration:
