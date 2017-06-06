@@ -32,8 +32,8 @@ minor edit by Gino Velasco 23.02.11
 """
 
 import numpy as np
-from itertools import izip
-from util import chkM
+
+from .util import chkM
 
 def nsdual(g, wins, nn, M=None):
 
@@ -41,7 +41,7 @@ def nsdual(g, wins, nn, M=None):
 
     # Construct the diagonal of the frame operator matrix explicitly
     x = np.zeros((nn,), dtype=float)
-    for gi,mii,sl in izip(g, M, wins):
+    for gi,mii,sl in zip(g, M, wins):
         xa = np.square(np.fft.fftshift(gi))
         xa *= mii
         x[sl] += xa
@@ -60,5 +60,5 @@ def nsdual(g, wins, nn, M=None):
     # Using the frame operator and the original window sequence, compute 
     # the dual window sequence
 #    gd = [gi/N.fft.ifftshift(N.hstack((x[wi[0][0]],x[wi[0][1]],x[wi[1][0]],x[wi[1][1]]))) for gi,wi in izip(g,wins)]
-    gd = [gi/np.fft.ifftshift(x[wi]) for gi,wi in izip(g,wins)]
+    gd = [gi/np.fft.ifftshift(x[wi]) for gi,wi in zip(g,wins)]
     return gd

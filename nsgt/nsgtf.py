@@ -13,9 +13,9 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 
 import numpy as np
 from math import ceil
-from itertools import izip
-from util import chkM
-from fft import fftp, ifftp
+
+from .util import chkM
+from .fft import fftp, ifftp
 
 try:
     # try to import cython version
@@ -24,7 +24,7 @@ except ImportError:
     nsgtf_loop = None
 
 if nsgtf_loop is None:
-    from nsgtf_loop import nsgtf_loop
+    from .nsgtf_loop import nsgtf_loop
 
 if False:
     # what about theano?
@@ -53,7 +53,7 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measureff
     else:
         sl = slice(0,None)
     
-    maxLg = max(int(ceil(float(len(gii))/mii))*mii for mii,gii in izip(M[sl],g[sl]))
+    maxLg = max(int(ceil(float(len(gii))/mii))*mii for mii,gii in zip(M[sl],g[sl]))
     temp0 = None
     
     if multithreading and MP is not None:
@@ -62,7 +62,7 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measureff
         mmap = map
 
     loopparams = []
-    for mii,gii,win_range in izip(M[sl],g[sl],wins[sl]):
+    for mii,gii,win_range in zip(M[sl],g[sl],wins[sl]):
         Lg = len(gii)
         col = int(ceil(float(Lg)/mii))
         assert col*mii >= Lg
@@ -98,4 +98,4 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measureff
         
 # non-sliced version
 def nsgtf(f, g, wins, nn, M=None, real=False, reducedform=0, measurefft=False, multithreading=False):
-    return nsgtf_sl((f,), g, wins, nn, M=M, real=real, reducedform=reducedform, measurefft=measurefft, multithreading=multithreading).next()
+    return next(nsgtf_sl((f,), g, wins, nn, M=M, real=real, reducedform=reducedform, measurefft=measurefft, multithreading=multithreading))

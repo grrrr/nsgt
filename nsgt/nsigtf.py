@@ -50,8 +50,8 @@ Edited by Nicki Holighaus 01.03.11
 """
 
 import numpy as np
-from itertools import izip, chain, imap
-from fft import fftp, ifftp, irfftp
+from itertools import chain
+from .fft import fftp, ifftp, irfftp
 
 try:
     # try to import cython version
@@ -60,7 +60,7 @@ except ImportError:
     nsigtf_loop = None
 
 if nsigtf_loop is None:
-    from nsigtf_loop import nsigtf_loop
+    from .nsigtf_loop import nsigtf_loop
 
 if False:
     # what about theano?
@@ -88,10 +88,10 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
         fftsymm = lambda c: np.hstack((c[0],c[-1:0:-1])).conj()
         if reducedform:
             # no coefficients for f=0 and f=fs/2
-            symm = lambda fc: chain(fc, imap(fftsymm,fc[::-1]))
+            symm = lambda fc: chain(fc, map(fftsymm,fc[::-1]))
             sl = lambda x: chain(x[reducedform:len(gd)//2+1-reducedform],x[len(gd)//2+reducedform:len(gd)+1-reducedform])
         else:
-            symm = lambda fc: chain(fc,imap(fftsymm,fc[-2:0:-1]))
+            symm = lambda fc: chain(fc,map(fftsymm,fc[-2:0:-1]))
             sl = lambda x: x
     else:
         ln = len(gd)
@@ -101,7 +101,7 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
     maxLg = max(len(gdii) for gdii in sl(gd))
 
     # get first slice
-    c0 = cseq.next()
+    c0 = next(cseq)
 
     fr = np.empty(nn, dtype=c0[0].dtype)  # Allocate output
     temp0 = np.empty(maxLg, dtype=fr.dtype)  # pre-allocation
@@ -112,7 +112,7 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
         mmap = map
 
     loopparams = []
-    for gdii,win_range in izip(sl(gd), sl(wins)):
+    for gdii,win_range in zip(sl(gd), sl(wins)):
         Lg = len(gdii)
         temp = temp0[:Lg]
         wr1 = win_range[:(Lg)//2]
@@ -146,4 +146,4 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
 
 # non-sliced version
 def nsigtf(c, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft=False, multithreading=False):
-    return nsigtf_sl((c,), gd, wins, nn, Ls=Ls, real=real, reducedform=reducedform, measurefft=measurefft, multithreading=multithreading).next()
+    return next(nsigtf_sl((c,), gd, wins, nn, Ls=Ls, real=real, reducedform=reducedform, measurefft=measurefft, multithreading=multithreading))

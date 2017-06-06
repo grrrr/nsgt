@@ -20,26 +20,26 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 """
 
 import numpy as np
-from itertools import izip, cycle, chain, tee
+from itertools import cycle, chain, tee
 from math import ceil
 
-from slicing import slicing
-from unslicing import unslicing
-from nsdual import nsdual
-from nsgfwin_sl import nsgfwin
-from nsgtf import nsgtf_sl
-from nsigtf import nsigtf_sl
-from util import calcwinrange
-from fscale import OctScale
+from .slicing import slicing
+from .unslicing import unslicing
+from .nsdual import nsdual
+from .nsgfwin_sl import nsgfwin
+from .nsgtf import nsgtf_sl
+from .nsigtf import nsigtf_sl
+from .util import calcwinrange
+from .fscale import OctScale
 
 # one of the more expensive functions (32/400)
 def arrange(cseq, M, fwd):
     try:
-        c0 = cseq.next()  # grab first stream element
+        c0 = next(cseq)  # grab first stream element
     except StopIteration:
         return iter(())
     cseq = chain((c0,), cseq)  # push it back in
-    M = map(len, c0[0])  # read off M from the coefficients
+    M = list(map(len, c0[0]))  # read off M from the coefficients
     ixs = (
            [(slice(3*mkk//4, mkk), slice(0, 3*mkk//4)) for mkk in M],  # odd
            [(slice(mkk//4, mkk), slice(0, mkk//4)) for mkk in M]  # even
@@ -51,11 +51,11 @@ def arrange(cseq, M, fwd):
 
     return ([
                 [np.concatenate((ckk[ix0],ckk[ix1]))
-                   for ckk,(ix0,ix1) in izip(ci, ixi)
+                   for ckk,(ix0,ix1) in zip(ci, ixi)
                 ]
              for ci in cci
              ]
-             for cci,ixi in izip(cseq, ixs)
+             for cci,ixi in zip(cseq, ixs)
             )
 
 
@@ -64,15 +64,15 @@ def starzip(iterables):
         for t in itr:
             yield t[i]
     iterables = iter(iterables)
-    it = iterables.next()  # we need that to determine the length of one element
+    it = next(iterables)  # we need that to determine the length of one element
     iterables = chain((it,), iterables)
     return [inner(itr, i) for i,itr in enumerate(tee(iterables, len(it)))]
 
 
 def chnmap(gen, seq):
     chns = starzip(seq) # returns a list of generators (one for each channel)
-    gens = map(gen, chns) # generators including transformation
-    return izip(*gens)  # packing channels to one generator yielding channel tuples
+    gens = list(map(gen, chns)) # generators including transformation
+    return zip(*gens)  # packing channels to one generator yielding channel tuples
 
 
 class NSGT_sliced:
@@ -179,8 +179,8 @@ class NSGT_sliced:
         sig = self.unchannelize(sig)
         
         # discard first two blocks (padding)
-        sig.next()
-        sig.next()
+        next(sig)
+        next(sig)
         return sig
 
 

@@ -81,15 +81,15 @@ c = list(c)
 outseq = slicq.backward(c)
 
 # make single output array from iterator
-s_r = reblock(outseq, len(s), fulllast=False).next()
+s_r = next(reblock(outseq, len(s), fulllast=False))
 s_r = s_r.real
 
 t2 = cputime()
 
 norm = lambda x: np.sqrt(np.sum(np.abs(np.square(np.abs(x)))))
 rec_err = norm(s-s_r)/norm(s)
-print "Reconstruction error: %.3e"%rec_err
-print "Calculation time: %.3fs"%(t2-t1)
+print("Reconstruction error: %.3e"%rec_err)
+print("Calculation time: %.3fs"%(t2-t1))
 
 # Compare the sliced coefficients with non-sliced ones
 if False:
@@ -97,14 +97,14 @@ if False:
     test_coeff_quality(c, s, g, shift, M, options.sl_len, len(s))
 
 if args.output:
-    print "Writing audio file '%s'"%args.output
+    print("Writing audio file '%s'"%args.output)
     sf = Sndfile(args.output, mode='w', format=Format('wav','pcm24'), channels=1, samplerate=fs)
     sf.write_frames(s_r)
     sf.close()
-    print "Done"
+    print("Done")
 
 if args.plot:
-    print "Plotting t*f space"
+    print("Plotting t*f space")
     import matplotlib.pyplot as pl
     tr = np.array([[np.mean(np.abs(cj)) for cj in ci] for ci in c])
     pl.imshow(np.log(np.flipud(tr.T)+1.e-10), aspect=float(tr.shape[0])/tr.shape[1]*0.5, interpolation='nearest')

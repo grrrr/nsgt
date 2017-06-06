@@ -23,12 +23,12 @@ All standard disclaimers apply.
 
 """
 
-from nsgfwin_sl import nsgfwin
-from nsdual import nsdual
-from nsgtf import nsgtf
-from nsigtf import nsigtf
-from util import calcwinrange
-from fscale import OctScale
+from .nsgfwin_sl import nsgfwin
+from .nsdual import nsdual
+from .nsgtf import nsgtf
+from .nsigtf import nsigtf
+from .util import calcwinrange
+from .fscale import OctScale
 from math import ceil
 
 class NSGT:
@@ -93,13 +93,13 @@ class NSGT:
     def forward(self, s):
         'transform'
         s = self.channelize(s)
-        c = map(self.fwd, s)
+        c = list(map(self.fwd, s))
         return self.unchannelize(c)
 
     def backward(self, c):
         'inverse transform'
         c = self.channelize(c)
-        s = map(self.bwd,c)
+        s = list(map(self.bwd,c))
         return self.unchannelize(s)
     
 class CQ_NSGT(NSGT):

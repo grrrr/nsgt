@@ -12,14 +12,14 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 """
 
 import numpy as np
-from itertools import izip, cycle, chain
-from util import hannwin
+from itertools import cycle, chain
+from .util import hannwin
 
 def slicequads(frec_sliced, hhop):
     slices = [[slice(hhop*((i+3-k*2)%4),hhop*((i+3-k*2)%4+1)) for i in range(4)] for k in range(2)]
     slices = cycle(slices)
     
-    for fsl,sl in izip(frec_sliced, slices):
+    for fsl,sl in zip(frec_sliced, slices):
         yield [[fslc[sli] for fslc in fsl] for sli in sl]
 
 
@@ -36,21 +36,21 @@ def unslicing(frec_sliced, sl_len, tr_area, dtype=float, usewindow=True):
         tw[max(hhop-htr-htr2, 0):hhop-htr] = hw[htr2:]
         tw[hhop-htr:3*hhop+htr] = 1
         tw[3*hhop+htr:min(3*hhop+htr+htr2, sl_len)] = hw[:htr2]
-        tw = [tw[o:o+hhop] for o in xrange(0, sl_len, hhop)]
+        tw = [tw[o:o+hhop] for o in range(0, sl_len, hhop)]
     else:
         tw = cycle((1,))
         
     # get first slice to deduce channels
-    firstquad = islices.next()
+    firstquad = next(islices)
     
     chns = len(firstquad[0]) # number of channels in first quad
     
     islices = chain((firstquad,), islices)
     
-    output = [np.zeros((chns,hhop), dtype=dtype) for _ in xrange(4)]
+    output = [np.zeros((chns,hhop), dtype=dtype) for _ in range(4)]
     
     for quad in islices:
-        for osl,isl,w in izip(output, quad, tw):
+        for osl,isl,w in zip(output, quad, tw):
             # in a piecewise manner add slices to output stream 
             osl[:] += isl*w
         for _ in range(2):

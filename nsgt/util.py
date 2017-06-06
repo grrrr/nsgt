@@ -13,7 +13,7 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 
 import numpy as np
 from math import exp, floor, ceil, pi
-from itertools import izip
+
 
 def hannwin(l):
     r = np.arange(l,dtype=float)
@@ -90,7 +90,7 @@ def _isseq(x):
 
 def chkM(M, g):
     if M is None:
-        M = np.array(map(len, g))
+        M = np.array(list(map(len, g)))
     elif not _isseq(M):
         M = np.ones(len(g), dtype=int)*M
     return M
@@ -103,7 +103,7 @@ def calcwinrange(g, rfbas, Ls):
     timepos -= shift[0] # Calculate positions from shift vector
     
     wins = []
-    for gii,tpii in izip(g, timepos):
+    for gii,tpii in zip(g, timepos):
         Lg = len(gii)
         win_range = np.arange(-(Lg//2)+tpii, Lg-(Lg//2)+tpii, dtype=int)
         win_range %= nn

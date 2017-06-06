@@ -15,6 +15,7 @@ import numpy as np
 import subprocess as sp
 import os.path
 import re
+from functools import reduce
 
 try:
     from scikits.audiolab import Sndfile, Format
@@ -30,7 +31,7 @@ def sndreader(sf, blksz=2**16, dtype=np.float32):
         channels = lambda s: s.T
     else:
         channels = lambda s: s.reshape((1,-1))
-    for offs in xrange(0, sf.nframes, blksz):
+    for offs in range(0, sf.nframes, blksz):
         data = sf.read_frames(min(sf.nframes-offs, blksz), dtype=dtype)
         yield channels(data)
     
@@ -78,7 +79,7 @@ class SndReader:
                 m=re.match(r"^(ffmpeg|avconv) version.*Duration: (\d\d:\d\d:\d\d.\d\d),.*Audio: (.+), (\d+) Hz, (.+), (.+), (\d+) kb/s"," ".join(fmtout.split('\n')))
                 self.samplerate = int(m.group(4)) if not sr else int(sr)
                 self.channels = {'mono':1,'1 channels (FL+FR)':1,'stereo':2}[m.group(5)] if not chns else chns
-                dur = reduce(lambda x,y: x*60+y,map(float,m.group(2).split(':')))
+                dur = reduce(lambda x,y: x*60+y,list(map(float,m.group(2).split(':'))))
                 self.frames = int(dur*self.samplerate)  # that's actually an estimation, because of potential resampling with round-off errors
                 pipe = sp.Popen([ffmpeg,
                     '-i', fn,
