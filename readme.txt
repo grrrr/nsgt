@@ -18,7 +18,7 @@ Numerical Python (http://numpy.scipy.org)
 Optional dependencies:
 -----------------------
 PyFFTW3 (https://launchpad.net/pyfftw)
-will greatly speed up the NSGT transformation is fftw3 is installed on your system
+will greatly speed up the NSGT transformation if fftw3 is installed on your system
 
 scikits.audiolab (http://pypi.python.org/pypi/scikits.audiolab)
 is needed for using the built-in audio import/streaming functionality
