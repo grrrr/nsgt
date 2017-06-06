@@ -1,7 +1,7 @@
 Python implementation of Non-Stationary Gabor Transform (NSGT)
 derived from MATLAB code by NUHAG, University of Vienna, Austria
 
-Thomas Grill, 2011-2015
+Thomas Grill, 2011-2017
 http://grrrr.org/nsgt
 
 Austrian Research Institute for Artificial Intelligence (OFAI)
