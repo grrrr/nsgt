@@ -15,6 +15,7 @@ import numpy as np
 import subprocess as sp
 import os.path
 import re
+import sys
 from functools import reduce
 
 try:
@@ -76,10 +77,12 @@ class SndReader:
             if ffmpeg is not None:
                 pipe = sp.Popen([ffmpeg,'-i', fn,'-'],stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
                 fmtout = pipe.stderr.read()
-                m=re.match(r"^(ffmpeg|avconv) version.*Duration: (\d\d:\d\d:\d\d.\d\d),.*Audio: (.+), (\d+) Hz, (.+), (.+), (\d+) kb/s"," ".join(fmtout.split('\n')))
+                if (sys.version_info > (3, 0)):
+                    fmtout = fmtout.decode()
+                m = re.match(r"^(ffmpeg|avconv) version.*Duration: (\d\d:\d\d:\d\d.\d\d),.*Audio: (.+), (\d+) Hz, (.+), (.+), (\d+) kb/s", " ".join(fmtout.split('\n')))
                 self.samplerate = int(m.group(4)) if not sr else int(sr)
-                self.channels = {'mono':1,'1 channels (FL+FR)':1,'stereo':2}[m.group(5)] if not chns else chns
-                dur = reduce(lambda x,y: x*60+y,list(map(float,m.group(2).split(':'))))
+                self.channels = {'mono':1, '1 channels (FL+FR)':1, 'stereo':2}[m.group(5)] if not chns else chns
+                dur = reduce(lambda x,y: x*60+y, list(map(float, m.group(2).split(':'))))
                 self.frames = int(dur*self.samplerate)  # that's actually an estimation, because of potential resampling with round-off errors
                 pipe = sp.Popen([ffmpeg,
                     '-i', fn,

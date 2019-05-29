@@ -24,7 +24,7 @@ def assemble_coeffs(cqt, ncoefs):
     cqt0 = next(cqt)
     cq0 = np.asarray(cqt0).T
     shh = cq0.shape[0]//2
-    out = np.empty((ncoefs,cq0.shape[1],cq0.shape[2]), dtype=cq0.dtype)
+    out = np.empty((ncoefs, cq0.shape[1], cq0.shape[2]), dtype=cq0.dtype)
     
     fr = 0
     sh = max(0, min(shh, ncoefs-fr))

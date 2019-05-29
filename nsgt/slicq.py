@@ -149,7 +149,7 @@ class NSGT_sliced:
     
     def forward(self, sig):
         'transform - s: iterable sequence of sequences' 
-        
+
         sig = self.channelize(sig)
 
         # Compute the slices (zero-padded Tukey window version)

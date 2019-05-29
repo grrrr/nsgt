@@ -91,7 +91,7 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measureff
             
         # TODO: if matrixform, perform "2D" FFT along one axis
         # this could also be nicely parallelized
-        y = mmap(ifft,c)
+        y = list(mmap(ifft,c))
         
         yield y
 
