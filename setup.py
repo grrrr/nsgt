@@ -33,6 +33,7 @@ Attention: some Cython versions also need the Pyrex module installed!
 """
 
 import warnings
+import os
 
 try:
     import setuptools
@@ -79,12 +80,12 @@ setup(
     license = "Artistic License",
     keywords = "fourier gabor",
     url = "http://grrrr.org/nsgt",
-    requires=["numpy"],
+    requires = ["numpy"],
     include_dirs = [numpy.get_include()],
-    packages=['nsgt'],
+    packages = ['nsgt'],
     cmdclass = cmdclass,
     ext_modules = ext_modules,
-    classifiers=[
+    classifiers = [
         "Development Status :: 4 - Beta",
         "Topic :: Scientific/Engineering :: Mathematics",
         "License :: OSI Approved :: Artistic License",

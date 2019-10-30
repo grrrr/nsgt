@@ -88,10 +88,14 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
         fftsymm = lambda c: np.hstack((c[0],c[-1:0:-1])).conj()
         if reducedform:
             # no coefficients for f=0 and f=fs/2
-            symm = lambda fc: chain(fc, map(fftsymm,fc[::-1]))
+            def symm(_fc):
+                fc = list(_fc)
+                return chain(fc, map(fftsymm, fc[::-1]))
             sl = lambda x: chain(x[reducedform:len(gd)//2+1-reducedform],x[len(gd)//2+reducedform:len(gd)+1-reducedform])
         else:
-            symm = lambda fc: chain(fc,map(fftsymm,fc[-2:0:-1]))
+            def symm(_fc):
+                fc = list(_fc)
+                return chain(fc, map(fftsymm, fc[-2:0:-1]))
             sl = lambda x: x
     else:
         ln = len(gd)
