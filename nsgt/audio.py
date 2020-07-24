@@ -80,27 +80,28 @@ class SndReader:
                 if (sys.version_info > (3, 0)):
                     fmtout = fmtout.decode()
                 m = re.match(r"^(ffmpeg|avconv) version.*Duration: (\d\d:\d\d:\d\d.\d\d),.*Audio: (.+), (\d+) Hz, (.+), (.+), (\d+) kb/s", " ".join(fmtout.split('\n')))
-                self.samplerate = int(m.group(4)) if not sr else int(sr)
-                self.channels = {'mono':1, '1 channels (FL+FR)':1, 'stereo':2}[m.group(5)] if not chns else chns
-                dur = reduce(lambda x,y: x*60+y, list(map(float, m.group(2).split(':'))))
-                self.frames = int(dur*self.samplerate)  # that's actually an estimation, because of potential resampling with round-off errors
-                pipe = sp.Popen([ffmpeg,
-                    '-i', fn,
-                    '-f', 'f32le',
-                    '-acodec', 'pcm_f32le',
-                    '-ar', str(self.samplerate),
-                    '-ac', str(self.channels),
-                    '-'],
-#                    bufsize=self.samplerate*self.channels*4*50,
-                    stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
-                def rdr():
-                    while True:
-                        data = pipe.stdout.read(blksz*4)
-                        if len(data) == 0:
-                            break
-                        yield np.fromstring(data, dtype=dtype).reshape((-1, self.channels)).T
-                self.rdr = rdr()
-                fnd = True                
+                if m is not None:
+                    self.samplerate = int(m.group(4)) if not sr else int(sr)
+                    self.channels = {'mono':1, '1 channels (FL+FR)':1, 'stereo':2}[m.group(5)] if not chns else chns
+                    dur = reduce(lambda x,y: x*60+y, list(map(float, m.group(2).split(':'))))
+                    self.frames = int(dur*self.samplerate)  # that's actually an estimation, because of potential resampling with round-off errors
+                    pipe = sp.Popen([ffmpeg,
+                        '-i', fn,
+                        '-f', 'f32le',
+                        '-acodec', 'pcm_f32le',
+                        '-ar', str(self.samplerate),
+                        '-ac', str(self.channels),
+                        '-'],
+    #                    bufsize=self.samplerate*self.channels*4*50,
+                        stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
+                    def rdr():
+                        while True:
+                            data = pipe.stdout.read(blksz*4)
+                            if len(data) == 0:
+                                break
+                            yield np.fromstring(data, dtype=dtype).reshape((-1, self.channels)).T
+                    self.rdr = rdr()
+                    fnd = True                
                 
         if not fnd:
             raise IOError("Format not usable")

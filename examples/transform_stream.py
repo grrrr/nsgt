@@ -5,7 +5,7 @@
 Python implementation of Non-Stationary Gabor Transform (NSGT)
 derived from MATLAB code by NUHAG, University of Vienna, Austria
 
-Thomas Grill, 2011-2015
+Thomas Grill, 2011-2020
 http://grrrr.org/nsgt
 """
 
@@ -25,20 +25,20 @@ from argparse import ArgumentParser
 parser = ArgumentParser()
 
 parser.add_argument("input", type=str, help="input file")
-parser.add_argument("--output", type=str, help="output audio file")
-parser.add_argument("--length", type=int, default=0, help="maximum length of signal (default=%(default)s)")
-parser.add_argument("--fmin", type=float, default=50, help="minimum frequency (default=%(default)s)")
-parser.add_argument("--fmax", type=float, default=22050, help="maximum frequency (default=%(default)s)")
-parser.add_argument("--scale", choices=('oct','log','mel'), default='log', help="frequency scale (oct,log,lin,mel)")
-parser.add_argument("--bins", type=int, default=50, help="frequency bins (total or per octave, default=%(default)s)")
+parser.add_argument('-o', "--output", type=str, help="output audio file")
+parser.add_argument('-L', "--length", type=int, default=0, help="maximum length of signal (default=%(default)s)")
+parser.add_argument('-f', "--fmin", type=float, default=50, help="minimum frequency (default=%(default)s)")
+parser.add_argument('-F', "--fmax", type=float, default=22050, help="maximum frequency (default=%(default)s)")
+parser.add_argument('-s', "--scale", choices=('oct','log','mel'), default='log', help="frequency scale (oct,log,lin,mel)")
+parser.add_argument('-b', "--bins", type=int, default=50, help="frequency bins (total or per octave, default=%(default)s)")
 parser.add_argument("--sllen", type=int, default=2**16, help="slice length (default=%(default)s)")
 parser.add_argument("--trlen", type=int, default=4096, help="transition area (default=%(default)s)")
-parser.add_argument("--real", action='store_true', help="assume real signal")
-parser.add_argument("--matrixform", action='store_true', help="use regular time division (matrix form)")
-parser.add_argument("--reducedform",action='store_true', help="if real==1: omit bins for f=0 and f=fs/2 (lossy=1), or also the transition bands (lossy=2)")
-parser.add_argument("--recwnd", action='store_true', help="use reconstruction window")
-parser.add_argument("--multithreading", action='store_true', help="use multithreading")
-parser.add_argument("--plot", action='store_true', help="plot transform (needs installed matplotlib and scipy packages)")
+parser.add_argument('-r', "--real", action='store_true', help="assume real signal")
+parser.add_argument('-m', "--matrixform", action='store_true', help="use regular time division (matrix form)")
+parser.add_argument('-l', "--reducedform", action='count', default=0, help="if real==1: omit bins for f=0 and f=fs/2 (lossy=1), or also the transition bands (lossy=2)")
+parser.add_argument('-w', "--recwnd", action='store_true', help="use reconstruction window")
+parser.add_argument('-t', "--multithreading", action='store_true', help="use multithreading")
+parser.add_argument('-p', "--plot", action='store_true', help="plot transform (needs installed matplotlib and scipy packages)")
 
 args = parser.parse_args()
 if not os.path.exists(args.input):
