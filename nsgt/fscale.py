@@ -149,3 +149,39 @@ class MelScale(Scale):
         pow2n = np.power(2, 1./odivs)
         return np.sqrt(pow2n)/(pow2n-1.)/2.
     
+
+def hz2bark(f):
+    #       HZ2BARK         Converts frequencies Hertz (Hz) to Bark
+    #
+    b = 6 * np.arcsinh(f/600)
+    return b
+
+
+def bark2hz(b):
+    #       BARK2HZ         Converts frequencies Bark to Hertz (HZ)
+    #
+    f = 600*np.sinh(b/6)
+    return f
+
+
+class BarkScale(Scale):
+    def __init__(self, fmin, fmax, bnds, beyond=0):
+        """
+        @param fmin: minimum frequency (Hz)
+        @param fmax: maximum frequency (Hz)
+        @param bnds: number of frequency bands (int)
+        @param beyond: number of frequency bands below fmin and above fmax (int)
+        """
+        bmin = hz2bark(fmin)
+        bmax = hz2bark(fmax)
+        Scale.__init__(self, bnds+beyond*2)
+        self.fmin = float(fmin)
+        self.fmax = float(fmax)
+        self.bbnd = (bmax-bmin)/(bnds-1)  # mels per band
+        self.bmin = bmin-self.bbnd*beyond
+        self.bmax = bmax+self.bbnd*beyond
+
+    def F(self, bnd=None):
+        if bnd is None:
+            bnd = np.arange(self.bnds)
+        return bark2hz(bnd*self.bbnd+self.bmin)
