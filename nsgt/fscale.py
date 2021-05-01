@@ -85,7 +85,32 @@ class LogScale(Scale):
     
     def Q(self, bnd=None):
         return self.q
-    
+
+
+class VQLogScale(Scale):
+    def __init__(self, fmin, fmax, bnds, gamma=0, beyond=0):
+        """
+        @param fmin: minimum frequency (Hz)
+        @param fmax: maximum frequency (Hz)
+        @param bnds: number of frequency bands (int)
+        @param gamma: decrease q at low frequencies with an offset
+        @param beyond: number of frequency bands below fmin and above fmax (int)
+        """
+        Scale.__init__(self, bnds+beyond*2)
+        lfmin = np.log2(fmin)
+        lfmax = np.log2(fmax)
+        odiv = (lfmax-lfmin)/(bnds-1)
+        lfmin_ = lfmin-odiv*beyond
+        lfmax_ = lfmax+odiv*beyond
+        self.fmin = 2**lfmin_
+        self.fmax = 2**lfmax_
+        self.pow2n = 2**odiv
+        #self.q = np.sqrt(self.pow2n)/(self.pow2n-1.)/2.
+        self.gamma = gamma
+        
+    def F(self, bnd=None):
+        return self.fmin*self.pow2n**(bnd if bnd is not None else np.arange(self.bnds)) + self.gamma
+
 
 class LinScale(Scale):
     def __init__(self, fmin, fmax, bnds, beyond=0):
