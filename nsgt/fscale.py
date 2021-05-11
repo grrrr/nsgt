@@ -33,6 +33,25 @@ class Scale:
         q = np.array([self.Q(b) for b in range(self.bnds)],dtype=float)
         return f,q
 
+    def suggested_sllen(self, sr):
+        '''
+        derives from the Q warning code of nsgfwin_sl.py:
+
+            qneeded = f*(Ls/(8.*sr))
+            if np.any(q >= qneeded) and dowarn:
+                warn("Q-factor too high for frequencies %s"%",".join("%.2f"%fi for fi in f[q >= qneeded]))
+
+        this method helps pick an appropriate length of NSGT or NSGT_sliced to support the desired frequency scale
+        '''
+        f,q = self()
+
+        Ls = int(np.ceil(max((q*8.*sr)/f)))
+
+        # make sure its divisible by 4
+        Ls = Ls + -Ls % 4
+
+        return Ls
+
 
 class OctScale(Scale):
     def __init__(self, fmin, fmax, bpo, beyond=0):
