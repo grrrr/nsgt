@@ -33,6 +33,16 @@ class Scale:
         q = np.array([self.Q(b) for b in range(self.bnds)],dtype=float)
         return f,q
 
+    def suggested_sllen(self, sr):
+        f,q = self()
+
+        Ls = int(np.ceil(max((q*8.*sr)/f)))
+
+        # make sure its divisible by 4
+        Ls = Ls + -Ls % 4
+
+        return Ls
+
 
 class OctScale(Scale):
     def __init__(self, fmin, fmax, bpo, beyond=0):
