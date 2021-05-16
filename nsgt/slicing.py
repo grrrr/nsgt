@@ -12,6 +12,7 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 """
 
 import numpy as np
+import torch
 from .util import hannwin
 from .reblock import reblock
 from itertools import chain, cycle
@@ -21,7 +22,7 @@ def makewnd(sl_len, tr_area):
     htr = tr_area//2
     # build window function within one slice (centered with transition areas around sl_len/4 and 3*sl_len/4    
     w = hannwin(2*tr_area)  # window is shifted
-    tw = np.empty(sl_len, dtype=float)
+    tw = torch.empty(sl_len, dtype=float)
     tw[:hhop-htr] = 0
     tw[hhop-htr:hhop+htr] = w[tr_area:]
     tw[hhop+htr:3*hhop-htr] = 1
@@ -47,7 +48,7 @@ def slicing(f, sl_len, tr_area):
     # get first block to deduce number of channels
     fseq0 = next(fseq)
     chns = len(fseq0)
-    pad = np.zeros((chns,hhop), dtype=fseq0.dtype)
+    pad = torch.zeros((chns,hhop), dtype=fseq0.dtype)
     # assemble a stream of front padding, already retrieved first block, the block stream and some tail padding
     fseq = chain((pad,pad,fseq0), fseq, (pad,pad,pad))
 
@@ -58,7 +59,7 @@ def slicing(f, sl_len, tr_area):
     for fi in fseq:
         past.append(fi)
         if len(past) == 4:
-            f_slice = np.empty((chns,sl_len), dtype=fi.dtype)
+            f_slice = torch.empty((chns,sl_len), dtype=fi.dtype)
             sl = next(slices)
             for sli,pi,twi in zip(sl, past, tw):
                 f_slice[:,sli] = pi    # signal

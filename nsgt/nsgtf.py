@@ -12,6 +12,7 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 """
 
 import numpy as np
+import torch
 from math import ceil
 
 from .util import chkM
@@ -68,6 +69,7 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measureff
         assert col*mii >= Lg
         gi1 = gii[:(Lg+1)//2]
         gi2 = gii[-(Lg//2):]
+
         p = (mii,gii,gi1,gi2,win_range,Lg,col)
         loopparams.append(p)
 
@@ -80,11 +82,11 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measureff
 
         if temp0 is None:
             # pre-allocate buffer (delayed because of dtype)
-            temp0 = np.empty(maxLg, dtype=ft.dtype)
+            temp0 = torch.empty(maxLg, dtype=ft.dtype)
         
         # A small amount of zero-padding might be needed (e.g. for scale frames)
         if nn > Ls:
-            ft = np.concatenate((ft, np.zeros(nn-Ls, dtype=ft.dtype)))
+            ft = torch.concatenate((ft, torch.zeros(nn-Ls, dtype=ft.dtype)))
         
         # The actual transform
         c = nsgtf_loop(loopparams, ft, temp0)

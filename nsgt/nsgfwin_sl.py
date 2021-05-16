@@ -39,6 +39,7 @@ from .util import hannwin, blackharr, blackharrcw
 from math import ceil
 from warnings import warn
 from itertools import chain
+import torch
 
 def nsgfwin(f, q, sr, Ls, sliced=True, min_win=4, Qvar=1, dowarn=True, dtype=np.float64):
     nf = sr/2.
@@ -102,14 +103,14 @@ def nsgfwin(f, q, sr, Ls, sliced=True, min_win=4, Qvar=1, dowarn=True, dtype=np.
 #    print "M",list(M)
     
     if sliced: 
-        g = [blackharr(m).astype(dtype) for m in M]
+        g = [blackharr(m).to(dtype) for m in M]
     else:
-        g = [hannwin(m).astype(dtype) for m in M]
+        g = [hannwin(m).to(dtype) for m in M]
     
     if sliced:
         for kk in (1,lbas+2):
             if M[kk-1] > M[kk]:
-                g[kk-1] = np.ones(M[kk-1], dtype=g[kk-1].dtype)
+                g[kk-1] = torch.ones(M[kk-1], dtype=g[kk-1].dtype)
                 g[kk-1][M[kk-1]//2-M[kk]//2:M[kk-1]//2+int(ceil(M[kk]/2.))] = hannwin(M[kk])
         
         rfbas = np.round(fbas/2.).astype(int)*2

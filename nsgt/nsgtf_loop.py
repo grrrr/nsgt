@@ -12,6 +12,8 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 """
 
 import numpy as np
+import torch
+
 
 def nsgtf_loop(loopparams, ft, temp0):
     c = [] # Initialization of the result
@@ -51,9 +53,9 @@ def nsgtf_loop(loopparams, ft, temp0):
         temp[(Lg+1)//2:-(Lg//2)] = 0  # clear gap (if any)
         
         if col > 1:
-            temp = np.sum(temp.reshape((mii,-1)), axis=1)
+            temp = torch.sum(temp.reshape((mii,-1)), axis=1)
         else:
-            temp = temp.copy()
+            temp = temp.clone()
 
         c.append(temp)
     return c
