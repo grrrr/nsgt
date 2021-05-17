@@ -19,6 +19,7 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 % Q-factor variation, and test run parameters.
 """
 
+import torch
 import numpy as np
 from itertools import cycle, chain, tee
 from math import ceil
@@ -51,7 +52,7 @@ def arrange(cseq, M, fwd):
         ixs = cycle(ixs[::-1])
 
     return ([
-                [np.concatenate((ckk[ix0],ckk[ix1]))
+                [torch.cat((ckk[ix0],ckk[ix1]))
                    for ckk,(ix0,ix1) in zip(ci, ixi)
                 ]
              for ci in cci
