@@ -18,27 +18,6 @@ from math import ceil
 from .util import chkM
 from .fft import fftp, ifftp
 
-try:
-    # try to import cython version
-    from _nsgtf_loop import nsgtf_loop
-except ImportError:
-    nsgtf_loop = None
-
-if nsgtf_loop is None:
-    from .nsgtf_loop import nsgtf_loop
-
-if False:
-    # what about theano?
-    try:
-        import theano as T
-    except ImportError:
-        T = None
-
-try:
-    import multiprocessing as MP
-except ImportError:
-    MP = None
-
 
 #@profile
 def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measurefft=False, multithreading=False):
@@ -57,10 +36,7 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measureff
     maxLg = max(int(ceil(float(len(gii))/mii))*mii for mii,gii in zip(M[sl],g[sl]))
     temp0 = None
     
-    if multithreading and MP is not None:
-        mmap = MP.Pool().map
-    else:
-        mmap = map
+    mmap = map
 
     loopparams = []
     for mii,gii,win_range in zip(M[sl],g[sl],wins[sl]):
@@ -89,8 +65,36 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measureff
             ft = torch.concatenate((ft, torch.zeros(nn-Ls, dtype=ft.dtype)))
         
         # The actual transform
-        c = nsgtf_loop(loopparams, ft, temp0)
+        c = [] # Initialization of the result
+
+        # TODO: torchify it
+        for mii,_,gi1,gi2,win_range,Lg,col in loopparams:
+            temp = temp0[:col*mii]
+
+            # original version
+        #            t = ft[win_range]*N.fft.fftshift(N.conj(gii))
+        #            temp[:(Lg+1)//2] = t[Lg//2:]  # if mii is odd, this is of length mii-mii//2
+        #            temp[-(Lg//2):] = t[:Lg//2]  # if mii is odd, this is of length mii//2
+
+            # modified version to avoid superfluous memory allocation
+            t1 = temp[:(Lg+1)//2]
+            t1[:] = gi1  # if mii is odd, this is of length mii-mii//2
+            t2 = temp[-(Lg//2):]
+            t2[:] = gi2  # if mii is odd, this is of length mii//2
+
+            ftw = ft[win_range]
+            t2 *= ftw[:Lg//2]
+            t1 *= ftw[Lg//2:]
             
+            temp[(Lg+1)//2:-(Lg//2)] = 0  # clear gap (if any)
+            
+            if col > 1:
+                temp = torch.sum(temp.reshape((mii,-1)), axis=1)
+            else:
+                temp = temp.clone()
+
+            c.append(temp)
+
         # TODO: if matrixform, perform "2D" FFT along one axis
         # this could also be nicely parallelized
         y = list(mmap(ifft,c))

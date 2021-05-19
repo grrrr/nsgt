@@ -51,23 +51,9 @@ else:
     from setuptools.extension import Extension
     setup_options['test_suite'] = 'tests'
     
-try:
-    from Cython.Distutils import build_ext
-except ImportError:
-    build_ext = None
-    
+   
 import numpy
 
-
-if build_ext is None:
-    cmdclass = {}
-    ext_modules = []
-else:
-    cmdclass = {'build_ext': build_ext}
-    ext_modules = [
-                   Extension("nsgt._nsgtf_loop", ["nsgt/nsgtf_loop.pyx"]),
-                   Extension("nsgt._nsigtf_loop", ["nsgt/nsigtf_loop.pyx"])
-    ]
 
 setup(
     name = "nsgt",
@@ -83,8 +69,8 @@ setup(
     requires = ["numpy"],
     include_dirs = [numpy.get_include()],
     packages = ['nsgt'],
-    cmdclass = cmdclass,
-    ext_modules = ext_modules,
+    cmdclass = {},
+    ext_modules = [],
     classifiers = [
         "Development Status :: 4 - Beta",
         "Topic :: Scientific/Engineering :: Mathematics",

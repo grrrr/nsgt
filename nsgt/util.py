@@ -16,7 +16,7 @@ import torch
 from math import exp, floor, ceil, pi
 
 
-TORCH_DEVICE = "cpu" # default to cpu
+TORCH_DEVICE = "cuda"
 
 
 def get_torch_device():
