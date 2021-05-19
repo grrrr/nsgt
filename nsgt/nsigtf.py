@@ -50,8 +50,10 @@ Edited by Nicki Holighaus 01.03.11
 """
 
 import numpy as np
+import torch
 from itertools import chain
 from .fft import fftp, ifftp, irfftp
+from .util import get_torch_device
 
 try:
     # try to import cython version
@@ -85,7 +87,7 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
     
     if real:
         ln = len(gd)//2+1-reducedform*2
-        fftsymm = lambda c: np.hstack((c[0],c[-1:0:-1])).conj()
+        fftsymm = lambda c: torch.tensor(np.hstack((c[0],c.numpy()[-1:0:-1])).conj(), device=get_torch_device())
         if reducedform:
             # no coefficients for f=0 and f=fs/2
             def symm(_fc):
@@ -107,8 +109,8 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
     # get first slice
     c0 = next(cseq)
 
-    fr = np.empty(nn, dtype=c0[0].dtype)  # Allocate output
-    temp0 = np.empty(maxLg, dtype=fr.dtype)  # pre-allocation
+    fr = torch.empty(nn, dtype=c0[0].dtype, device=get_torch_device())  # Allocate output
+    temp0 = torch.empty(maxLg, dtype=fr.dtype, device=get_torch_device())  # pre-allocation
     
     if multithreading and MP is not None:
         mmap = MP.Pool().map

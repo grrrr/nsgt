@@ -16,6 +16,19 @@ import torch
 from math import exp, floor, ceil, pi
 
 
+TORCH_DEVICE = "cpu" # default to cpu
+
+
+def get_torch_device():
+    return torch.device(TORCH_DEVICE)
+
+
+def set_torch_device(torch_device):
+    global TORCH_DEVICE
+    TORCH_DEVICE = torch_device
+
+
+
 def hannwin(l):
     r = torch.arange(l,dtype=float)
     r *= np.pi*2./l

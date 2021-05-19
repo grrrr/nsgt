@@ -33,6 +33,7 @@ __version__ = '0.18'
 from .cq import NSGT, CQ_NSGT
 from .slicq import NSGT_sliced, CQ_NSGT_sliced
 from .fscale import Scale, OctScale, LogScale, LinScale, MelScale, BarkScale, VQLogScale
+from .util import get_torch_device, set_torch_device
 from warnings import warn
 
 try:
