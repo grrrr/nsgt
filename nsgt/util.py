@@ -30,7 +30,7 @@ def set_torch_device(torch_device):
 
 
 def hannwin(l):
-    r = torch.arange(l,dtype=float)
+    r = torch.arange(l,dtype=float,device=get_torch_device())
     r *= np.pi*2./l
     r = torch.cos(r)
     r += 1.
@@ -41,12 +41,12 @@ def blackharr(n,l=None,mod=True):
     if l is None: 
         l = n
     nn = (n//2)*2
-    k = torch.arange(n)
+    k = torch.arange(n, device=get_torch_device())
     if not mod:
         bh = 0.35875 - 0.48829*torch.cos(k*(2*pi/nn)) + 0.14128*torch.cos(k*(4*pi/nn)) -0.01168*torch.cos(k*(6*pi/nn))
     else:
         bh = 0.35872 - 0.48832*torch.cos(k*(2*pi/nn)) + 0.14128*torch.cos(k*(4*pi/nn)) -0.01168*torch.cos(k*(6*pi/nn))
-    bh = torch.hstack((bh,torch.zeros(l-n,dtype=bh.dtype)))
+    bh = torch.hstack((bh,torch.zeros(l-n,dtype=bh.dtype,device=get_torch_device())))
     bh = torch.hstack((bh[-n//2:],bh[:-n//2]))
     return bh
 
@@ -119,23 +119,8 @@ def calcwinrange(g, rfbas, Ls):
     wins = []
     for gii,tpii in zip(g, timepos):
         Lg = len(gii)
-        win_range = np.arange(-(Lg//2)+tpii, Lg-(Lg//2)+tpii, dtype=int)
+        win_range = torch.arange(-(Lg//2)+tpii, Lg-(Lg//2)+tpii, dtype=int, device=get_torch_device())
         win_range %= nn
-
-#        Lg2 = Lg//2
-#        oh = tpii
-#        o = oh-Lg2
-#        oe = oh+Lg2
-#
-#        if o < 0:
-#            # wraparound is in first half
-#            win_range = ((slice(o+nn,nn),slice(0,oh)),(slice(oh,oe),slice(0,0)))
-#        elif oe > nn:
-#            # wraparound is in second half
-#            win_range = ((slice(o,oh),slice(0,0)),(slice(oh,nn),slice(0,oe-nn)))
-#        else:
-#            # no wraparound
-#            win_range = ((slice(o,oh),slice(0,0)),(slice(oh,oe),slice(0,0)))
 
         wins.append(win_range)
         

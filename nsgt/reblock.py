@@ -13,6 +13,7 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 
 import numpy as np
 import torch
+from .util import get_torch_device
 
 
 def reblock(sseq, blocksize, dtype=None, fulllast=True, padding=0, multichannel=False):
@@ -42,7 +43,7 @@ def reblock(sseq, blocksize, dtype=None, fulllast=True, padding=0, multichannel=
                         dt = dtype
                 chns = len(si)
 
-                block = torch.empty(chns,blocksize, dtype=torch.float32)
+                block = torch.empty(chns,blocksize, dtype=torch.float32, device=get_torch_device())
                 blockrem = block
                 
             sout = [sj[:blockrem.shape[1]] for sj in si]

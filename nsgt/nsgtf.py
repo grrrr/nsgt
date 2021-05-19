@@ -15,7 +15,7 @@ import numpy as np
 import torch
 from math import ceil
 
-from .util import chkM
+from .util import chkM, get_torch_device
 from .fft import fftp, ifftp
 
 
@@ -58,7 +58,7 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measureff
 
         if temp0 is None:
             # pre-allocate buffer (delayed because of dtype)
-            temp0 = torch.empty(maxLg, dtype=ft.dtype)
+            temp0 = torch.empty(maxLg, dtype=ft.dtype, device=get_torch_device())
         
         # A small amount of zero-padding might be needed (e.g. for scale frames)
         if nn > Ls:

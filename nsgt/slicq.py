@@ -84,7 +84,7 @@ class NSGT_sliced:
                  multichannel=False,
                  measurefft=False,
                  multithreading=False,
-                 dtype=float):
+                 dtype=torch.float32):
         assert fs > 0
         assert sl_len > 0
         assert tr_area >= 0
