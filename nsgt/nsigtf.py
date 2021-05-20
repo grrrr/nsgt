@@ -86,7 +86,13 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
     
     if real:
         ln = len(gd)//2+1-reducedform*2
-        fftsymm = lambda c: torch.tensor(np.hstack((c[0],c.numpy()[-1:0:-1])).conj(), device=torch.device(device))
+
+        if device == "cpu":
+            fftsymm = lambda c: torch.tensor(np.hstack((c[0],c.numpy()[-1:0:-1])).conj(), device=torch.device(device))
+        else:
+            # round trip through cpu because i don't want to deal with the lack of negative indexing in torch
+            fftsymm = lambda c: torch.tensor(np.hstack((c[0].cpu().numpy(),c.cpu().numpy()[-1:0:-1])).conj(), device=torch.device(device))
+
         if reducedform:
             # no coefficients for f=0 and f=fs/2
             def symm(_fc):
