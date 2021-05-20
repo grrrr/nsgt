@@ -228,9 +228,7 @@ class NSGT_sliced:
         next(sig)
 
         # convert to tensor
-
         ret = next(reblock(sig, length, fulllast=False, multichannel=self.multichannel, device=self.device))
-        ret = torch.tensor(ret)
 
         return ret
 
