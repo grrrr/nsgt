@@ -51,23 +51,24 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measureff
     ragged_giis = [torch.nn.functional.pad(torch.unsqueeze(gii, dim=0), (0, maxLg-gii.shape[0])) for gii in g[sl]]
     giis = torch.conj(torch.cat(ragged_giis))
 
-    f = torch.cat([torch.unsqueeze(f, dim=0) for f in f_slices])
-    ft = fft(f)
+    #f = torch.cat([torch.unsqueeze(f, dim=0) for f in f_slices])
 
-    Ls = f.shape[-1]
+    ft = fft(f_slices)
+
+    Ls = f_slices.shape[-1]
 
     assert nn == Ls
 
     # The actual transform
-    c = torch.empty(f.shape[0], len(loopparams), maxLg, dtype=ft.dtype, device=get_torch_device())
+    c = torch.empty(*f_slices.shape[:2], len(loopparams), maxLg, dtype=ft.dtype, device=get_torch_device())
 
     # TODO: torchify it
     for j, (mii,win_range,Lg,col) in enumerate(loopparams):
-        t = ft[:, win_range]*torch.fft.fftshift(torch.conj(giis[j, :Lg]))
+        t = ft[:, :, win_range]*torch.fft.fftshift(torch.conj(giis[j, :Lg]))
 
-        c[:, j, :(Lg+1)//2] = t[:, Lg//2:]  # if mii is odd, this is of length mii-mii//2
-        c[:, j, -(Lg//2):] = t[:, :Lg//2]  # if mii is odd, this is of length mii//2
-        c[:, j, (Lg+1)//2:-(Lg//2)] = 0  # clear gap (if any)
+        c[:, :, j, :(Lg+1)//2] = t[:, :, Lg//2:]  # if mii is odd, this is of length mii-mii//2
+        c[:, :, j, -(Lg//2):] = t[:, :, :Lg//2]  # if mii is odd, this is of length mii//2
+        c[:, :, j, (Lg+1)//2:-(Lg//2)] = 0  # clear gap (if any)
 
     y = ifft(c)
     

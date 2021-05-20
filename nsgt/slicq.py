@@ -77,6 +77,24 @@ def chnmap(gen, seq):
     return zip(*gens)  # packing channels to one generator yielding channel tuples
 
 
+def chnmap_forward(gen, seq):
+    chns = starzip(seq) # returns a list of generators (one for each channel)
+
+    # fuck generators, use a tensor
+    chns = [list(x) for x in chns]
+
+    f_slices = torch.empty(len(chns[0]), len(chns), len(chns[0][0]), dtype=torch.float32, device=torch.device("cuda"))
+
+    for i, chn in enumerate(chns):
+        for j, sig in enumerate(chn):
+            f_slices[j, i, :] = sig
+
+    print('f_slices shape: {0}'.format(f_slices.shape))
+    ret = gen(f_slices)
+
+    return ret
+
+
 class NSGT_sliced:
     def __init__(self, scale, sl_len, tr_area, fs,
                  min_win=16, Qvar=1,
@@ -155,8 +173,10 @@ class NSGT_sliced:
 
         # Compute the slices (zero-padded Tukey window version)
         f_sliced = slicing(sig, self.sl_len, self.tr_area)
-        
-        cseq = chnmap(self.fwd, f_sliced)
+
+        cseq = chnmap_forward(self.fwd, f_sliced)
+        #return cseq
+        print('cseq shape: {0}'.format(cseq.shape))
     
         cseq = arrange(cseq, self.M, True)
         
