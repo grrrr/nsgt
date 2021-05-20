@@ -15,12 +15,12 @@ import numpy as np
 import torch
 from math import ceil
 
-from .util import chkM, get_torch_device
+from .util import chkM
 from .fft import fftp, ifftp
 
 
 #@profile
-def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measurefft=False, multithreading=False):
+def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measurefft=False, multithreading=False, device="cuda"):
     M = chkM(M,g)
     dtype = g[0].dtype
     
@@ -60,7 +60,7 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measureff
     assert nn == Ls
 
     # The actual transform
-    c = torch.empty(*f_slices.shape[:2], len(loopparams), maxLg, dtype=ft.dtype, device=get_torch_device())
+    c = torch.empty(*f_slices.shape[:2], len(loopparams), maxLg, dtype=ft.dtype, device=torch.device(device))
 
     # TODO: torchify it
     for j, (mii,win_range,Lg,col) in enumerate(loopparams):

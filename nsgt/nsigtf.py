@@ -53,7 +53,6 @@ import numpy as np
 import torch
 from itertools import chain
 from .fft import fftp, ifftp, irfftp
-from .util import get_torch_device
 
 try:
     # try to import cython version
@@ -78,7 +77,7 @@ except ImportError:
     
 
 #@profile
-def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft=False, multithreading=False):
+def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft=False, multithreading=False, device="cuda"):
     cseq = iter(cseq)
     dtype = gd[0].dtype
 
@@ -87,7 +86,7 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
     
     if real:
         ln = len(gd)//2+1-reducedform*2
-        fftsymm = lambda c: torch.tensor(np.hstack((c[0],c.numpy()[-1:0:-1])).conj(), device=get_torch_device())
+        fftsymm = lambda c: torch.tensor(np.hstack((c[0],c.numpy()[-1:0:-1])).conj(), device=torch.device(device))
         if reducedform:
             # no coefficients for f=0 and f=fs/2
             def symm(_fc):
@@ -109,8 +108,8 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
     # get first slice
     c0 = next(cseq)
 
-    fr = torch.empty(nn, dtype=c0[0].dtype, device=get_torch_device())  # Allocate output
-    temp0 = torch.empty(maxLg, dtype=fr.dtype, device=get_torch_device())  # pre-allocation
+    fr = torch.empty(nn, dtype=c0[0].dtype, device=torch.device(device))  # Allocate output
+    temp0 = torch.empty(maxLg, dtype=fr.dtype, device=torch.device(device))  # pre-allocation
     
     if multithreading and MP is not None:
         mmap = MP.Pool().map

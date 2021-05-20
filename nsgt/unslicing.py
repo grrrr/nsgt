@@ -13,7 +13,7 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 
 import numpy as np
 from itertools import cycle, chain
-from .util import hannwin, get_torch_device
+from .util import hannwin
 import torch
 
 
@@ -25,7 +25,7 @@ def slicequads(frec_sliced, hhop):
         yield [[fslc[sli] for fslc in fsl] for sli in sl]
 
 
-def unslicing(frec_sliced, sl_len, tr_area, dtype=float, usewindow=True):
+def unslicing(frec_sliced, sl_len, tr_area, dtype=float, usewindow=True, device="cuda"):
     hhop = sl_len//4    
     islices = slicequads(frec_sliced, hhop)
     
@@ -33,8 +33,8 @@ def unslicing(frec_sliced, sl_len, tr_area, dtype=float, usewindow=True):
         tr_area2 = min(2*hhop-tr_area, 2*tr_area)
         htr = tr_area//2
         htr2 = tr_area2//2
-        hw = hannwin(tr_area2)
-        tw = torch.zeros(sl_len, dtype=dtype, device=get_torch_device())
+        hw = hannwin(tr_area2, device=device)
+        tw = torch.zeros(sl_len, dtype=dtype, device=torch.device(device))
         tw[max(hhop-htr-htr2, 0):hhop-htr] = hw[htr2:]
         tw[hhop-htr:3*hhop+htr] = 1
         tw[3*hhop+htr:min(3*hhop+htr+htr2, sl_len)] = hw[:htr2]
@@ -49,7 +49,7 @@ def unslicing(frec_sliced, sl_len, tr_area, dtype=float, usewindow=True):
     
     islices = chain((firstquad,), islices)
     
-    output = [torch.zeros((chns,hhop), dtype=dtype, device=get_torch_device()) for _ in range(4)]
+    output = [torch.zeros((chns,hhop), dtype=dtype, device=torch.device(device)) for _ in range(4)]
     
     for quad in islices:
         for osl,isl,w in zip(output, quad, tw):
@@ -58,7 +58,7 @@ def unslicing(frec_sliced, sl_len, tr_area, dtype=float, usewindow=True):
         for _ in range(2):
             # absolutely first two should be padding (and discarded by the receiver)
             yield output.pop(0)
-            output.append(torch.zeros((chns,hhop), dtype=dtype, device=get_torch_device()))
+            output.append(torch.zeros((chns,hhop), dtype=dtype, device=torch.device(device)))
 
     for _ in range(2):
         # absolutely last two should be padding (and discarded by the receiver)

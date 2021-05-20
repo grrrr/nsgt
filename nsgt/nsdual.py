@@ -34,18 +34,20 @@ minor edit by Gino Velasco 23.02.11
 import numpy as np
 import torch
 
-from .util import chkM, get_torch_device
+from .util import chkM
 
 
-def nsdual(g, wins, nn, M=None):
-
+def nsdual(g, wins, nn, M=None, device="cuda"):
     M = chkM(M,g)
 
     # Construct the diagonal of the frame operator matrix explicitly
-    x = torch.zeros((nn,), dtype=float, device=get_torch_device())
+    x = torch.zeros((nn,), dtype=float, device=torch.device(device))
     for gi,mii,sl in zip(g, M, wins):
         xa = torch.square(torch.fft.fftshift(gi))
         xa *= mii
+
+        #print('xa: {0} {1} {2}'.format(xa.shape, xa.dtype, xa.device))
+        #print('x: {0} {1} {2}'.format(x.shape, x.dtype, x.device))
         x[sl] += xa
 
         # could be more elegant...

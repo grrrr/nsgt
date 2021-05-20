@@ -16,37 +16,25 @@ import torch
 from math import exp, floor, ceil, pi
 
 
-TORCH_DEVICE = "cuda"
-
-
-def get_torch_device():
-    return torch.device(TORCH_DEVICE)
-
-
-def set_torch_device(torch_device):
-    global TORCH_DEVICE
-    TORCH_DEVICE = torch_device
-
-
-
-def hannwin(l):
-    r = torch.arange(l,dtype=float,device=get_torch_device())
+def hannwin(l, device="cuda"):
+    r = torch.arange(l,dtype=float, device=torch.device(device))
     r *= np.pi*2./l
     r = torch.cos(r)
     r += 1.
     r *= 0.5
     return r
 
-def blackharr(n,l=None,mod=True):
+
+def blackharr(n, l=None, mod=True, device="cuda"):
     if l is None: 
         l = n
     nn = (n//2)*2
-    k = torch.arange(n, device=get_torch_device())
+    k = torch.arange(n, device=torch.device(device))
     if not mod:
         bh = 0.35875 - 0.48829*torch.cos(k*(2*pi/nn)) + 0.14128*torch.cos(k*(4*pi/nn)) -0.01168*torch.cos(k*(6*pi/nn))
     else:
         bh = 0.35872 - 0.48832*torch.cos(k*(2*pi/nn)) + 0.14128*torch.cos(k*(4*pi/nn)) -0.01168*torch.cos(k*(6*pi/nn))
-    bh = torch.hstack((bh,torch.zeros(l-n,dtype=bh.dtype,device=get_torch_device())))
+    bh = torch.hstack((bh,torch.zeros(l-n,dtype=bh.dtype,device=torch.device(device))))
     bh = torch.hstack((bh[-n//2:],bh[:-n//2]))
     return bh
 
@@ -109,7 +97,8 @@ def chkM(M, g):
         M = np.ones(len(g), dtype=int)*M
     return M
 
-def calcwinrange(g, rfbas, Ls):
+
+def calcwinrange(g, rfbas, Ls, device="cuda"):
     shift = np.concatenate(((np.mod(-rfbas[-1],Ls),), rfbas[1:]-rfbas[:-1]))
     
     timepos = np.cumsum(shift)
@@ -119,7 +108,7 @@ def calcwinrange(g, rfbas, Ls):
     wins = []
     for gii,tpii in zip(g, timepos):
         Lg = len(gii)
-        win_range = torch.arange(-(Lg//2)+tpii, Lg-(Lg//2)+tpii, dtype=int, device=get_torch_device())
+        win_range = torch.arange(-(Lg//2)+tpii, Lg-(Lg//2)+tpii, dtype=int, device=torch.device(device))
         win_range %= nn
 
         wins.append(win_range)

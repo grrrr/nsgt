@@ -30,14 +30,14 @@ from .nsdual import nsdual
 from .nsgfwin_sl import nsgfwin
 from .nsgtf import nsgtf_sl
 from .nsigtf import nsigtf_sl
-from .util import calcwinrange, get_torch_device
+from .util import calcwinrange
 from .fscale import OctScale
+from .reblock import reblock
 
 
 # one of the more expensive functions (32/400)
 #@profile
 def arrange(cseq, M, fwd):
-    print('cseq in: {0} {1}'.format(cseq.shape, cseq.dtype))
     cseq = iter(cseq)
     try:
         c0 = next(cseq)  # grab first stream element
@@ -71,7 +71,7 @@ def arrange(cseq, M, fwd):
     F1 = len(c[0][0])
     F2 = len(c[0][0][0])
 
-    C = torch.empty(T, I, F1, F2, dtype=torch.complex64, device=get_torch_device())
+    C = torch.empty(T, I, F1, F2, dtype=torch.complex64, device=torch.device(device))
 
     for i, cc in enumerate(c):
         assert len(cc) == I
@@ -81,7 +81,6 @@ def arrange(cseq, M, fwd):
                 assert len(cccc) == F2
                 C[i, j, k] = torch.tensor(cccc)
 
-    print('C out: {0} {1}'.format(C.shape, C.dtype))
     return C
 
 
@@ -101,13 +100,13 @@ def chnmap(gen, seq):
     return zip(*gens)  # packing channels to one generator yielding channel tuples
 
 
-def chnmap_forward(gen, seq):
+def chnmap_forward(gen, seq, device="cuda"):
     chns = starzip(seq) # returns a list of generators (one for each channel)
 
     # fuck generators, use a tensor
     chns = [list(x) for x in chns]
 
-    f_slices = torch.empty(len(chns[0]), len(chns), len(chns[0][0]), dtype=torch.float32, device=torch.device("cuda"))
+    f_slices = torch.empty(len(chns[0]), len(chns), len(chns[0][0]), dtype=torch.float32, device=torch.device(device))
 
     for i, chn in enumerate(chns):
         for j, sig in enumerate(chn):
@@ -125,7 +124,8 @@ class NSGT_sliced:
                  multichannel=False,
                  measurefft=False,
                  multithreading=False,
-                 dtype=torch.float32):
+                 dtype=torch.float32,
+                 device="cuda"):
         assert fs > 0
         assert sl_len > 0
         assert tr_area >= 0
@@ -136,6 +136,8 @@ class NSGT_sliced:
         assert sl_len%4 == 0
         assert tr_area%2 == 0
 
+        self.device = torch.device(device)
+
         self.sl_len = sl_len
         self.tr_area = tr_area
         self.fs = fs
@@ -144,11 +146,12 @@ class NSGT_sliced:
         self.multithreading = multithreading
         self.userecwnd = recwnd
         self.reducedform = reducedform
+        self.multichannel = multichannel
 
         self.scale = scale
         self.frqs,self.q = self.scale()
 
-        self.g,self.rfbas,self.M = nsgfwin(self.frqs, self.q, self.fs, self.sl_len, sliced=True, min_win=min_win, Qvar=Qvar, dtype=dtype)
+        self.g,self.rfbas,self.M = nsgfwin(self.frqs, self.q, self.fs, self.sl_len, sliced=True, min_win=min_win, Qvar=Qvar, dtype=dtype, device=self.device)
         
 #        print "rfbas",self.rfbas/float(self.sl_len)*self.fs
         if real:
@@ -174,12 +177,12 @@ class NSGT_sliced:
             self.channelize = lambda seq: ((it,) for it in seq)
             self.unchannelize = lambda seq: (it[0] for it in seq)
 
-        self.wins,self.nn = calcwinrange(self.g, self.rfbas, self.sl_len)
+        self.wins,self.nn = calcwinrange(self.g, self.rfbas, self.sl_len, device=self.device)
         
-        self.gd = nsdual(self.g, self.wins, self.nn, self.M)
+        self.gd = nsdual(self.g, self.wins, self.nn, self.M, device=self.device)
         
-        self.fwd = lambda fc: nsgtf_sl(fc, self.g, self.wins, self.nn, self.M, real=self.real, reducedform=self.reducedform, measurefft=self.measurefft, multithreading=self.multithreading)
-        self.bwd = lambda cc: nsigtf_sl(cc, self.gd, self.wins, self.nn, self.sl_len ,real=self.real, reducedform=self.reducedform, measurefft=self.measurefft, multithreading=self.multithreading)
+        self.fwd = lambda fc: nsgtf_sl(fc, self.g, self.wins, self.nn, self.M, real=self.real, reducedform=self.reducedform, measurefft=self.measurefft, multithreading=self.multithreading, device=self.device)
+        self.bwd = lambda cc: nsigtf_sl(cc, self.gd, self.wins, self.nn, self.sl_len ,real=self.real, reducedform=self.reducedform, measurefft=self.measurefft, multithreading=self.multithreading, device=self.device)
 
     @property
     def coef_factor(self):
@@ -195,9 +198,9 @@ class NSGT_sliced:
         sig = self.channelize(sig)
 
         # Compute the slices (zero-padded Tukey window version)
-        f_sliced = slicing(sig, self.sl_len, self.tr_area)
+        f_sliced = slicing(sig, self.sl_len, self.tr_area, device=self.device)
 
-        cseq = chnmap_forward(self.fwd, f_sliced)
+        cseq = chnmap_forward(self.fwd, f_sliced, device=self.device)
     
         #cseq = arrange(cseq, self.M, True)
         
@@ -206,9 +209,8 @@ class NSGT_sliced:
         return cseq
 
 
-    def backward(self, cseq):
+    def backward(self, cseq, length):
         'inverse transform - c: iterable sequence of coefficients'
-                
         cseq = self.channelize(cseq)
         
         #cseq = arrange(cseq, self.M, False)
@@ -217,14 +219,20 @@ class NSGT_sliced:
         
         # Glue the parts back together
         ftype = float if self.real else complex
-        sig = unslicing(frec_sliced, self.sl_len, self.tr_area, dtype=ftype, usewindow=self.userecwnd)
+        sig = unslicing(frec_sliced, self.sl_len, self.tr_area, dtype=ftype, usewindow=self.userecwnd, device=self.device)
         
         sig = self.unchannelize(sig)
         
         # discard first two blocks (padding)
         next(sig)
         next(sig)
-        return sig
+
+        # convert to tensor
+
+        ret = next(reblock(sig, length, fulllast=False, multichannel=self.multichannel, device=self.device))
+        ret = torch.tensor(ret)
+
+        return ret
 
 
 class CQ_NSGT_sliced(NSGT_sliced):
