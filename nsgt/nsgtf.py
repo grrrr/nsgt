@@ -43,63 +43,35 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measureff
         Lg = len(gii)
         col = int(ceil(float(Lg)/mii))
         assert col*mii >= Lg
-        gi1 = gii[:(Lg+1)//2]
-        gi2 = gii[-(Lg//2):]
+        assert col == 1
 
-        p = (mii,gii,gi1,gi2,win_range,Lg,col)
+        p = (mii,win_range,Lg,col)
         loopparams.append(p)
 
-    # main loop over slices
-    for f in f_slices:
-        Ls = len(f)
-        
-        # some preparation    
-        ft = fft(f)
+    ragged_giis = [torch.nn.functional.pad(torch.unsqueeze(gii, dim=0), (0, maxLg-gii.shape[0])) for gii in g[sl]]
+    giis = torch.conj(torch.cat(ragged_giis))
 
-        if temp0 is None:
-            # pre-allocate buffer (delayed because of dtype)
-            temp0 = torch.empty(maxLg, dtype=ft.dtype, device=get_torch_device())
-        
-        # A small amount of zero-padding might be needed (e.g. for scale frames)
-        if nn > Ls:
-            ft = torch.concatenate((ft, torch.zeros(nn-Ls, dtype=ft.dtype)))
-        
-        # The actual transform
-        c = [] # Initialization of the result
+    f = torch.cat([torch.unsqueeze(f, dim=0) for f in f_slices])
+    ft = fft(f)
 
-        # TODO: torchify it
-        for mii,_,gi1,gi2,win_range,Lg,col in loopparams:
-            temp = temp0[:col*mii]
+    Ls = f.shape[-1]
 
-            # original version
-        #            t = ft[win_range]*N.fft.fftshift(N.conj(gii))
-        #            temp[:(Lg+1)//2] = t[Lg//2:]  # if mii is odd, this is of length mii-mii//2
-        #            temp[-(Lg//2):] = t[:Lg//2]  # if mii is odd, this is of length mii//2
+    assert nn == Ls
 
-            # modified version to avoid superfluous memory allocation
-            t1 = temp[:(Lg+1)//2]
-            t1[:] = gi1  # if mii is odd, this is of length mii-mii//2
-            t2 = temp[-(Lg//2):]
-            t2[:] = gi2  # if mii is odd, this is of length mii//2
+    # The actual transform
+    c = torch.empty(f.shape[0], len(loopparams), maxLg, dtype=ft.dtype, device=get_torch_device())
 
-            ftw = ft[win_range]
-            t2 *= ftw[:Lg//2]
-            t1 *= ftw[Lg//2:]
-            
-            temp[(Lg+1)//2:-(Lg//2)] = 0  # clear gap (if any)
-            
-            if col > 1:
-                temp = torch.sum(temp.reshape((mii,-1)), axis=1)
-            else:
-                temp = temp.clone()
+    # TODO: torchify it
+    for j, (mii,win_range,Lg,col) in enumerate(loopparams):
+        t = ft[:, win_range]*torch.fft.fftshift(torch.conj(giis[j, :Lg]))
 
-            c.append(temp)
+        c[:, j, :(Lg+1)//2] = t[:, Lg//2:]  # if mii is odd, this is of length mii-mii//2
+        c[:, j, -(Lg//2):] = t[:, :Lg//2]  # if mii is odd, this is of length mii//2
+        c[:, j, (Lg+1)//2:-(Lg//2)] = 0  # clear gap (if any)
 
-        # TODO: if matrixform, perform "2D" FFT along one axis
-        # this could also be nicely parallelized
-        y = list(mmap(ifft,c))
-        
-        yield y
+    y = ifft(c)
+    
+    return y
 
         
 # non-sliced version
