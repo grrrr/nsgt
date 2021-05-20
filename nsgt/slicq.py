@@ -30,11 +30,14 @@ from .nsdual import nsdual
 from .nsgfwin_sl import nsgfwin
 from .nsgtf import nsgtf_sl
 from .nsigtf import nsigtf_sl
-from .util import calcwinrange
+from .util import calcwinrange, get_torch_device
 from .fscale import OctScale
 
+
 # one of the more expensive functions (32/400)
+#@profile
 def arrange(cseq, M, fwd):
+    print('cseq in: {0} {1}'.format(cseq.shape, cseq.dtype))
     cseq = iter(cseq)
     try:
         c0 = next(cseq)  # grab first stream element
@@ -42,6 +45,7 @@ def arrange(cseq, M, fwd):
         return iter(())
     cseq = chain((c0,), cseq)  # push it back in
     M = list(map(len, c0[0]))  # read off M from the coefficients
+    #print(M)
     ixs = (
            [(slice(3*mkk//4, mkk), slice(0, 3*mkk//4)) for mkk in M],  # odd
            [(slice(mkk//4, mkk), slice(0, mkk//4)) for mkk in M]  # even
@@ -51,7 +55,7 @@ def arrange(cseq, M, fwd):
     else:
         ixs = cycle(ixs[::-1])
 
-    return ([
+    tmp = ([
                 [torch.cat((ckk[ix0],ckk[ix1]))
                    for ckk,(ix0,ix1) in zip(ci, ixi)
                 ]
@@ -59,6 +63,26 @@ def arrange(cseq, M, fwd):
              ]
              for cci,ixi in zip(cseq, ixs)
             )
+
+    c = list(tmp)
+
+    T = len(c)
+    I = len(c[0])
+    F1 = len(c[0][0])
+    F2 = len(c[0][0][0])
+
+    C = torch.empty(T, I, F1, F2, dtype=torch.complex64, device=get_torch_device())
+
+    for i, cc in enumerate(c):
+        assert len(cc) == I
+        for j, ccc in enumerate(cc):
+            assert len(ccc) == F1
+            for k, cccc in enumerate(ccc):
+                assert len(cccc) == F2
+                C[i, j, k] = torch.tensor(cccc)
+
+    print('C out: {0} {1}'.format(C.shape, C.dtype))
+    return C
 
 
 def starzip(iterables):
@@ -89,7 +113,6 @@ def chnmap_forward(gen, seq):
         for j, sig in enumerate(chn):
             f_slices[j, i, :] = sig
 
-    print('f_slices shape: {0}'.format(f_slices.shape))
     ret = gen(f_slices)
 
     return ret
@@ -175,10 +198,8 @@ class NSGT_sliced:
         f_sliced = slicing(sig, self.sl_len, self.tr_area)
 
         cseq = chnmap_forward(self.fwd, f_sliced)
-        #return cseq
-        print('cseq shape: {0}'.format(cseq.shape))
     
-        cseq = arrange(cseq, self.M, True)
+        #cseq = arrange(cseq, self.M, True)
         
         cseq = self.unchannelize(cseq)
         
@@ -190,7 +211,7 @@ class NSGT_sliced:
                 
         cseq = self.channelize(cseq)
         
-        cseq = arrange(cseq, self.M, False)
+        #cseq = arrange(cseq, self.M, False)
 
         frec_sliced = chnmap(self.bwd, cseq)
         
