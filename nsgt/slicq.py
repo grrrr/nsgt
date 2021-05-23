@@ -37,7 +37,7 @@ from .reblock import reblock
 
 # one of the more expensive functions (32/400)
 #@profile
-def arrange(cseq, M, fwd):
+def arrange(cseq, M, fwd, device="cuda"):
     cseq = iter(cseq)
     try:
         c0 = next(cseq)  # grab first stream element
@@ -79,7 +79,8 @@ def arrange(cseq, M, fwd):
             assert len(ccc) == F1
             for k, cccc in enumerate(ccc):
                 assert len(cccc) == F2
-                C[i, j, k] = torch.tensor(cccc)
+                #C[i, j, k] = torch.tensor(cccc)
+                C[i, j, k] = cccc
 
     return C
 
@@ -202,7 +203,7 @@ class NSGT_sliced:
 
         cseq = chnmap_forward(self.fwd, f_sliced, device=self.device)
     
-        #cseq = arrange(cseq, self.M, True)
+        #cseq = arrange(cseq, self.M, True, device=self.device)
         
         cseq = self.unchannelize(cseq)
         
@@ -213,7 +214,7 @@ class NSGT_sliced:
         'inverse transform - c: iterable sequence of coefficients'
         cseq = self.channelize(cseq)
         
-        #cseq = arrange(cseq, self.M, False)
+        #cseq = arrange(cseq, self.M, False, device=self.device)
 
         frec_sliced = chnmap(self.bwd, cseq)
         
