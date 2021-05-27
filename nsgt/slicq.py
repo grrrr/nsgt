@@ -95,10 +95,18 @@ def starzip(iterables):
     return [inner(itr, i) for i,itr in enumerate(tee(iterables, len(it)))]
 
 
-def chnmap(gen, seq):
+def chnmap_backward(gen, seq, sl_len, device="cuda"):
     chns = starzip(seq) # returns a list of generators (one for each channel)
+    frec_slices = torch.empty(seq.shape[0], seq.shape[1], sl_len, dtype=torch.float32, device=torch.device(device))
+
     gens = list(map(gen, chns)) # generators including transformation
-    return zip(*gens)  # packing channels to one generator yielding channel tuples
+    ret = list(zip(*gens))  # packing channels to one generator yielding channel tuples
+
+    for i, chn in enumerate(ret):
+        for j, sig in enumerate(chn):
+            frec_slices[i, j, :] = sig
+
+    return frec_slices
 
 
 def chnmap_forward(gen, seq, device="cuda"):
@@ -209,27 +217,35 @@ class NSGT_sliced:
         
         return cseq
 
-
+    #@profile
     def backward(self, cseq, length):
         'inverse transform - c: iterable sequence of coefficients'
+
+        print('1. channelize')
+
         cseq = self.channelize(cseq)
         
         #cseq = arrange(cseq, self.M, False, device=self.device)
 
-        frec_sliced = chnmap(self.bwd, cseq)
-        
+        print('2. chnmap')
+        frec_sliced = chnmap_backward(self.bwd, cseq, self.sl_len, device=self.device)
+
+        print('3. unslicing')
+
         # Glue the parts back together
         ftype = float if self.real else complex
         sig = unslicing(frec_sliced, self.sl_len, self.tr_area, dtype=ftype, usewindow=self.userecwnd, device=self.device)
+
+        print('4. unchannelize and discard')
         
-        sig = self.unchannelize(sig)
-        
-        # discard first two blocks (padding)
-        next(sig)
-        next(sig)
+        sig = list(self.unchannelize(sig))[2:]
+
+        print('5. to tensor')
 
         # convert to tensor
         ret = next(reblock(sig, length, fulllast=False, multichannel=self.multichannel, device=self.device))
+
+        print('6. done')
 
         return ret
 

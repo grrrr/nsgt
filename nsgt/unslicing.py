@@ -17,15 +17,23 @@ from .util import hannwin
 import torch
 
 
+#@profile
 def slicequads(frec_sliced, hhop):
+    print('frec_sliced: {0}'.format(type(frec_sliced)))
+    print('frec_sliced: {0}'.format(len(frec_sliced)))
     slices = [[slice(hhop*((i+3-k*2)%4),hhop*((i+3-k*2)%4+1)) for i in range(4)] for k in range(2)]
     slices = cycle(slices)
     
     for fsl,sl in zip(frec_sliced, slices):
+        print('slicequads 1: {0}'.format(type(fsl)))
+        print('slicequads 2: {0}'.format(type(sl)))
         yield [[fslc[sli] for fslc in fsl] for sli in sl]
 
 
+#@profile
 def unslicing(frec_sliced, sl_len, tr_area, dtype=float, usewindow=True, device="cuda"):
+    #print("unslicing: {0}".format(frec_sliced.shape))
+
     hhop = sl_len//4    
     islices = slicequads(frec_sliced, hhop)
     
@@ -47,11 +55,13 @@ def unslicing(frec_sliced, sl_len, tr_area, dtype=float, usewindow=True, device=
     
     chns = len(firstquad[0]) # number of channels in first quad
     
-    islices = chain((firstquad,), islices)
+    islices = list(chain((firstquad,), islices))
     
     output = [torch.zeros((chns,hhop), dtype=dtype, device=torch.device(device)) for _ in range(4)]
     
     for quad in islices:
+        print('quad.shape: {0}'.format(len(quad)))
+        print('quad[0].shape: {0}'.format(len(quad[0])))
         for osl,isl,w in zip(output, quad, tw):
             # in a piecewise manner add slices to output stream 
             osl[:] += torch.cat([torch.unsqueeze(isl_, dim=0) for isl_ in isl])*w

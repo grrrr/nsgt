@@ -62,6 +62,7 @@ except ImportError:
 
 #@profile
 def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft=False, multithreading=False, device="cuda"):
+    print('nsigtf_sl: {0}'.format(type(cseq)))
     cseq = iter(cseq)
     dtype = gd[0].dtype
 
@@ -97,6 +98,7 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
 
     # get first slice
     c0 = next(cseq)
+    print('c0.shape: {0}'.format(c0.shape))
 
     fr = torch.empty(nn, dtype=c0[0].dtype, device=torch.device(device))  # Allocate output
     temp0 = torch.empty(maxLg, dtype=fr.dtype, device=torch.device(device))  # pre-allocation
@@ -117,9 +119,13 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
         sl2 = slice(-(Lg//2), None)
         p = (gdii,wr1,wr2,sl1,sl2,temp)
         loopparams.append(p)
+
+    print('loopparams: {0}'.format(len(loopparams)))
         
     # main loop over slices
     for c in chain((c0,),cseq):
+        #print('len(c): {0}'.format(len(c)))
+
         assert len(c) == ln
 
         # do transforms on coefficients

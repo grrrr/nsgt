@@ -31,6 +31,7 @@ def makewnd(sl_len, tr_area, device="cuda"):
     tw[3*hhop+htr:] = 0
     return tw
 
+
 def slicing(f, sl_len, tr_area, device="cuda"):
     if tr_area%2 != 0:
         raise ValueError("Transition area 'tr_area' must be modulo 2")
