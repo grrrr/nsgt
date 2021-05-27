@@ -100,6 +100,9 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
     #c0 = next(cseq)
     #print('c0.shape: {0}'.format(c0.shape))
 
+    ragged_gdiis = [torch.nn.functional.pad(torch.unsqueeze(gdii, dim=0), (0, maxLg-gdii.shape[0])) for gdii in sl(gd)]
+    gdiis = torch.conj(torch.cat(ragged_gdiis))
+
     fr = torch.empty(nn, dtype=cseq.dtype, device=torch.device(device))  # Allocate output
     temp0 = torch.empty(maxLg, dtype=fr.dtype, device=torch.device(device))  # pre-allocation
     
@@ -117,14 +120,10 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
 #        wr1,wr2 = win_range
         sl1 = slice(None, (Lg+1)//2)
         sl2 = slice(-(Lg//2), None)
-        p = (gdii,wr1,wr2,sl1,sl2,temp)
+        p = (wr1,wr2,sl1,sl2,temp,Lg)
         loopparams.append(p)
 
     print('loopparams: {0}'.format(len(loopparams)))
-        
-    #print('len(c): {0}'.format(len(c)))
-
-    #assert len(c) == ln
 
     # do transforms on coefficients
     # TODO: for matrixform we could do a FFT on the whole matrix along one axis
@@ -137,12 +136,12 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
     fr[:] = 0.
     # The overlap-add procedure including multiplication with the synthesis windows
     # TODO: stuff loop into theano
-    for t,(gdii,wr1,wr2,sl1,sl2,temp) in zip(fc, loopparams):
+    for j,(t,(wr1,wr2,sl1,sl2,temp,Lg)) in enumerate(zip(fc, loopparams)):
         t1 = temp[sl1]
         t2 = temp[sl2]
         t1[:] = t[sl1]
         t2[:] = t[sl2]
-        temp *= gdii
+        temp *= gdiis[j, :Lg] 
         temp *= len(t)
 
         fr[wr1] += t2

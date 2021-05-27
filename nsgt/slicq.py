@@ -106,7 +106,7 @@ def chnmap_backward(gen, seq, sl_len, device="cuda"):
 
     for i, chn in enumerate(chns):
         for j, coef in enumerate(chn):
-            print('coef: {0}'.format(coef.shape))
+            print('coef: {0} {1} {0}'.format(i, j, coef.shape))
             frec_slices[j, i, :] = gen(coef)
 
     return frec_slices
