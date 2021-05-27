@@ -53,11 +53,6 @@ import numpy as np
 import torch
 from itertools import chain
 from .fft import fftp, ifftp, irfftp
-
-try:
-    import multiprocessing as MP
-except ImportError:
-    MP = None
     
 
 #@profile
@@ -96,53 +91,44 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
         
     maxLg = max(len(gdii) for gdii in sl(gd))
 
-    # get first slice
-    #c0 = next(cseq)
-    #print('c0.shape: {0}'.format(c0.shape))
-
     ragged_gdiis = [torch.nn.functional.pad(torch.unsqueeze(gdii, dim=0), (0, maxLg-gdii.shape[0])) for gdii in sl(gd)]
     gdiis = torch.conj(torch.cat(ragged_gdiis))
 
     fr = torch.empty(nn, dtype=cseq.dtype, device=torch.device(device))  # Allocate output
     temp0 = torch.empty(maxLg, dtype=fr.dtype, device=torch.device(device))  # pre-allocation
-    
-    if multithreading and MP is not None:
-        mmap = MP.Pool().map
-    else:
-        mmap = map
 
     loopparams = []
     for gdii,win_range in zip(sl(gd), sl(wins)):
         Lg = len(gdii)
-        temp = temp0[:Lg]
         wr1 = win_range[:(Lg)//2]
         wr2 = win_range[-((Lg+1)//2):]
-#        wr1,wr2 = win_range
         sl1 = slice(None, (Lg+1)//2)
         sl2 = slice(-(Lg//2), None)
-        p = (wr1,wr2,sl1,sl2,temp,Lg)
+        p = (wr1,wr2,sl1,sl2,Lg)
         loopparams.append(p)
-
-    print('loopparams: {0}'.format(len(loopparams)))
 
     # do transforms on coefficients
     # TODO: for matrixform we could do a FFT on the whole matrix along one axis
     # this could also be nicely parallalized
-    fc = mmap(fft, cseq)
-    fc = symm(fc)
-    
+    fc = fft(cseq)
+    #fc = symm(fc)
+
     # The overlap-add procedure including multiplication with the synthesis windows
     #fr = nsigtf_loop(loopparams, fr, fc)
     fr[:] = 0.
     # The overlap-add procedure including multiplication with the synthesis windows
     # TODO: stuff loop into theano
-    for j,(t,(wr1,wr2,sl1,sl2,temp,Lg)) in enumerate(zip(fc, loopparams)):
-        t1 = temp[sl1]
-        t2 = temp[sl2]
+    for j,(wr1,wr2,sl1,sl2,Lg) in enumerate(loopparams[:fc.shape[0]]):
+        t = fc[j]
+
+        t1 = temp0[:Lg][sl1]
+        t2 = temp0[:Lg][sl2]
+
         t1[:] = t[sl1]
         t2[:] = t[sl2]
-        temp *= gdiis[j, :Lg] 
-        temp *= len(t)
+
+        temp0[:Lg] *= gdiis[j, :Lg] 
+        temp0[:Lg] *= len(t)
 
         fr[wr1] += t2
         fr[wr2] += t1
