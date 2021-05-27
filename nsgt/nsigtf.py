@@ -60,7 +60,7 @@ except ImportError:
     MP = None
     
 
-#@profile
+@profile
 def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft=False, multithreading=False, device="cuda"):
     print('nsigtf_sl: {0}'.format(type(cseq)))
     cseq = iter(cseq)

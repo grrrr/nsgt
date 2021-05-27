@@ -17,20 +17,21 @@ from .util import hannwin
 import torch
 
 
-#@profile
+@profile
 def slicequads(frec_sliced, hhop):
-    print('frec_sliced: {0}'.format(type(frec_sliced)))
-    print('frec_sliced: {0}'.format(len(frec_sliced)))
     slices = [[slice(hhop*((i+3-k*2)%4),hhop*((i+3-k*2)%4+1)) for i in range(4)] for k in range(2)]
     slices = cycle(slices)
-    
-    for fsl,sl in zip(frec_sliced, slices):
-        print('slicequads 1: {0}'.format(type(fsl)))
-        print('slicequads 2: {0}'.format(type(sl)))
-        yield [[fslc[sli] for fslc in fsl] for sli in sl]
+
+    ret2 = torch.empty(frec_sliced.shape[0], 4, frec_sliced.shape[1], hhop, dtype=frec_sliced.dtype, device=frec_sliced.device)
+
+    for j, (fsl,sl) in enumerate(zip(frec_sliced, slices)):
+        for k, sli in enumerate(sl):
+            ret2[j, k, :] = torch.cat([torch.unsqueeze(fslc[sli], dim=0) for fslc in fsl])
+
+    return ret2
 
 
-#@profile
+@profile
 def unslicing(frec_sliced, sl_len, tr_area, dtype=float, usewindow=True, device="cuda"):
     #print("unslicing: {0}".format(frec_sliced.shape))
 
@@ -51,17 +52,17 @@ def unslicing(frec_sliced, sl_len, tr_area, dtype=float, usewindow=True, device=
         tw = cycle((1,))
         
     # get first slice to deduce channels
-    firstquad = next(islices)
+    firstquad = islices[0]
     
     chns = len(firstquad[0]) # number of channels in first quad
     
-    islices = list(chain((firstquad,), islices))
+    #islices = list(chain((firstquad,), islices))
     
     output = [torch.zeros((chns,hhop), dtype=dtype, device=torch.device(device)) for _ in range(4)]
     
     for quad in islices:
-        print('quad.shape: {0}'.format(len(quad)))
-        print('quad[0].shape: {0}'.format(len(quad[0])))
+        #print('quad.shape: {0}'.format(len(quad)))
+        #print('quad[0].shape: {0}'.format(len(quad[0])))
         for osl,isl,w in zip(output, quad, tw):
             # in a piecewise manner add slices to output stream 
             osl[:] += torch.cat([torch.unsqueeze(isl_, dim=0) for isl_ in isl])*w

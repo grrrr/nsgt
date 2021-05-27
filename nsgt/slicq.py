@@ -217,7 +217,7 @@ class NSGT_sliced:
         
         return cseq
 
-    #@profile
+    @profile
     def backward(self, cseq, length):
         'inverse transform - c: iterable sequence of coefficients'
 
