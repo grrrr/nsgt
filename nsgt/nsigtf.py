@@ -77,7 +77,7 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
     ragged_gdiis = [torch.nn.functional.pad(torch.unsqueeze(gdii, dim=0), (0, maxLg-gdii.shape[0])) for gdii in sl(gd)]
     gdiis = torch.conj(torch.cat(ragged_gdiis))
 
-    fr = torch.empty(*cseq.shape[:2], nn, dtype=cseq.dtype, device=torch.device(device))  # Allocate output
+    fr = torch.zeros(*cseq.shape[:2], nn, dtype=cseq.dtype, device=torch.device(device))  # Allocate output
     temp0 = torch.empty(*cseq.shape[:2], maxLg, dtype=fr.dtype, device=torch.device(device))  # pre-allocation
 
     loopparams = []
@@ -94,26 +94,23 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
     fc = fft(cseq)
 
     # The overlap-add procedure including multiplication with the synthesis windows
-    for i in range(cseq.shape[0]):
-        for j in range(cseq.shape[1]):
-            fr[i, j, :] = 0.
-            for k,(wr1,wr2,Lg) in enumerate(loopparams[:fc.shape[2]]):
-                t = fc[i, j, k]
+    for i,(wr1,wr2,Lg) in enumerate(loopparams[:fc.shape[2]]):
+        t = fc[:, :, i]
 
-                r = (Lg+1)//2
-                l = (Lg//2)
+        r = (Lg+1)//2
+        l = (Lg//2)
 
-                t1 = temp0[i, j, :r]
-                t2 = temp0[i, j, Lg-l:Lg]
+        t1 = temp0[:, :, :r]
+        t2 = temp0[:, :, Lg-l:Lg]
 
-                t1[:] = t[:r]
-                t2[:] = t[maxLg-l:maxLg]
+        t1[:, :, :] = t[:, :, :r]
+        t2[:, :, :] = t[:, :, maxLg-l:maxLg]
 
-                temp0[i, j, :Lg] *= gdiis[k, :Lg] 
-                temp0[i, j, :Lg] *= len(t)
+        temp0[:, :, :Lg] *= gdiis[i, :Lg] 
+        temp0[:, :, :Lg] *= t.shape[-1]
 
-                fr[i, j, wr1] += t2
-                fr[i, j, wr2] += t1
+        fr[:, :, wr1] += t2
+        fr[:, :, wr2] += t1
 
     ftr = fr[:, :, :nn//2+1] if real else fr
 

@@ -98,18 +98,12 @@ def starzip(iterables):
 #@profile
 def chnmap_backward(gen, seq, sl_len, device="cuda"):
     print('A')
+    print('seq.shape, device: {0} {1}'.format(seq.shape, seq.device))
     #chns = starzip(seq) # returns a list of generators (one for each channel)
 
     #chns = [list(x) for x in chns]
 
-    frec_slices = torch.empty(seq.shape[0], seq.shape[1], sl_len, dtype=torch.float32, device=torch.device(device))
-
-    #for i in range(seq.shape[0]):
-    #    print('chn: {0} {1}'.format(i, seq[i, :].shape))
-    #    #for j in range(seq.shape[1]):
-    #    #    print('coef: {0} {1}'.format(j, seq[i, j, :].shape))
-    #    #    frec_slices[i, j, :] = gen(seq[i, j, :])
-    #    frec_slices[i, :] = gen(seq[i, :])
+    #frec_slices = torch.empty(seq.shape[0], seq.shape[1], sl_len, dtype=torch.float32, device=torch.device(device))
     frec_slices = gen(seq)
 
     return frec_slices
