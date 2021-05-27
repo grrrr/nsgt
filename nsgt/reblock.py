@@ -45,10 +45,12 @@ def reblock(sseq, blocksize, dtype=None, fulllast=True, padding=0, multichannel=
                 block = torch.empty(chns,blocksize, dtype=torch.float32, device=torch.device(device))
                 blockrem = block
                 
-            sout = [sj[:blockrem.shape[1]] for sj in si]
-            avail = len(sout[0])
-            for blr,souti in zip(blockrem, sout):
-                blr[:avail] = souti # copy data per channel
+            sout = torch.cat([torch.unsqueeze(sj[:blockrem.shape[1]], dim=0) for sj in si])
+
+            avail = sout.shape[1]
+
+            blockrem[:, :avail] = sout[:, :]
+
             si = [sj[avail:] for sj in si]  # move ahead in input block
             blockrem = blockrem[:,avail:]  # move ahead in output block
             
