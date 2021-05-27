@@ -104,12 +104,13 @@ def chnmap_backward(gen, seq, sl_len, device="cuda"):
 
     frec_slices = torch.empty(seq.shape[0], seq.shape[1], sl_len, dtype=torch.float32, device=torch.device(device))
 
-    for i in range(seq.shape[0]):
-        print('chn: {0} {1}'.format(i, seq[i, :].shape))
-        #for j in range(seq.shape[1]):
-        #    print('coef: {0} {1}'.format(j, seq[i, j, :].shape))
-        #    frec_slices[i, j, :] = gen(seq[i, j, :])
-        frec_slices[i, :] = gen(seq[i, :])
+    #for i in range(seq.shape[0]):
+    #    print('chn: {0} {1}'.format(i, seq[i, :].shape))
+    #    #for j in range(seq.shape[1]):
+    #    #    print('coef: {0} {1}'.format(j, seq[i, j, :].shape))
+    #    #    frec_slices[i, j, :] = gen(seq[i, j, :])
+    #    frec_slices[i, :] = gen(seq[i, :])
+    frec_slices = gen(seq)
 
     return frec_slices
 
