@@ -95,16 +95,19 @@ def starzip(iterables):
     return [inner(itr, i) for i,itr in enumerate(tee(iterables, len(it)))]
 
 
+#@profile
 def chnmap_backward(gen, seq, sl_len, device="cuda"):
+    print('A')
     chns = starzip(seq) # returns a list of generators (one for each channel)
+
+    chns = [list(x) for x in chns]
+
     frec_slices = torch.empty(seq.shape[0], seq.shape[1], sl_len, dtype=torch.float32, device=torch.device(device))
 
-    gens = list(map(gen, chns)) # generators including transformation
-    ret = list(zip(*gens))  # packing channels to one generator yielding channel tuples
-
-    for i, chn in enumerate(ret):
-        for j, sig in enumerate(chn):
-            frec_slices[i, j, :] = sig
+    for i, chn in enumerate(chns):
+        for j, coef in enumerate(chn):
+            print('coef: {0}'.format(coef.shape))
+            frec_slices[j, i, :] = gen(coef)
 
     return frec_slices
 
@@ -217,7 +220,7 @@ class NSGT_sliced:
         
         return cseq
 
-    @profile
+    #@profile
     def backward(self, cseq, length):
         'inverse transform - c: iterable sequence of coefficients'
 
@@ -229,6 +232,8 @@ class NSGT_sliced:
 
         print('2. chnmap')
         frec_sliced = chnmap_backward(self.bwd, cseq, self.sl_len, device=self.device)
+
+        print('frec_sliced: {0}'.format(frec_sliced.shape))
 
         print('3. unslicing')
 

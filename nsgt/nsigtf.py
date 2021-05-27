@@ -60,10 +60,10 @@ except ImportError:
     MP = None
     
 
-@profile
+#@profile
 def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft=False, multithreading=False, device="cuda"):
     print('nsigtf_sl: {0}'.format(type(cseq)))
-    cseq = iter(cseq)
+    #cseq = iter(cseq)
     dtype = gd[0].dtype
 
     fft = fftp(measure=measurefft, dtype=dtype)
@@ -97,10 +97,10 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
     maxLg = max(len(gdii) for gdii in sl(gd))
 
     # get first slice
-    c0 = next(cseq)
-    print('c0.shape: {0}'.format(c0.shape))
+    #c0 = next(cseq)
+    #print('c0.shape: {0}'.format(c0.shape))
 
-    fr = torch.empty(nn, dtype=c0[0].dtype, device=torch.device(device))  # Allocate output
+    fr = torch.empty(nn, dtype=cseq.dtype, device=torch.device(device))  # Allocate output
     temp0 = torch.empty(maxLg, dtype=fr.dtype, device=torch.device(device))  # pre-allocation
     
     if multithreading and MP is not None:
@@ -122,43 +122,41 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
 
     print('loopparams: {0}'.format(len(loopparams)))
         
-    # main loop over slices
-    for c in chain((c0,),cseq):
-        #print('len(c): {0}'.format(len(c)))
+    #print('len(c): {0}'.format(len(c)))
 
-        assert len(c) == ln
+    #assert len(c) == ln
 
-        # do transforms on coefficients
-        # TODO: for matrixform we could do a FFT on the whole matrix along one axis
-        # this could also be nicely parallalized
-        fc = mmap(fft, c)
-        fc = symm(fc)
-        
-        # The overlap-add procedure including multiplication with the synthesis windows
-        #fr = nsigtf_loop(loopparams, fr, fc)
-        fr[:] = 0.
-        # The overlap-add procedure including multiplication with the synthesis windows
-        # TODO: stuff loop into theano
-        for t,(gdii,wr1,wr2,sl1,sl2,temp) in zip(fc, loopparams):
-            t1 = temp[sl1]
-            t2 = temp[sl2]
-            t1[:] = t[sl1]
-            t2[:] = t[sl2]
-            temp *= gdii
-            temp *= len(t)
+    # do transforms on coefficients
+    # TODO: for matrixform we could do a FFT on the whole matrix along one axis
+    # this could also be nicely parallalized
+    fc = mmap(fft, cseq)
+    fc = symm(fc)
+    
+    # The overlap-add procedure including multiplication with the synthesis windows
+    #fr = nsigtf_loop(loopparams, fr, fc)
+    fr[:] = 0.
+    # The overlap-add procedure including multiplication with the synthesis windows
+    # TODO: stuff loop into theano
+    for t,(gdii,wr1,wr2,sl1,sl2,temp) in zip(fc, loopparams):
+        t1 = temp[sl1]
+        t2 = temp[sl2]
+        t1[:] = t[sl1]
+        t2[:] = t[sl2]
+        temp *= gdii
+        temp *= len(t)
 
-            fr[wr1] += t2
-            fr[wr2] += t1
+        fr[wr1] += t2
+        fr[wr2] += t1
 
-        #return fr
+    #return fr
 
-        ftr = fr[:nn//2+1] if real else fr
+    ftr = fr[:nn//2+1] if real else fr
 
-        sig = ifft(ftr, outn=nn)
+    sig = ifft(ftr, outn=nn)
 
-        sig = sig[:Ls] # Truncate the signal to original length (if given)
+    sig = sig[:Ls] # Truncate the signal to original length (if given)
 
-        yield sig
+    return sig
 
 # non-sliced version
 def nsigtf(c, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft=False, multithreading=False):
