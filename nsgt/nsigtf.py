@@ -55,22 +55,6 @@ from itertools import chain
 from .fft import fftp, ifftp, irfftp
 
 try:
-    # try to import cython version
-    from _nsigtf_loop import nsigtf_loop
-except ImportError:
-    nsigtf_loop = None
-
-if nsigtf_loop is None:
-    from .nsigtf_loop import nsigtf_loop
-
-if False:
-    # what about theano?
-    try:
-        import theano as T
-    except ImportError:
-        T = None
-    
-try:
     import multiprocessing as MP
 except ImportError:
     MP = None
@@ -145,7 +129,22 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
         fc = symm(fc)
         
         # The overlap-add procedure including multiplication with the synthesis windows
-        fr = nsigtf_loop(loopparams, fr, fc)
+        #fr = nsigtf_loop(loopparams, fr, fc)
+        fr[:] = 0.
+        # The overlap-add procedure including multiplication with the synthesis windows
+        # TODO: stuff loop into theano
+        for t,(gdii,wr1,wr2,sl1,sl2,temp) in zip(fc, loopparams):
+            t1 = temp[sl1]
+            t2 = temp[sl2]
+            t1[:] = t[sl1]
+            t2[:] = t[sl2]
+            temp *= gdii
+            temp *= len(t)
+
+            fr[wr1] += t2
+            fr[wr2] += t1
+
+        #return fr
 
         ftr = fr[:nn//2+1] if real else fr
 
