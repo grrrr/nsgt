@@ -63,30 +63,15 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
 
     fft = fftp(measure=measurefft, dtype=dtype)
     ifft = irfftp(measure=measurefft, dtype=dtype) if real else ifftp(measure=measurefft, dtype=dtype)
-    
+
     if real:
         ln = len(gd)//2+1-reducedform*2
-
-        if device == "cpu":
-            fftsymm = lambda c: torch.tensor(np.hstack((c[0],c.numpy()[-1:0:-1])).conj(), device=torch.device(device))
-        else:
-            # round trip through cpu because i don't want to deal with the lack of negative indexing in torch
-            fftsymm = lambda c: torch.tensor(np.hstack((c[0].cpu().numpy(),c.cpu().numpy()[-1:0:-1])).conj(), device=torch.device(device))
-
         if reducedform:
-            # no coefficients for f=0 and f=fs/2
-            def symm(_fc):
-                fc = list(_fc)
-                return chain(fc, map(fftsymm, fc[::-1]))
             sl = lambda x: chain(x[reducedform:len(gd)//2+1-reducedform],x[len(gd)//2+reducedform:len(gd)+1-reducedform])
         else:
-            def symm(_fc):
-                fc = list(_fc)
-                return chain(fc, map(fftsymm, fc[-2:0:-1]))
             sl = lambda x: x
     else:
         ln = len(gd)
-        symm = lambda fc: fc
         sl = lambda x: x
         
     maxLg = max(len(gdii) for gdii in sl(gd))
@@ -102,30 +87,30 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
         Lg = len(gdii)
         wr1 = win_range[:(Lg)//2]
         wr2 = win_range[-((Lg+1)//2):]
-        sl1 = slice(None, (Lg+1)//2)
-        sl2 = slice(-(Lg//2), None)
-        p = (wr1,wr2,sl1,sl2,Lg)
+        p = (wr1,wr2,Lg)
         loopparams.append(p)
 
     # do transforms on coefficients
     # TODO: for matrixform we could do a FFT on the whole matrix along one axis
     # this could also be nicely parallalized
     fc = fft(cseq)
-    #fc = symm(fc)
 
     # The overlap-add procedure including multiplication with the synthesis windows
     #fr = nsigtf_loop(loopparams, fr, fc)
     fr[:] = 0.
     # The overlap-add procedure including multiplication with the synthesis windows
     # TODO: stuff loop into theano
-    for j,(wr1,wr2,sl1,sl2,Lg) in enumerate(loopparams[:fc.shape[0]]):
+    for j,(wr1,wr2,Lg) in enumerate(loopparams[:fc.shape[0]]):
         t = fc[j]
 
-        t1 = temp0[:Lg][sl1]
-        t2 = temp0[:Lg][sl2]
+        r = (Lg+1)//2
+        l = (Lg//2)
 
-        t1[:] = t[sl1]
-        t2[:] = t[sl2]
+        t1 = temp0[:r]
+        t2 = temp0[Lg-l:Lg]
+
+        t1[:] = t[:r]
+        t2[:] = t[maxLg-l:maxLg]
 
         temp0[:Lg] *= gdiis[j, :Lg] 
         temp0[:Lg] *= len(t)

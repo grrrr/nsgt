@@ -106,9 +106,10 @@ def chnmap_backward(gen, seq, sl_len, device="cuda"):
 
     for i in range(seq.shape[0]):
         print('chn: {0} {1}'.format(i, seq[i, :].shape))
-        for j in range(seq.shape[1]):
-            print('coef: {0} {1}'.format(j, seq[i, j, :].shape))
-            frec_slices[i, j, :] = gen(seq[i, j, :])
+        #for j in range(seq.shape[1]):
+        #    print('coef: {0} {1}'.format(j, seq[i, j, :].shape))
+        #    frec_slices[i, j, :] = gen(seq[i, j, :])
+        frec_slices[i, :] = gen(seq[i, :])
 
     return frec_slices
 
