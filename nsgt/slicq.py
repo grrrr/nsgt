@@ -97,16 +97,7 @@ def starzip(iterables):
 
 #@profile
 def chnmap_backward(gen, seq, sl_len, device="cuda"):
-    print('A')
-    print('seq.shape, device: {0} {1}'.format(seq.shape, seq.device))
-    #chns = starzip(seq) # returns a list of generators (one for each channel)
-
-    #chns = [list(x) for x in chns]
-
-    #frec_slices = torch.empty(seq.shape[0], seq.shape[1], sl_len, dtype=torch.float32, device=torch.device(device))
-    frec_slices = gen(seq)
-
-    return frec_slices
+    return gen(seq)
 
 
 def chnmap_forward(gen, seq, device="cuda"):
@@ -211,8 +202,6 @@ class NSGT_sliced:
 
         cseq = chnmap_forward(self.fwd, f_sliced, device=self.device)
     
-        #cseq = arrange(cseq, self.M, True, device=self.device)
-        
         cseq = self.unchannelize(cseq)
         
         return cseq
@@ -220,34 +209,18 @@ class NSGT_sliced:
     #@profile
     def backward(self, cseq, length):
         'inverse transform - c: iterable sequence of coefficients'
-
-        print('1. channelize')
-
         cseq = self.channelize(cseq)
-        
-        #cseq = arrange(cseq, self.M, False, device=self.device)
 
-        print('2. chnmap')
-        frec_sliced = chnmap_backward(self.bwd, cseq, self.sl_len, device=self.device)
-
-        print('frec_sliced: {0}'.format(frec_sliced.shape))
-
-        print('3. unslicing')
+        frec_sliced = self.bwd(cseq)
 
         # Glue the parts back together
         ftype = float if self.real else complex
         sig = unslicing(frec_sliced, self.sl_len, self.tr_area, dtype=ftype, usewindow=self.userecwnd, device=self.device)
 
-        print('4. unchannelize and discard')
-        
         sig = list(self.unchannelize(sig))[2:]
-
-        print('5. to tensor')
 
         # convert to tensor
         ret = next(reblock(sig, length, fulllast=False, multichannel=self.multichannel, device=self.device))
-
-        print('6. done')
 
         return ret
 
