@@ -38,51 +38,22 @@ from .reblock import reblock
 # one of the more expensive functions (32/400)
 #@profile
 def arrange(cseq, M, fwd, device="cuda"):
-    cseq = iter(cseq)
-    try:
-        c0 = next(cseq)  # grab first stream element
-    except StopIteration:
-        return iter(())
-    cseq = chain((c0,), cseq)  # push it back in
-    M = list(map(len, c0[0]))  # read off M from the coefficients
-    #print(M)
-    ixs = (
-           [(slice(3*mkk//4, mkk), slice(0, 3*mkk//4)) for mkk in M],  # odd
-           [(slice(mkk//4, mkk), slice(0, mkk//4)) for mkk in M]  # even
-    )
+    M = cseq.shape[-1]
+
     if fwd:
-        ixs = cycle(ixs)
+        odd_mid = M//4
+        even_mid = 3*M//4
     else:
-        ixs = cycle(ixs[::-1])
+        odd_mid = 3*M//4
+        even_mid = M//4
 
-    tmp = ([
-                [torch.cat((ckk[ix0],ckk[ix1]))
-                   for ckk,(ix0,ix1) in zip(ci, ixi)
-                ]
-             for ci in cci
-             ]
-             for cci,ixi in zip(cseq, ixs)
-            )
+    # odd indices
+    cseq[1::2, :, :, :] = torch.cat((cseq[1::2, :, :, odd_mid:], cseq[1::2, :, :, :odd_mid]), dim=-1)
 
-    c = list(tmp)
+    # even indices
+    cseq[::2, :, :, :] = torch.cat((cseq[::2, :, :, even_mid:], cseq[::2, :, :, :even_mid]), dim=-1)
 
-    T = len(c)
-    I = len(c[0])
-    F1 = len(c[0][0])
-    F2 = len(c[0][0][0])
-
-    C = torch.empty(T, I, F1, F2, dtype=torch.complex64, device=torch.device(device))
-
-    for i, cc in enumerate(c):
-        assert len(cc) == I
-        for j, ccc in enumerate(cc):
-            assert len(ccc) == F1
-            for k, cccc in enumerate(ccc):
-                assert len(cccc) == F2
-                #C[i, j, k] = torch.tensor(cccc)
-                C[i, j, k] = cccc
-
-    return C
+    return cseq
 
 
 def starzip(iterables):
@@ -93,11 +64,6 @@ def starzip(iterables):
     it = next(iterables)  # we need that to determine the length of one element
     iterables = chain((it,), iterables)
     return [inner(itr, i) for i,itr in enumerate(tee(iterables, len(it)))]
-
-
-#@profile
-def chnmap_backward(gen, seq, sl_len, device="cuda"):
-    return gen(seq)
 
 
 def chnmap_forward(gen, seq, device="cuda"):
@@ -192,6 +158,7 @@ class NSGT_sliced:
     def slice_coefs(self):
         return self.ncoefs
     
+    #@profile
     def forward(self, sig):
         'transform - s: iterable sequence of sequences' 
 
@@ -201,6 +168,8 @@ class NSGT_sliced:
         f_sliced = slicing(sig, self.sl_len, self.tr_area, device=self.device)
 
         cseq = chnmap_forward(self.fwd, f_sliced, device=self.device)
+
+        cseq = arrange(cseq, self.M, True, device=self.device)
     
         cseq = self.unchannelize(cseq)
         
@@ -210,6 +179,8 @@ class NSGT_sliced:
     def backward(self, cseq, length):
         'inverse transform - c: iterable sequence of coefficients'
         cseq = self.channelize(cseq)
+
+        cseq = arrange(cseq, self.M, False, device=self.device)
 
         frec_sliced = self.bwd(cseq)
 
