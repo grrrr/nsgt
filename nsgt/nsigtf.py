@@ -121,5 +121,6 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
     return sig
 
 # non-sliced version
-def nsigtf(c, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft=False, multithreading=False):
-    return next(nsigtf_sl((c,), gd, wins, nn, Ls=Ls, real=real, reducedform=reducedform, measurefft=measurefft, multithreading=multithreading))
+def nsigtf(c, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft=False, multithreading=False, device="cuda"):
+    ret = nsigtf_sl(torch.unsqueeze(c, dim=0), gd, wins, nn, Ls=Ls, real=real, reducedform=reducedform, measurefft=measurefft, multithreading=multithreading, device=device)
+    return torch.squeeze(ret, dim=0)

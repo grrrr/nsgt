@@ -76,5 +76,6 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measureff
 
         
 # non-sliced version
-def nsgtf(f, g, wins, nn, M=None, real=False, reducedform=0, measurefft=False, multithreading=False):
-    return next(nsgtf_sl((f,), g, wins, nn, M=M, real=real, reducedform=reducedform, measurefft=measurefft, multithreading=multithreading))
+def nsgtf(f, g, wins, nn, M=None, real=False, reducedform=0, measurefft=False, multithreading=False, device="cuda"):
+    ret = nsgtf_sl(torch.unsqueeze(f, dim=0), g, wins, nn, M=M, real=real, reducedform=reducedform, measurefft=measurefft, multithreading=multithreading, device=device)
+    return torch.squeeze(ret, dim=0)
