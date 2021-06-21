@@ -66,6 +66,7 @@ def starzip(iterables):
     return [inner(itr, i) for i,itr in enumerate(tee(iterables, len(it)))]
 
 
+#@profile
 def chnmap_forward(gen, seq, device="cuda"):
     chns = starzip(seq) # returns a list of generators (one for each channel)
 
@@ -83,7 +84,7 @@ def chnmap_forward(gen, seq, device="cuda"):
     return ret
 
 
-class NSGT_sliced:
+class NSGT_sliced(torch.nn.Module):
     def __init__(self, scale, sl_len, tr_area, fs,
                  min_win=16, Qvar=1,
                  real=False, recwnd=False, matrixform=False, reducedform=0,
@@ -101,6 +102,8 @@ class NSGT_sliced:
 
         assert sl_len%4 == 0
         assert tr_area%2 == 0
+
+        super(NSGT_sliced, self).__init__()
 
         self.device = torch.device(device)
 
@@ -126,6 +129,8 @@ class NSGT_sliced:
         else:
             sl = slice(0,None)
 
+        self.fbins_actual = sl.stop
+
         # coefficients per slice
         self.ncoefs = max(int(ceil(float(len(gii))/mii))*mii for mii,gii in zip(self.M[sl],self.g[sl]))
         
@@ -146,9 +151,18 @@ class NSGT_sliced:
         self.wins,self.nn = calcwinrange(self.g, self.rfbas, self.sl_len, device=self.device)
         
         self.gd = nsdual(self.g, self.wins, self.nn, self.M, device=self.device)
+        self.setup_lambdas()
         
+    def setup_lambdas(self):
         self.fwd = lambda fc: nsgtf_sl(fc, self.g, self.wins, self.nn, self.M, real=self.real, reducedform=self.reducedform, measurefft=self.measurefft, multithreading=self.multithreading, device=self.device)
         self.bwd = lambda cc: nsigtf_sl(cc, self.gd, self.wins, self.nn, self.sl_len ,real=self.real, reducedform=self.reducedform, measurefft=self.measurefft, multithreading=self.multithreading, device=self.device)
+
+    def _apply(self, fn):
+        super(NSGT_sliced, self)._apply(fn)
+        self.wins = [fn(w) for w in self.wins]
+        self.g = [fn(g) for g in self.g]
+        self.device = self.g[0].device
+        self.setup_lambdas()
 
     @property
     def coef_factor(self):
