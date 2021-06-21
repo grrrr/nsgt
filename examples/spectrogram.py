@@ -16,29 +16,46 @@ import torch
 from nsgt import NSGT_sliced, LogScale, LinScale, MelScale, OctScale, SndReader
 
 
-def assemble_coeffs(cqt, ncoefs):
+def assemble_coeffs(cqts, ncoefs):
     """
     Build a sequence of blocks out of incoming overlapping CQT slices
     """
-    cqt = iter(cqt)
-    cqt0 = next(cqt)
-    cq0 = torch.tensor(cqt0).T
-    shh = cq0.shape[0]//2
-    out = torch.empty((ncoefs, cq0.shape[1], cq0.shape[2]), dtype=cq0.dtype)
-    
-    fr = 0
-    sh = max(0, min(shh, ncoefs-fr))
-    out[fr:fr+sh] = cq0[sh:] # store second half
-    # add up slices
-    for cqi in cqt:
-        cqi = torch.tensor(cqi).T
-        out[fr:fr+sh] += cqi[:sh]
-        cqi = cqi[sh:]
-        fr += sh
-        sh = max(0, min(shh, ncoefs-fr))
-        out[fr:fr+sh] = cqi[:sh]
+    print(f'CQT SHAPE: {cqts.shape}')
+
+    mlses = []
+    for cqt in cqts:
+        cqt = iter(cqt)
+        cqt0 = next(cqt)
+        cq0 = cqt0.clone().detach().T
+        shh = cq0.shape[0]//2
+        out = torch.empty((ncoefs, cq0.shape[1], cq0.shape[2]), dtype=cq0.dtype)
         
-    return out[:fr]
+        fr = 0
+        sh = max(0, min(shh, ncoefs-fr))
+        out[fr:fr+sh] = cq0[sh:] # store second half
+        # add up slices
+        for cqi in cqt:
+            cqi = cqi.clone().detach().T
+            out[fr:fr+sh] += cqi[:sh]
+            cqi = cqi[sh:]
+            fr += sh
+            sh = max(0, min(shh, ncoefs-fr))
+            out[fr:fr+sh] = cqi[:sh]
+            
+        coefs = out[:fr]
+
+        # compute magnitude spectrum
+        mindb = -100.
+        mls = torch.abs(coefs)
+        mindb = torch.empty_like(mls).fill_(10**(mindb/20.))
+        mls = torch.maximum(mls, mindb)
+        mls = torch.log10(mls)
+        mls *= 20.
+
+        mlses.append(mls)
+
+    mls = torch.cat([torch.unsqueeze(mls_, dim=0) for mls_ in mlses], dim=0)
+    return mls
 
 
 from argparse import ArgumentParser
@@ -95,29 +112,22 @@ ncoefs = int(sf.frames*slicq.coef_factor)
 # generator for forward transformation
 c = slicq.forward((signal,))
 
+# add a batch
+c = torch.unsqueeze(c, dim=0)
+
 # add up overlapping coefficient slices
-coefs = assemble_coeffs(c, ncoefs)
+mls = assemble_coeffs(c, ncoefs)
 
-del sf # not needed any more
-
-# compute magnitude spectrum
-mindb = -100.
-mls = torch.abs(coefs)
-# mix down multichannel
-mls = torch.mean(mls, dim=-1)
-mindb = torch.empty_like(mls).fill_(10**(mindb/20.))
-mls = torch.maximum(mls, mindb)
-
-mls = torch.log10(mls)
-mls *= 20.
-
-fs_coef = fs*slicq.coef_factor # frame rate of coefficients
-mls_dur = len(mls)/fs_coef # final duration of MLS
-
-times = torch.linspace(0, mls_dur, len(mls)+1)
+print(f'PRE-MIXDOWN: mls.shape: {mls.shape}')
 
 if args.plot:
     print("Plotting t*f space")
+    # remove batch
+    mls = torch.squeeze(mls, dim=0)
+    # mix down multichannel
+    mls = torch.mean(mls, dim=-1)
+    fs_coef = fs*slicq.coef_factor # frame rate of coefficients
+    mls_dur = len(mls)/fs_coef # final duration of MLS
     import matplotlib.pyplot as pl
     mls_max = torch.quantile(mls, 0.999)
     print(f'mls.T.shape: {mls.T.shape}')
