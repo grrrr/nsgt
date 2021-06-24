@@ -37,7 +37,7 @@ EXTERNALS : firwin
 import numpy as np
 from .util import hannwin,_isseq
 
-def nsgfwin(fmin, fmax ,bins, sr, Ls, min_win=4):
+def nsgfwin(fmin, fmax ,bins, sr, Ls, min_win=4, device="cuda"):
 
     nf = sr/2
     
@@ -78,7 +78,7 @@ def nsgfwin(fmin, fmax ,bins, sr, Ls, min_win=4):
     M[-1] = np.round(Ls-fbas[-2])
     
     M = np.clip(M, min_win, np.inf).astype(int)
-    g = [hannwin(m) for m in M]
+    g = [hannwin(m, device=device) for m in M]
     
     fbas[lbas] = (fbas[lbas-1]+fbas[lbas+1])/2
     fbas[lbas+2] = Ls-fbas[lbas]

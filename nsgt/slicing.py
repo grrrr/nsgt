@@ -22,7 +22,7 @@ def makewnd(sl_len, tr_area, device="cuda"):
     hhop = sl_len//4
     htr = tr_area//2
     # build window function within one slice (centered with transition areas around sl_len/4 and 3*sl_len/4    
-    w = hannwin(2*tr_area)  # window is shifted
+    w = hannwin(2*tr_area, device=device)  # window is shifted
     tw = torch.empty(sl_len, dtype=torch.float32, device=torch.device(device))
     tw[:hhop-htr] = 0
     tw[hhop-htr:hhop+htr] = w[tr_area:]

@@ -112,7 +112,7 @@ def nsgfwin(f, q, sr, Ls, sliced=True, min_win=4, Qvar=1, dowarn=True, dtype=np.
         for kk in (1,lbas+2):
             if M[kk-1] > M[kk]:
                 g[kk-1] = torch.ones(M[kk-1], dtype=g[kk-1].dtype, device=torch.device(device))
-                g[kk-1][M[kk-1]//2-M[kk]//2:M[kk-1]//2+int(ceil(M[kk]/2.))] = hannwin(M[kk])
+                g[kk-1][M[kk-1]//2-M[kk]//2:M[kk-1]//2+int(ceil(M[kk]/2.))] = hannwin(M[kk], device=device)
         
         rfbas = np.round(fbas/2.).astype(int)*2
     else:
