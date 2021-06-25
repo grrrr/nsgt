@@ -155,6 +155,7 @@ parser.add_argument("--bins", type=int, default=50, help="Number of frequency bi
 parser.add_argument("--sllen", type=int, default=2**20, help="Slice length in samples (default=%(default)s)")
 parser.add_argument("--trlen", type=int, default=2**18, help="Transition area in samples (default=%(default)s)")
 parser.add_argument("--plot", action='store_true', help="Plot transform (needs installed matplotlib package)")
+parser.add_argument("--matrixform", action='store_true', help="Use matrixform")
 
 args = parser.parse_args()
 if not os.path.exists(args.input):
@@ -173,7 +174,7 @@ scl = scale(args.fmin, args.fmax, args.bins)
 
 slicq = NSGT_sliced(scl, args.sllen, args.trlen, fs, 
                     real=True,
-                    matrixform=True, 
+                    matrixform=args.matrixform,
                     multichannel=True,
                     device="cpu"
                     )
@@ -197,40 +198,6 @@ ncoefs = int(sf.frames*slicq.coef_factor)
 # generator for forward transformation
 c = slicq.forward((signal,))
 
-# add a batch
-c = torch.unsqueeze(c, dim=0)
+signal_recon = slicq.backward(c, signal.shape[-1])
 
-print(f'c: {c.shape}')
-nb_samples, nb_slices, nb_channels, nb_f_bins, nb_m_bins = c.shape
-
-# add up overlapping coefficient slices
-mls1 = assemble_coeffs(c, ncoefs)
-mls2 = overlap_add_slicq(c, ncoefs)
-
-mls3 = overlap_add_slicq_i(c)
-print(f'mls3: {mls3.shape}')
-
-c_recon = inverse_ola_slicq(mls3, nb_slices, nb_m_bins)
-print(f'c_recon: {c_recon.shape} vs. {c.shape}')
-mls4 = overlap_add_slicq_i(c_recon)
-print(f'mls4: {mls4.shape}')
-
-print(f'{torch.nn.functional.mse_loss(mls4, mls3)}')
-print(f'{torch.nn.functional.mse_loss(c_recon, c)}')
-
-if args.plot:
-    fig, axs = plt.subplots(4)
-
-    for i, mls in enumerate([mls1, mls2, mls3, mls4]):
-        print(f"Plotting t*f space for mls {i}: {mls.shape} {mls.device} {mls.dtype}")
-        # remove batch
-        mls = torch.squeeze(mls, dim=0)
-        # mix down multichannel
-        mls = torch.mean(mls, dim=-1)
-        fs_coef = fs*slicq.coef_factor # frame rate of coefficients
-        mls_dur = len(mls)/fs_coef # final duration of MLS
-        mls_max = torch.quantile(mls, 0.999)
-        axs[i].imshow(mls.T, aspect=mls_dur/mls.shape[1]*0.2, interpolation='nearest', origin='lower', vmin=mls_max-60., vmax=mls_max, extent=(0,mls_dur,0,mls.shape[1]))
-        axs[i].set_title(f'mls {i}')
-
-    plt.show()
+print(f'cmp: {torch.nn.functional.mse_loss(signal_recon, signal)}')

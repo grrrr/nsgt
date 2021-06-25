@@ -2,8 +2,6 @@
 
 """
 Thomas Grill, 2011-2015
-http://grrrr.org/nsgt
-
 --
 Original matlab code comments follow:
 
@@ -56,7 +54,7 @@ from .fft import fftp, ifftp, irfftp
     
 
 #@profile
-def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft=False, multithreading=False, device="cuda"):
+def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, matrixform=False, measurefft=False, multithreading=False, device="cuda"):
     dtype = gd[0].dtype
 
     fft = fftp(measure=measurefft, dtype=dtype)
@@ -77,8 +75,48 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
     ragged_gdiis = [torch.nn.functional.pad(torch.unsqueeze(gdii, dim=0), (0, maxLg-gdii.shape[0])) for gdii in sl(gd)]
     gdiis = torch.conj(torch.cat(ragged_gdiis))
 
-    fr = torch.zeros(*cseq.shape[:2], nn, dtype=cseq.dtype, device=torch.device(device))  # Allocate output
-    temp0 = torch.empty(*cseq.shape[:2], maxLg, dtype=fr.dtype, device=torch.device(device))  # pre-allocation
+    if not matrixform:
+        assert type(cseq) == dict
+
+        # cseq is a dict, massage it back into a square matrix
+        # we can be lazier on the inverse than forward transform
+        cseq_chunk = next(iter(cseq.values()))
+        cseq_tsors = []
+
+        for time_bucket, jagged_tensor in sorted(cseq.items()):
+            print(f'time_bucket: {time_bucket}')
+            print(f'jagged_tensor: {jagged_tensor.shape}')
+
+            cseq_tsor = torch.empty(*jagged_tensor.shape[:3], maxLg, device=device, dtype=jagged_tensor.dtype)
+
+            # do fft before unraggedizing it
+            jagged_tensor = fft(jagged_tensor)
+
+            Lg = time_bucket
+
+            cseq_tsor[:, :, :, :(Lg+1)//2] = jagged_tensor[:, :, :, :Lg//2]
+            cseq_tsor[:, :, :, -Lg//2:] = jagged_tensor[:, :, :, Lg//2:]
+            cseq_tsor[:, :, :, (Lg+1)//2:-(Lg//2)] = 0
+
+            cseq_tsors.append(cseq_tsor)
+
+        fc = torch.cat(cseq_tsors, dim=2)
+        print(f'fc: {fc.shape}')
+        cseq_shape = cseq_chunk.shape[:2]
+        cseq_dtype = cseq_chunk.dtype
+    else:
+        assert type(cseq) == torch.Tensor
+
+        # do transforms on coefficients
+        # TODO: for matrixform we could do a FFT on the whole matrix along one axis
+        # this could also be nicely parallalized
+        cseq_shape = cseq.shape[:2]
+        cseq_dtype = cseq.dtype
+
+        fc = fft(cseq)
+
+    fr = torch.zeros(*cseq_shape, nn, dtype=cseq_dtype, device=torch.device(device))  # Allocate output
+    temp0 = torch.empty(*cseq_shape, maxLg, dtype=fr.dtype, device=torch.device(device))  # pre-allocation
 
     loopparams = []
     for gdii,win_range in zip(sl(gd), sl(wins)):
@@ -87,11 +125,6 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft
         wr2 = win_range[-((Lg+1)//2):]
         p = (wr1,wr2,Lg)
         loopparams.append(p)
-
-    # do transforms on coefficients
-    # TODO: for matrixform we could do a FFT on the whole matrix along one axis
-    # this could also be nicely parallalized
-    fc = fft(cseq)
 
     # The overlap-add procedure including multiplication with the synthesis windows
     for i,(wr1,wr2,Lg) in enumerate(loopparams[:fc.shape[2]]):

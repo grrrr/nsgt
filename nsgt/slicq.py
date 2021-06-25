@@ -38,20 +38,26 @@ from .reblock import reblock
 # one of the more expensive functions (32/400)
 #@profile
 def arrange(cseq, M, fwd, device="cuda"):
-    M = cseq.shape[-1]
+    if type(cseq) == torch.Tensor:
+        M = cseq.shape[-1]
 
-    if fwd:
-        odd_mid = M//4
-        even_mid = 3*M//4
+        if fwd:
+            odd_mid = M//4
+            even_mid = 3*M//4
+        else:
+            odd_mid = 3*M//4
+            even_mid = M//4
+
+        # odd indices
+        cseq[1::2, :, :, :] = torch.cat((cseq[1::2, :, :, odd_mid:], cseq[1::2, :, :, :odd_mid]), dim=-1)
+
+        # even indices
+        cseq[::2, :, :, :] = torch.cat((cseq[::2, :, :, even_mid:], cseq[::2, :, :, :even_mid]), dim=-1)
+    elif type(cseq) == dict:
+        for time_bucket, cseq_tsor, in sorted(cseq.items()):
+            cseq[time_bucket] = arrange(cseq_tsor, M, fwd, device)
     else:
-        odd_mid = 3*M//4
-        even_mid = M//4
-
-    # odd indices
-    cseq[1::2, :, :, :] = torch.cat((cseq[1::2, :, :, odd_mid:], cseq[1::2, :, :, :odd_mid]), dim=-1)
-
-    # even indices
-    cseq[::2, :, :, :] = torch.cat((cseq[::2, :, :, even_mid:], cseq[::2, :, :, :even_mid]), dim=-1)
+        raise ValueError(f'unsupported type {type(cseq)}')
 
     return cseq
 
@@ -133,14 +139,19 @@ class NSGT_sliced(torch.nn.Module):
 
         # coefficients per slice
         self.ncoefs = max(int(ceil(float(len(gii))/mii))*mii for mii,gii in zip(self.M[sl],self.g[sl]))
+
+        self.matrixform = matrixform
+        self.time_buckets = None
         
-        if matrixform:
+        if self.matrixform:
             if self.reducedform:
                 rm = self.M[self.reducedform:len(self.M)//2+1-self.reducedform]
                 self.M[:] = rm.max()
             else:
                 self.M[:] = self.M.max()
-                
+        else:
+            self.time_buckets = np.unique(self.M)
+
         if multichannel:
             self.channelize = lambda seq: seq
             self.unchannelize = lambda seq: seq
@@ -154,8 +165,8 @@ class NSGT_sliced(torch.nn.Module):
         self.setup_lambdas()
         
     def setup_lambdas(self):
-        self.fwd = lambda fc: nsgtf_sl(fc, self.g, self.wins, self.nn, self.M, real=self.real, reducedform=self.reducedform, measurefft=self.measurefft, multithreading=self.multithreading, device=self.device)
-        self.bwd = lambda cc: nsigtf_sl(cc, self.gd, self.wins, self.nn, self.sl_len ,real=self.real, reducedform=self.reducedform, measurefft=self.measurefft, multithreading=self.multithreading, device=self.device)
+        self.fwd = lambda fc: nsgtf_sl(fc, self.g, self.wins, self.nn, self.M, real=self.real, reducedform=self.reducedform, matrixform=self.matrixform, measurefft=self.measurefft, multithreading=self.multithreading, device=self.device, time_buckets=self.time_buckets)
+        self.bwd = lambda cc: nsigtf_sl(cc, self.gd, self.wins, self.nn, self.sl_len ,real=self.real, reducedform=self.reducedform, matrixform=self.matrixform, measurefft=self.measurefft, multithreading=self.multithreading, device=self.device)
 
     def _apply(self, fn):
         super(NSGT_sliced, self)._apply(fn)
@@ -186,7 +197,7 @@ class NSGT_sliced(torch.nn.Module):
         cseq = arrange(cseq, self.M, True, device=self.device)
     
         cseq = self.unchannelize(cseq)
-        
+
         return cseq
 
     #@profile

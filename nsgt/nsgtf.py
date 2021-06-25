@@ -20,7 +20,7 @@ from .fft import fftp, ifftp
 
 
 #@profile
-def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measurefft=False, multithreading=False, device="cuda"):
+def nsgtf_sl(f_slices, g, wins, nn, M=None, matrixform=False, real=False, reducedform=0, measurefft=False, multithreading=False, device="cuda", time_buckets=None):
     M = chkM(M,g)
     dtype = g[0].dtype
     
@@ -48,10 +48,12 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measureff
         p = (mii,win_range,Lg,col)
         loopparams.append(p)
 
+    jagged_indices = [None]*len(loopparams)
+    print(f'len(loopparams): {len(loopparams)}')
+    input()
+
     ragged_giis = [torch.nn.functional.pad(torch.unsqueeze(gii, dim=0), (0, maxLg-gii.shape[0])) for gii in g[sl]]
     giis = torch.conj(torch.cat(ragged_giis))
-
-    #f = torch.cat([torch.unsqueeze(f, dim=0) for f in f_slices])
 
     ft = fft(f_slices)
 
@@ -66,13 +68,37 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measureff
     for j, (mii,win_range,Lg,col) in enumerate(loopparams):
         t = ft[:, :, win_range]*torch.fft.fftshift(torch.conj(giis[j, :Lg]))
 
-        c[:, :, j, :(Lg+1)//2] = t[:, :, Lg//2:]  # if mii is odd, this is of length mii-mii//2
-        c[:, :, j, -(Lg//2):] = t[:, :, :Lg//2]  # if mii is odd, this is of length mii//2
+        sl1 = slice(None,(Lg+1)//2)
+        sl2 = slice(-(Lg//2),None)
+
+        # assign slice objects needed to jaggedify it
+        jagged_indices[j] = (sl1, sl2)
+
+        c[:, :, j, sl1] = t[:, :, Lg//2:]  # if mii is odd, this is of length mii-mii//2
+        c[:, :, j, sl2] = t[:, :, :Lg//2]  # if mii is odd, this is of length mii//2
         c[:, :, j, (Lg+1)//2:-(Lg//2)] = 0  # clear gap (if any)
 
-    y = ifft(c)
-    
-    return y
+    if matrixform:
+        return ifft(c)
+
+    nb_slices, nb_channels, nb_f_bins, nb_m_bins = c.shape
+
+    jaggeds = [None]*len(loopparams)
+
+    bucketed_tensors = {b: [] for b in time_buckets}
+    ret = {b: None for b in time_buckets}
+
+    for i in range(nb_f_bins):
+        Lg = 2*jagged_indices[i][0].stop
+        tsor = torch.cat([c[:, :, i, jagged_indices[i][0]], c[:, :, i, jagged_indices[i][1]]], dim=-1)
+        print(f'appending {tsor.shape} to bucket {Lg}')
+        bucketed_tensors[Lg].append(tsor)
+
+    for b, v in bucketed_tensors.items():
+        # ifft on it
+        ret[b] = ifft(torch.cat([torch.unsqueeze(v_, dim=2) for v_ in v], dim=2))
+
+    return ret
 
         
 # non-sliced version
