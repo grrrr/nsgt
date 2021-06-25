@@ -61,7 +61,7 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, matrixform=False, real=False, reduce
     assert nn == Ls
 
     if matrixform:
-        c = torch.empty(*f_slices.shape[:2], len(loopparams), maxLg, dtype=ft.dtype, device=torch.device(device))
+        c = torch.zeros(*f_slices.shape[:2], len(loopparams), maxLg, dtype=ft.dtype, device=torch.device(device))
 
         for j, (mii,win_range,Lg,col) in enumerate(loopparams):
             t = ft[:, :, win_range]*torch.fft.fftshift(giis[j, :Lg])
@@ -71,7 +71,6 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, matrixform=False, real=False, reduce
 
             c[:, :, j, sl1] = t[:, :, Lg//2:]  # if mii is odd, this is of length mii-mii//2
             c[:, :, j, sl2] = t[:, :, :Lg//2]  # if mii is odd, this is of length mii//2
-            c[:, :, j, (Lg+1)//2:-(Lg//2)] = 0  # clear gap (if any)
 
         return ifft(c)
     else:
@@ -79,7 +78,7 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, matrixform=False, real=False, reduce
         ret = {b: None for b in time_buckets}
 
         for j, (mii,win_range,Lg,col) in enumerate(loopparams):
-            c = torch.empty(*f_slices.shape[:2], 1, Lg, dtype=ft.dtype, device=torch.device(device))
+            c = torch.zeros(*f_slices.shape[:2], 1, Lg, dtype=ft.dtype, device=torch.device(device))
 
             t = ft[:, :, win_range]*torch.fft.fftshift(giis[j, :Lg])
 
@@ -88,7 +87,6 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, matrixform=False, real=False, reduce
 
             c[:, :, 0, sl1] = t[:, :, Lg//2:]  # if mii is odd, this is of length mii-mii//2
             c[:, :, 0, sl2] = t[:, :, :Lg//2]  # if mii is odd, this is of length mii//2
-            c[:, :, 0, (Lg+1)//2:-(Lg//2)] = 0  # clear gap (if any)
 
             bucketed_tensors[Lg].append(c)
 
