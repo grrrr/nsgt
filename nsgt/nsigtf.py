@@ -77,46 +77,22 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, matrixform
 
     if not matrixform:
         assert type(cseq) == dict
-
-        # cseq is a dict, massage it back into a square matrix
-        # we can be lazier on the inverse than forward transform
-        cseq_chunk = next(iter(cseq.values()))
-        cseq_tsors = []
-
-        for time_bucket, jagged_tensor in sorted(cseq.items()):
-            print(f'time_bucket: {time_bucket}')
-            print(f'jagged_tensor: {jagged_tensor.shape}')
-
-            cseq_tsor = torch.empty(*jagged_tensor.shape[:3], maxLg, device=device, dtype=jagged_tensor.dtype)
-
-            # do fft before unraggedizing it
-            jagged_tensor = fft(jagged_tensor)
-
-            Lg = time_bucket
-
-            cseq_tsor[:, :, :, :(Lg+1)//2] = jagged_tensor[:, :, :, :Lg//2]
-            cseq_tsor[:, :, :, -Lg//2:] = jagged_tensor[:, :, :, Lg//2:]
-            cseq_tsor[:, :, :, (Lg+1)//2:-(Lg//2)] = 0
-
-            cseq_tsors.append(cseq_tsor)
-
-        fc = torch.cat(cseq_tsors, dim=2)
-        print(f'fc: {fc.shape}')
-        cseq_shape = cseq_chunk.shape[:2]
-        cseq_dtype = cseq_chunk.dtype
+        nfreqs = 0
+        for bucket, cseq_tsor in cseq.items():
+            cseq_dtype = cseq_tsor.dtype
+            cseq[bucket] = fft(cseq_tsor)
+            nfreqs += cseq_tsor.shape[2]
+        cseq_shape = (*cseq_tsor.shape[:2], nfreqs)
     else:
         assert type(cseq) == torch.Tensor
-
-        # do transforms on coefficients
-        # TODO: for matrixform we could do a FFT on the whole matrix along one axis
-        # this could also be nicely parallalized
-        cseq_shape = cseq.shape[:2]
+        cseq_shape = cseq.shape[:3]
         cseq_dtype = cseq.dtype
-
         fc = fft(cseq)
 
-    fr = torch.zeros(*cseq_shape, nn, dtype=cseq_dtype, device=torch.device(device))  # Allocate output
-    temp0 = torch.empty(*cseq_shape, maxLg, dtype=fr.dtype, device=torch.device(device))  # pre-allocation
+    fr = torch.zeros(*cseq_shape[:2], nn, dtype=cseq_dtype, device=torch.device(device))  # Allocate output
+    temp0 = torch.empty(*cseq_shape[:2], maxLg, dtype=fr.dtype, device=torch.device(device))  # pre-allocation
+
+    fbins = cseq_shape[2]
 
     loopparams = []
     for gdii,win_range in zip(sl(gd), sl(wins)):
@@ -127,31 +103,56 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, matrixform
         loopparams.append(p)
 
     # The overlap-add procedure including multiplication with the synthesis windows
-    for i,(wr1,wr2,Lg) in enumerate(loopparams[:fc.shape[2]]):
-        t = fc[:, :, i]
+    if matrixform:
+        for i,(wr1,wr2,Lg) in enumerate(loopparams[:fbins]):
+            t = fc[:, :, i]
 
-        r = (Lg+1)//2
-        l = (Lg//2)
+            r = (Lg+1)//2
+            l = (Lg//2)
 
-        t1 = temp0[:, :, :r]
-        t2 = temp0[:, :, Lg-l:Lg]
+            t1 = temp0[:, :, :r]
+            t2 = temp0[:, :, Lg-l:Lg]
 
-        t1[:, :, :] = t[:, :, :r]
-        t2[:, :, :] = t[:, :, maxLg-l:maxLg]
+            t1[:, :, :] = t[:, :, :r]
+            t2[:, :, :] = t[:, :, maxLg-l:maxLg]
 
-        temp0[:, :, :Lg] *= gdiis[i, :Lg] 
-        temp0[:, :, :Lg] *= t.shape[-1]
+            temp0[:, :, :Lg] *= gdiis[i, :Lg] 
+            temp0[:, :, :Lg] *= maxLg
 
-        fr[:, :, wr1] += t2
-        fr[:, :, wr2] += t1
+            fr[:, :, wr1] += t2
+            fr[:, :, wr2] += t1
+    else:
+        # frequencies are bucketed by same time resolution
+        fbin_ptr = 0
+        for Lg_outer, fc in cseq.items():
+            nb_fbins = fc.shape[2]
+            for i,(wr1,wr2,Lg) in enumerate(loopparams[fbin_ptr:fbin_ptr+nb_fbins]):
+                freq_idx = fbin_ptr+i
+
+                assert Lg == Lg_outer
+                t = fc[:, :, i]
+
+                r = (Lg+1)//2
+                l = (Lg//2)
+
+                t1 = temp0[:, :, :r]
+                t2 = temp0[:, :, Lg-l:Lg]
+
+                t1[:, :, :] = t[:, :, :r]
+                t2[:, :, :] = t[:, :, Lg-l:Lg]
+
+                temp0[:, :, :Lg] *= gdiis[freq_idx, :Lg] 
+                temp0[:, :, :Lg] *= Lg
+
+                fr[:, :, wr1] += t2
+                fr[:, :, wr2] += t1
+            fbin_ptr += nb_fbins
 
     ftr = fr[:, :, :nn//2+1] if real else fr
-
     sig = ifft(ftr, outn=nn)
-
     sig = sig[:, :, :Ls] # Truncate the signal to original length (if given)
-
     return sig
+
 
 # non-sliced version
 def nsigtf(c, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft=False, multithreading=False, device="cuda"):

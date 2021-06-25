@@ -14,6 +14,7 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 import numpy as np
 import torch
 from math import ceil
+import matplotlib.pyplot as plt
 
 from .util import chkM
 from .fft import fftp, ifftp
@@ -49,8 +50,6 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, matrixform=False, real=False, reduce
         loopparams.append(p)
 
     jagged_indices = [None]*len(loopparams)
-    print(f'len(loopparams): {len(loopparams)}')
-    input()
 
     ragged_giis = [torch.nn.functional.pad(torch.unsqueeze(gii, dim=0), (0, maxLg-gii.shape[0])) for gii in g[sl]]
     giis = torch.conj(torch.cat(ragged_giis))
@@ -61,46 +60,45 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, matrixform=False, real=False, reduce
 
     assert nn == Ls
 
-    # The actual transform
-    c = torch.empty(*f_slices.shape[:2], len(loopparams), maxLg, dtype=ft.dtype, device=torch.device(device))
-
-    # TODO: torchify it
-    for j, (mii,win_range,Lg,col) in enumerate(loopparams):
-        t = ft[:, :, win_range]*torch.fft.fftshift(torch.conj(giis[j, :Lg]))
-
-        sl1 = slice(None,(Lg+1)//2)
-        sl2 = slice(-(Lg//2),None)
-
-        # assign slice objects needed to jaggedify it
-        jagged_indices[j] = (sl1, sl2)
-
-        c[:, :, j, sl1] = t[:, :, Lg//2:]  # if mii is odd, this is of length mii-mii//2
-        c[:, :, j, sl2] = t[:, :, :Lg//2]  # if mii is odd, this is of length mii//2
-        c[:, :, j, (Lg+1)//2:-(Lg//2)] = 0  # clear gap (if any)
-
     if matrixform:
+        c = torch.empty(*f_slices.shape[:2], len(loopparams), maxLg, dtype=ft.dtype, device=torch.device(device))
+
+        for j, (mii,win_range,Lg,col) in enumerate(loopparams):
+            t = ft[:, :, win_range]*torch.fft.fftshift(giis[j, :Lg])
+
+            sl1 = slice(None,(Lg+1)//2)
+            sl2 = slice(-(Lg//2),None)
+
+            c[:, :, j, sl1] = t[:, :, Lg//2:]  # if mii is odd, this is of length mii-mii//2
+            c[:, :, j, sl2] = t[:, :, :Lg//2]  # if mii is odd, this is of length mii//2
+            c[:, :, j, (Lg+1)//2:-(Lg//2)] = 0  # clear gap (if any)
+
         return ifft(c)
+    else:
+        bucketed_tensors = {b: [] for b in time_buckets}
+        ret = {b: None for b in time_buckets}
 
-    nb_slices, nb_channels, nb_f_bins, nb_m_bins = c.shape
+        for j, (mii,win_range,Lg,col) in enumerate(loopparams):
+            c = torch.empty(*f_slices.shape[:2], 1, Lg, dtype=ft.dtype, device=torch.device(device))
 
-    jaggeds = [None]*len(loopparams)
+            t = ft[:, :, win_range]*torch.fft.fftshift(giis[j, :Lg])
 
-    bucketed_tensors = {b: [] for b in time_buckets}
-    ret = {b: None for b in time_buckets}
+            sl1 = slice(None,(Lg+1)//2)
+            sl2 = slice(-(Lg//2),None)
 
-    for i in range(nb_f_bins):
-        Lg = 2*jagged_indices[i][0].stop
-        tsor = torch.cat([c[:, :, i, jagged_indices[i][0]], c[:, :, i, jagged_indices[i][1]]], dim=-1)
-        print(f'appending {tsor.shape} to bucket {Lg}')
-        bucketed_tensors[Lg].append(tsor)
+            c[:, :, 0, sl1] = t[:, :, Lg//2:]  # if mii is odd, this is of length mii-mii//2
+            c[:, :, 0, sl2] = t[:, :, :Lg//2]  # if mii is odd, this is of length mii//2
+            c[:, :, 0, (Lg+1)//2:-(Lg//2)] = 0  # clear gap (if any)
 
-    for b, v in bucketed_tensors.items():
-        # ifft on it
-        ret[b] = ifft(torch.cat([torch.unsqueeze(v_, dim=2) for v_ in v], dim=2))
+            bucketed_tensors[Lg].append(c)
 
-    return ret
+        # bucket-wise ifft
+        for b, v in bucketed_tensors.items():
+            ret[b] = ifft(torch.cat(v, dim=2))
 
+        return ret
         
+
 # non-sliced version
 def nsgtf(f, g, wins, nn, M=None, real=False, reducedform=0, measurefft=False, multithreading=False, device="cuda"):
     ret = nsgtf_sl(torch.unsqueeze(f, dim=0), g, wins, nn, M=M, real=real, reducedform=reducedform, measurefft=measurefft, multithreading=multithreading, device=device)

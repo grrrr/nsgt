@@ -37,7 +37,7 @@ from .reblock import reblock
 
 # one of the more expensive functions (32/400)
 #@profile
-def arrange(cseq, M, fwd, device="cuda"):
+def arrange(cseq, fwd, device="cuda"):
     if type(cseq) == torch.Tensor:
         M = cseq.shape[-1]
 
@@ -55,7 +55,7 @@ def arrange(cseq, M, fwd, device="cuda"):
         cseq[::2, :, :, :] = torch.cat((cseq[::2, :, :, even_mid:], cseq[::2, :, :, :even_mid]), dim=-1)
     elif type(cseq) == dict:
         for time_bucket, cseq_tsor, in sorted(cseq.items()):
-            cseq[time_bucket] = arrange(cseq_tsor, M, fwd, device)
+            cseq[time_bucket] = arrange(cseq_tsor, fwd, device)
     else:
         raise ValueError(f'unsupported type {type(cseq)}')
 
@@ -194,7 +194,7 @@ class NSGT_sliced(torch.nn.Module):
 
         cseq = chnmap_forward(self.fwd, f_sliced, device=self.device)
 
-        cseq = arrange(cseq, self.M, True, device=self.device)
+        cseq = arrange(cseq, True, device=self.device)
     
         cseq = self.unchannelize(cseq)
 
@@ -205,7 +205,7 @@ class NSGT_sliced(torch.nn.Module):
         'inverse transform - c: iterable sequence of coefficients'
         cseq = self.channelize(cseq)
 
-        cseq = arrange(cseq, self.M, False, device=self.device)
+        cseq = arrange(cseq, False, device=self.device)
 
         frec_sliced = self.bwd(cseq)
 
