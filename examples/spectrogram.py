@@ -198,6 +198,13 @@ ncoefs = int(sf.frames*slicq.coef_factor)
 # generator for forward transformation
 c = slicq.forward((signal,))
 
+if args.matrixform:
+    print(f'NSGT-sliCQ matrix shape: {c.shape}')
+else:
+    print(f'NSGT-sliCQ jagged shape:')
+    for time_bucket, freq_block in sorted(c.items()):
+        print(f'\ttime bucket {time_bucket}: {freq_block.shape}')
+
 signal_recon = slicq.backward(c, signal.shape[-1])
 
-print(f'cmp: {torch.nn.functional.mse_loss(signal_recon, signal)}')
+print(f'recon error (mse): {torch.nn.functional.mse_loss(signal_recon, signal)}')
