@@ -126,7 +126,7 @@ Ragged transforms:
 | Original with [numpy.fft](https://numpy.org/doc/stable/reference/routines.fft.html) backend | real=True, multithreading=False | CPU (Ryzen 3700x) | 2.08 |
 | Original with [numpy.fft](https://numpy.org/doc/stable/reference/routines.fft.html) backend | real=True, multithreading=True | CPU (Ryzen 3700x) | 2.37 |
 
-The transform execution time was measured with the [examples/benchmark.py](https://github.com/sevagh/nsgt/blob/torch/examples/benchmarks.py) script on the full length song [Mestis - El Mestizo](https://www.youtube.com/watch?v=0kn2doStfp4) with sliCQ parameters `--scale=bark --bins=512 --fmin=83. --fmax=22050.` My computer runs Fedora 33 (amd64) with an AMD Ryzen 3700x processor, 64GB DDR4 memory, and NVIDIA 3080 Ti and 2070 SUPER. The Bark scale was chosen as it results in a smaller transform than the constant-Q log scale.
+The transform execution time was measured with the [examples/benchmark.py](https://github.com/sevagh/nsgt/blob/torch/examples/benchmark.py) script on the full length song [Mestis - El Mestizo](https://www.youtube.com/watch?v=0kn2doStfp4) with sliCQ parameters `--scale=bark --bins=512 --fmin=83. --fmax=22050.` My computer runs Fedora 33 (amd64) with an AMD Ryzen 3700x processor, 64GB DDR4 memory, and NVIDIA 3080 Ti and 2070 SUPER. The Bark scale was chosen as it results in a smaller transform than the constant-Q log scale.
 
 Benchmark invocation arguments:
 ```
