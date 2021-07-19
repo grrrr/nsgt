@@ -76,11 +76,11 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, matrixform
     gdiis = torch.conj(torch.cat(ragged_gdiis))
 
     if not matrixform:
-        assert type(cseq) == dict
+        assert type(cseq) == list
         nfreqs = 0
-        for bucket, cseq_tsor in cseq.items():
+        for i, cseq_tsor in enumerate(cseq):
             cseq_dtype = cseq_tsor.dtype
-            cseq[bucket] = fft(cseq_tsor)
+            cseq[i] = fft(cseq_tsor)
             nfreqs += cseq_tsor.shape[2]
         cseq_shape = (*cseq_tsor.shape[:2], nfreqs)
     else:
@@ -124,9 +124,11 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, matrixform
     else:
         # frequencies are bucketed by same time resolution
         fbin_ptr = 0
-        for Lg_outer, fc in cseq.items():
+        for i, fc in enumerate(cseq):
+            Lg_outer = fc.shape[-1]
+
             nb_fbins = fc.shape[2]
-            for i,(wr1,wr2,Lg) in enumerate(loopparams[fbin_ptr:fbin_ptr+nb_fbins]):
+            for i,(wr1,wr2,Lg) in enumerate(loopparams[fbin_ptr:fbin_ptr+nb_fbins][:fbins]):
                 freq_idx = fbin_ptr+i
 
                 assert Lg == Lg_outer

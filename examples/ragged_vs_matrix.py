@@ -12,28 +12,8 @@ http://grrrr.org/nsgt
 import os
 from warnings import warn
 import torch
-import matplotlib.pyplot as plt
 
-from nsgt import NSGT_sliced, LogScale, LinScale, MelScale, OctScale, VQLogScale, BarkScale, SndReader
-
-
-def overlap_add_slicq(slicq):
-    nb_samples, nb_slices, nb_channels, nb_f_bins, nb_m_bins = slicq.shape
-
-    window = nb_m_bins
-    hop = window//2 # 50% overlap window
-
-    ncoefs = nb_slices*nb_m_bins//2 + hop
-    out = torch.zeros((nb_samples, nb_channels, nb_f_bins, ncoefs), dtype=slicq.dtype, device=slicq.device)
-
-    ptr = 0
-
-    for i in range(nb_slices):
-        out[:, :, :, ptr:ptr+window] += slicq[:, i, :, :, :]
-        ptr += hop
-
-    return out
-
+from nsgt import NSGT, NSGT_sliced, LogScale, LinScale, MelScale, OctScale, VQLogScale, BarkScale, SndReader
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -42,11 +22,11 @@ parser.add_argument("input", type=str, help="Input file")
 parser.add_argument("--sr", type=int, default=44100, help="Sample rate used for the NSGT (default=%(default)s)")
 parser.add_argument("--fmin", type=float, default=50, help="Minimum frequency in Hz (default=%(default)s)")
 parser.add_argument("--fmax", type=float, default=22050, help="Maximum frequency in Hz (default=%(default)s)")
-parser.add_argument("--scale", choices=('oct','cqlog','mel','bark','vqlog'), default='cqlog', help="Frequency scale")
+parser.add_argument("--scale", choices=('oct','cqlog','mel','bark','vqlog','lin'), default='cqlog', help="Frequency scale oct, cqlog, vqlog, lin, mel, bark (default='%(default)s')")
 parser.add_argument("--bins", type=int, default=50, help="Number of frequency bins (total or per octave, default=%(default)s)")
 parser.add_argument("--sllen", type=int, default=2**20, help="Slice length in samples (default=%(default)s)")
 parser.add_argument("--trlen", type=int, default=2**18, help="Transition area in samples (default=%(default)s)")
-parser.add_argument("--plot", action='store_true', help="Plot transform (needs installed matplotlib package)")
+parser.add_argument("--matrixform", action='store_true', help="Use matrixform")
 
 args = parser.parse_args()
 if not os.path.exists(args.input):
@@ -55,7 +35,7 @@ if not os.path.exists(args.input):
 fs = args.sr
 
 # build transform
-scales = {'cqlog':LogScale, 'lin':LinScale, 'mel':MelScale, 'oct':OctScale, 'bark':BarkScale, 'vqlog':VQLogScale}
+scales = {'cqlog': LogScale, 'lin': LinScale, 'mel': MelScale, 'oct': OctScale, 'vqlog': VQLogScale, 'bark': BarkScale}
 try:
     scale = scales[args.scale]
 except KeyError:
@@ -65,7 +45,7 @@ scl = scale(args.fmin, args.fmax, args.bins)
 
 slicq = NSGT_sliced(scl, args.sllen, args.trlen, fs, 
                     real=True,
-                    matrixform=True, 
+                    matrixform=args.matrixform,
                     multichannel=True,
                     device="cpu"
                     )
@@ -89,36 +69,16 @@ ncoefs = int(sf.frames*slicq.coef_factor)
 # generator for forward transformation
 c = slicq.forward((signal,))
 
-# add a batch
-c = torch.unsqueeze(c, dim=0)
+if args.matrixform:
+    print(f'NSGT-sliCQ matrix shape: {c.shape}')
+else:
+    print(f'NSGT-sliCQ jagged shape:')
+    freq_idx = 0
+    for i, C_block in enumerate(c):
+        freq_start = freq_idx
+        freq_idx += C_block.shape[2]
+        print(f'\tblock {i}, f {freq_start}: {C_block.shape}')
 
-if args.plot:
-    # dB
-    mls = 20.*torch.log10(torch.abs(overlap_add_slicq(c)))
+signal_recon = slicq.backward(c, signal.shape[-1])
 
-    plt.rcParams.update({'font.size': 14})
-    fig, axs = plt.subplots(2)
-
-    print(f"Plotting t*f space")
-
-    # remove batch
-    mls = torch.squeeze(mls, dim=0)
-    # mix down multichannel
-    mls = torch.mean(mls, dim=0)
-
-    mls = mls.T
-
-    fs_coef = fs*slicq.coef_factor # frame rate of coefficients
-    mls_dur = len(mls)/fs_coef # final duration of MLS
-    mls_max = torch.quantile(mls, 0.999)
-    axs[0].imshow(mls.T, aspect=mls_dur/mls.shape[1]*0.2, interpolation='nearest', origin='lower', vmin=mls_max-60., vmax=mls_max, extent=(0,mls_dur,0,mls.shape[1]))
-    axs[0].set_title(f'|sliCQ|')
-
-    sig = torch.mean(signal, dim=0)
-    print(f'sig: {sig.shape} {fs}')
-
-    axs[1].specgram(sig, Fs=fs, NFFT=2048, noverlap=512, mode='magnitude', scale='dB', sides='onesided')
-    axs[1].set_title(f'|STFT|')
-
-    plt.subplots_adjust(wspace=0.001,hspace=0.001)
-    plt.show()
+print(f'recon error (mse): {torch.nn.functional.mse_loss(signal_recon, signal)}')

@@ -14,14 +14,12 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 import numpy as np
 import torch
 from math import ceil
-import matplotlib.pyplot as plt
 
 from .util import chkM
 from .fft import fftp, ifftp
 
 
-#@profile
-def nsgtf_sl(f_slices, g, wins, nn, M=None, matrixform=False, real=False, reducedform=0, measurefft=False, multithreading=False, device="cuda", time_buckets=None):
+def nsgtf_sl(f_slices, g, wins, nn, M=None, matrixform=False, real=False, reducedform=0, measurefft=False, multithreading=False, device="cuda"):
     M = chkM(M,g)
     dtype = g[0].dtype
     
@@ -74,10 +72,12 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, matrixform=False, real=False, reduce
 
         return ifft(c)
     else:
-        bucketed_tensors = {b: [] for b in time_buckets}
-        ret = {b: None for b in time_buckets}
+        block_ptr = -1
+        bucketed_tensors = []
+        ret = []
 
         for j, (mii,win_range,Lg,col) in enumerate(loopparams):
+            
             c = torch.zeros(*f_slices.shape[:2], 1, Lg, dtype=ft.dtype, device=torch.device(device))
 
             t = ft[:, :, win_range]*torch.fft.fftshift(giis[j, :Lg])
@@ -88,11 +88,17 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, matrixform=False, real=False, reduce
             c[:, :, 0, sl1] = t[:, :, Lg//2:]  # if mii is odd, this is of length mii-mii//2
             c[:, :, 0, sl2] = t[:, :, :Lg//2]  # if mii is odd, this is of length mii//2
 
-            bucketed_tensors[Lg].append(c)
+            # start a new block
+            if block_ptr == -1 or bucketed_tensors[block_ptr][0].shape[-1] != Lg:
+                bucketed_tensors.append(c)
+                block_ptr += 1
+            else:
+                # concat block to previous contiguous frequency block with same time resolution
+                bucketed_tensors[block_ptr] = torch.cat([bucketed_tensors[block_ptr], c], dim=2)
 
         # bucket-wise ifft
-        for b, v in bucketed_tensors.items():
-            ret[b] = ifft(torch.cat(v, dim=2))
+        for bucketed_tensor in bucketed_tensors:
+            ret.append(ifft(bucketed_tensor))
 
         return ret
         
