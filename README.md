@@ -1,19 +1,10 @@
-# NSGT and sliCQ transforms
+# PyTorch NSGT and sliCQ transforms
 
-PyTorch implementation of the Nonstationary Gabor Transform and sliCQ Transform, forked from [the reference implementation](https://github.com/grrrr/nsgt):
-* Peter Balazs et al, "Theory, implementation and applications of nonstationary Gabor frames." In: Journal of computational and applied mathematics 236 (2011), pp. 1481–1496. doi: 10.1016/j.cam.2011.09.011. url: https://ltfat.github.io/notes/ltfatnote018.pdf.
-* Gino Angelo Velasco et al., "Constructing an invertible constant-Q transform with nonstationary Gabor frames." 2011. url: https://www.univie.ac.at/nonstatgab/pdf_files/dohogrve11_amsart.pdf.
-
-This fork adds the following features:
+This project is a PyTorch implementation of the Nonstationary Gabor Transform and sliCQ Transform, based on [Balazs et al. 2011](http://ltfat.org/notes/ltfatnote018.pdf) and [Dörfler et al. 2014](https://www.univie.ac.at/nonstatgab/cqt/index.php). It is forked from [the reference implementation](https://github.com/grrrr/nsgt) by Thomas Grill, with the following additions:
+* [PyTorch](https://github.com/pytorch/pytorch/) tensor implementation for both the NSGT and sliCQ transforms, resulting in faster performance and the capability to use them in GPU deep learning models
 * Bark scale based on the [Barktan formula](https://github.com/stephencwelch/Perceptual-Coding-In-Python/issues/3)
-* Variable-Q scale with a frequency offset parameter based on:
-    * Christian Schörkhuber et al. “A Matlab Toolbox for Efficient Perfect Reconstruction Time-Frequency Transforms with Log-Frequency Resolution.” In: Proceedings of the AES International Conference. 2014.
-    * Dong-Yan Huang, Minghui Dong, and Haizhou Li. “A Real-Time Variable-Q Non-Stationary Gabor Transform for Pitch Shifting.” In: INTERSPEECH – 16th Annual Conference of the International Speech Communication Association. Sept. 2015.
+* Variable-Q scale with a frequency offset parameter, which can be seen in [Schörkhuber et al. 2014](https://www.researchgate.net/publication/274009051_A_Matlab_Toolbox_for_Efficient_Perfect_Reconstruction_Time-Frequency_Transforms_with_Log-Frequency_Resolution) and [Huang et al. 2015](https://www.researchgate.net/publication/292361602_A_Real-Time_Variable-Q_Non-Stationary_Gabor_Transform_for_Pitch_Shifting)
 * Minimum slice length suggestion for a given frequency scale
-* [PyTorch](https://github.com/pytorch/pytorch/) tensor implementation for faster performance and the capability to use the NSGT or sliCQ in GPU deep learning models
-* Support for the ragged/jagged sliCQ transform
-
-The purpose of this fork is to support a [deep learning model for music source separation](https://github.com/sevagh/xumx-sliCQ).
 
 ## STFT vs. sliCQ spectrogram
 
@@ -23,9 +14,9 @@ The spectrograms below show the magnitude transform of an excerpt of music (10 s
 
 <img src="./.github/spectrograms.png" width=768px />
 
-By using a varying time-frequency resolution, transients and tonal sounds are distinguished more clearly. This is essentially the crux of the hypothesis that the sliCQ transform may be useful for music source separation.
+By using a varying time-frequency resolution, transients and tonal sounds are distinguished more clearly, making it a good choice for representing the spectral content of musical signals.
 
-The above was generated with the [examples/spectrogram.py](https://github.com/sevagh/nsgt/blob/torch/examples/spectrogram.py) script with a 48-bin log scale (i.e. CQT) from 83-22050 Hz:
+The spectrogram above was generated with the [examples/spectrogram.py](https://github.com/sevagh/nsgt/blob/torch/examples/spectrogram.py) script with a 48-bin log scale (i.e. CQT) from 83-22050 Hz:
 ```
 (nsgt-torch) $ python examples/spectrogram.py \
                 ./mestis.wav --sr 44100 \
@@ -111,22 +102,22 @@ Matrix transforms:
 
 | Library | Transform params | Device | Execution time (s) |
 |---------|-----------|--------|--------------------|
-| NSGT PyTorch | real=True | GPU (3080 Ti) | 0.38 |
-| NSGT PyTorch | real=True | CPU (Ryzen 3700x) | 3.05 |
-| Original with [numpy.fft](https://numpy.org/doc/stable/reference/routines.fft.html) backend | real=True, multithreading=True | CPU (Ryzen 3700x) | 4.87 |
 | Original with [numpy.fft](https://numpy.org/doc/stable/reference/routines.fft.html) backend | real=True, multithreading=False | CPU (Ryzen 3700x) | 7.13 |
+| Original with [numpy.fft](https://numpy.org/doc/stable/reference/routines.fft.html) backend | real=True, multithreading=True | CPU (Ryzen 3700x) | 4.87 |
+| NSGT PyTorch | real=True | CPU (Ryzen 3700x) | 3.05 |
+| NSGT PyTorch | real=True | GPU (3080 Ti) | 0.38 |
 | NSGT PyTorch | real=True | GPU (2070 SUPER) | n/a (OOM on 8GB vram) |
 
 Ragged transforms:
 | Library | Transform params | Device | Execution time (s) |
 |---------|-----------|--------|--------------------|
-| NSGT PyTorch | real=True | GPU (3080 Ti) | 0.60 |
-| NSGT PyTorch | real=True | GPU (2070 SUPER) | 0.64 |
-| NSGT PyTorch | real=True | CPU (Ryzen 3700x) | 1.14 |
 | Original with [numpy.fft](https://numpy.org/doc/stable/reference/routines.fft.html) backend | real=True, multithreading=False | CPU (Ryzen 3700x) | 2.08 |
 | Original with [numpy.fft](https://numpy.org/doc/stable/reference/routines.fft.html) backend | real=True, multithreading=True | CPU (Ryzen 3700x) | 2.37 |
+| NSGT PyTorch | real=True | CPU (Ryzen 3700x) | 1.14 |
+| NSGT PyTorch | real=True | GPU (2070 SUPER) | 0.64 |
+| NSGT PyTorch | real=True | GPU (3080 Ti) | 0.60 |
 
-The transform execution time was measured with the [examples/benchmark.py](https://github.com/sevagh/nsgt/blob/torch/examples/benchmark.py) script on the full length song [Mestis - El Mestizo](https://www.youtube.com/watch?v=0kn2doStfp4) with sliCQ parameters `--scale=bark --bins=512 --fmin=83. --fmax=22050.` My computer runs Fedora 33 (amd64) with an AMD Ryzen 3700x processor, 64GB DDR4 memory, and NVIDIA 3080 Ti and 2070 SUPER. The Bark scale was chosen as it results in a smaller transform than the constant-Q log scale.
+The transform execution time was measured with the [examples/benchmark.py](https://github.com/sevagh/nsgt/blob/torch/examples/benchmark.py) script on the full length song [Mestis - El Mestizo](https://www.youtube.com/watch?v=0kn2doStfp4) with sliCQ parameters `--scale=bark --bins=512 --fmin=83. --fmax=22050.` The test computer is running Fedora 33 (amd64) with an AMD Ryzen 3700x processor, 64GB DDR4 memory, and NVIDIA 3080 Ti and 2070 SUPER. The Bark scale was chosen as it results in a smaller transform than the constant-Q log scale (but still not small enough to fit the matrix form on the 2070 SUPER's 8GB vram).
 
 Benchmark invocation arguments:
 ```
