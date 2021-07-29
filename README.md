@@ -24,10 +24,6 @@ The spectrogram above was generated with the [examples/spectrogram.py](https://g
                 --plot
 ```
 
-### Install and run
-
-The included Conda environment script, [conda-env.yml](./conda-env.yml), contains the appropriate version of PyTorch (as well as some other unneeded dependencies, since its copied from a larger project).
-
 ## Tensor sliCQ transform
 
 In the diagram below, the NSGT/sliCQ transform output of an audio signal using a simple nonlinear frequency scale, `[10, 50, 400, 3000, 16000] Hz`, is demonstrated in a simplified diagram:
