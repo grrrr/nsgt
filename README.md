@@ -6,6 +6,8 @@ This project is a PyTorch implementation of the Nonstationary Gabor Transform an
 * Variable-Q scale with a frequency offset parameter, which can be seen in [Schörkhuber et al. 2014](https://www.researchgate.net/publication/274009051_A_Matlab_Toolbox_for_Efficient_Perfect_Reconstruction_Time-Frequency_Transforms_with_Log-Frequency_Resolution) and [Huang et al. 2015](https://www.researchgate.net/publication/292361602_A_Real-Time_Variable-Q_Non-Stationary_Gabor_Transform_for_Pitch_Shifting)
 * Minimum slice length suggestion for a given frequency scale
 
+This is the standalone version of the sliCQ transform used in https://github.com/sevagh/xumx-sliCQ
+
 ## STFT vs. sliCQ spectrogram
 
 The NSGT or sliCQ allow for nonuniform time-frequency resolution. Following the example of the constant-Q transform, music can be analyzed by maintaining a constant-Q center frequency to frequency resolution ratio per bin, to have high frequency resolution at low frequencies and high time resolution at high frequencies.
@@ -24,9 +26,15 @@ The spectrogram above was generated with the [examples/spectrogram.py](https://g
                 --plot
 ```
 
+Another example of a spectrogram showing the sliCQ's capability for good spectral representations for music is from my [xumx-sliCQ](https://github.com/sevagh/xumx-sliCQ) project:
+
+<img src="./.github/spectrograms_xumx_slicq.png" width=768px />
+
+The parameters are the same sliCQ used by default in the model: Bark, 262 bins, 32.9-22020 Hz, 18060 sllen, 4514 trlen.
+
 ## Tensor sliCQ transform
 
-In the diagram below, the NSGT/sliCQ transform output of an audio signal using a simple nonlinear frequency scale, `[10, 50, 400, 3000, 16000] Hz`, is demonstrated in a simplified diagram:
+In the diagram below, the NSGT/sliCQ transform output of an audio signal using a simple nonlinear frequency scale, grouped into 3 time-frequency resolution blocks (or buckets): `[10, 30, 80, 150], [400, 2300], [11000, 16000] Hz`, is demonstrated in a simplified diagram:
 
 <img src=".github/slicq_shape.png" width=768px/>
 
