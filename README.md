@@ -34,7 +34,7 @@ The parameters are the same sliCQ used by default in the model: Bark, 262 bins, 
 
 ## Tensor sliCQ transform
 
-In the diagram below, the NSGT/sliCQ transform output of an audio signal using a simple nonlinear frequency scale, grouped into 3 time-frequency resolution blocks (or buckets): `[10, 30, 80, 150], [400, 2300], [11000, 16000] Hz`, is demonstrated in a simplified diagram:
+In the diagram below, the NSGT/sliCQ transform output of an audio signal using a simple nonlinear frequency scale, grouped into 4 time-frequency resolution blocks (or buckets): `[10, 30, 80, 150], [400, 2300], [11000], [16000] Hz`, is demonstrated in a simplified diagram:
 
 <img src=".github/slicq_shape.png" width=768px/>
 
