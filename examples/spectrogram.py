@@ -72,20 +72,20 @@ else:
 
 
 freqs, qs = scl()
-print(freqs)
-print(['{0:.2f}'.format(q) for q in qs])
+#print(freqs)
+#print(['{0:.2f}'.format(q) for q in qs])
 
-#print(','.join(['{0:.2f}'.format(freq) for freq in freqs[:10]]))
-#print()
-#
-#print(','.join(['{0:.2f}'.format(freq) for freq in freqs[-10:]]))
-#print()
-#
-#print(','.join(['{0:.2f}'.format(q) for q in qs[:10]]))
-#print()
-#
-#print(','.join(['{0:.2f}'.format(q) for q in qs[-10:]]))
-#print()
+print(', '.join(['{0:.2f}'.format(freq) for freq in freqs[:5]]))
+print()
+
+print(', '.join(['{0:.2f}'.format(freq) for freq in freqs[-5:]]))
+print()
+
+print(', '.join(['{0:.2f}'.format(q) for q in qs[:5]]))
+print()
+
+print(', '.join(['{0:.2f}'.format(q) for q in qs[-5:]]))
+print()
 
 # Read audio data
 sf = SndReader(args.input, sr=fs, chns=2)
