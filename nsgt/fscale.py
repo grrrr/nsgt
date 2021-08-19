@@ -220,3 +220,30 @@ class BarkScale(Scale):
         if bnd is None:
             bnd = np.arange(self.bnds)
         return bark2hz(bnd*self.bbnd+self.bmin)
+
+
+'''
+a toy frequency scale based on powers of two
+to demonstrate the flexibility of the sliCQT
+'''
+class Pow2Scale(Scale):
+    def __init__(self, fmin, fmax, bnds, beyond=0):
+        """
+        @param fmin: minimum frequency (Hz)
+        @param fmax: maximum frequency (Hz)
+        @param bnds: number of frequency bands (int)
+        @param beyond: number of frequency bands below fmin and above fmax (int)
+        """
+        self.start = 0
+        while 2**self.start < fmin:
+            self.start += 1
+
+        Scale.__init__(self, bnds-self.start+beyond*2)
+
+        if 2**(bnds-1) >= fmax:
+            raise ValueError(f'too many frequency bands!')
+
+    def F(self, bnd=None):
+        if bnd is None:
+            bnd = np.arange(self.bnds)
+        return 2**(bnd+self.start)

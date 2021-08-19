@@ -15,6 +15,7 @@ import torch
 import matplotlib.pyplot as plt
 
 from nsgt import NSGT, NSGT_sliced, LogScale, LinScale, MelScale, OctScale, VQLogScale, BarkScale, SndReader
+from nsgt.fscale import Pow2Scale
 
 
 def overlap_add_slicq(slicq):
@@ -43,7 +44,7 @@ parser.add_argument("--sr", type=int, default=44100, help="Sample rate used for 
 parser.add_argument("--fmin", type=float, default=50, help="Minimum frequency in Hz (default=%(default)s)")
 parser.add_argument("--fmax", type=float, default=22050, help="Maximum frequency in Hz (default=%(default)s)")
 parser.add_argument("--gamma", type=float, default=15, help="variable-q frequency offset per band")
-parser.add_argument("--scale", choices=('oct','cqlog','mel','bark','vqlog'), default='cqlog', help="Frequency scale")
+parser.add_argument("--scale", choices=('oct','cqlog','mel','bark','vqlog','pow2'), default='cqlog', help="Frequency scale")
 parser.add_argument("--bins", type=int, default=50, help="Number of frequency bins (total or per octave, default=%(default)s)")
 parser.add_argument("--sllen", type=int, default=2**20, help="Slice length in samples (default=%(default)s)")
 parser.add_argument("--trlen", type=int, default=2**18, help="Transition area in samples (default=%(default)s)")
@@ -58,7 +59,7 @@ if not os.path.exists(args.input):
 fs = args.sr
 
 # build transform
-scales = {'cqlog':LogScale, 'lin':LinScale, 'mel':MelScale, 'oct':OctScale, 'bark':BarkScale, 'vqlog':VQLogScale}
+scales = {'cqlog':LogScale, 'lin':LinScale, 'mel':MelScale, 'oct':OctScale, 'bark':BarkScale, 'vqlog':VQLogScale, 'pow2':Pow2Scale}
 try:
     scale = scales[args.scale]
 except KeyError:
@@ -71,18 +72,20 @@ else:
 
 
 freqs, qs = scl()
+print(freqs)
+print(['{0:.2f}'.format(q) for q in qs])
 
-print(','.join(['{0:.2f}'.format(freq) for freq in freqs[:10]]))
-print()
-
-print(','.join(['{0:.2f}'.format(freq) for freq in freqs[-10:]]))
-print()
-
-print(','.join(['{0:.2f}'.format(q) for q in qs[:10]]))
-print()
-
-print(','.join(['{0:.2f}'.format(q) for q in qs[-10:]]))
-print()
+#print(','.join(['{0:.2f}'.format(freq) for freq in freqs[:10]]))
+#print()
+#
+#print(','.join(['{0:.2f}'.format(freq) for freq in freqs[-10:]]))
+#print()
+#
+#print(','.join(['{0:.2f}'.format(q) for q in qs[:10]]))
+#print()
+#
+#print(','.join(['{0:.2f}'.format(q) for q in qs[-10:]]))
+#print()
 
 # Read audio data
 sf = SndReader(args.input, sr=fs, chns=2)

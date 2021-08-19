@@ -98,6 +98,25 @@ Due to the complicated nature of the sliCQ transform, it's not very simple to de
 
 It's best to think of them separately, and it's important to note that in my experience, trying to use the matrix form in a neural network led to subpar results (most probably due to the murky effect of the zero-padding, or "smearing", of the low time resolutions into larger ones).
 
+### Arbitrary frequency scales
+
+I recently included the "power of two" frequency scale, to show that the NSGT/sliCQT is flexible and can use any monotonically-increasing frequency scale. The sliCQT gives you the Fourier transform coefficients for your desired frequency scale, with a perfect inverse operator and no fuss.
+
+Power of two frequency scale, frequencies and Q factors:
+* Pow2Scale, 20-22050 Hz (fmin-fmax), 15 bins
+* Starting bin = 5, since 2\*\*5 = 32 Hz is the first power-of-two past 20 Hz
+* Frequencies (Hz): 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384
+* Q factors (constant-Q by default): 0.72 throughout
+
+Spectrogram of the famous LTFAT tonal/transient [Glockenspiel signal](https://ltfat.org/doc/signals/gspi.html) with the above frequency scale:
+
+<img src="./.github/toy_spectrogram_pow2.png" width=768px />
+
+Generated with:
+```
+$ python examples/spectrogram.py --fmin 20 --fmax 22050 --scale pow2 --sr 44100 --bins 15 --nonsliced --plot ./gspi.wav
+```
+
 ## Performance
 
 This is not an exhaustive benchmark, but a time measurement of the forward + backward sliCQ transform on various devices, compared to the original NSGT library, **omitting** the cost of memory transfer the song from host to the GPU device.
