@@ -18,22 +18,29 @@ from nsgt import NSGT, NSGT_sliced, LogScale, LinScale, MelScale, OctScale, VQLo
 from nsgt.fscale import Pow2Scale
 
 
-def overlap_add_slicq(slicq):
-    nb_samples, nb_slices, nb_channels, nb_f_bins, nb_m_bins = slicq.shape
+def overlap_add_slicq(slicq, flatten=False):
+    # proper 50% overlap-add
+    if not flatten:
+        nb_samples, nb_slices, nb_channels, nb_f_bins, nb_m_bins = slicq.shape
 
-    window = nb_m_bins
-    hop = window//2 # 50% overlap window
+        window = nb_m_bins
+        hop = window//2 # 50% overlap window
 
-    ncoefs = nb_slices*nb_m_bins//2 + hop
-    out = torch.zeros((nb_samples, nb_channels, nb_f_bins, ncoefs), dtype=slicq.dtype, device=slicq.device)
+        ncoefs = nb_slices*nb_m_bins//2 + hop
+        out = torch.zeros((nb_samples, nb_channels, nb_f_bins, ncoefs), dtype=slicq.dtype, device=slicq.device)
 
-    ptr = 0
+        ptr = 0
 
-    for i in range(nb_slices):
-        out[:, :, :, ptr:ptr+window] += slicq[:, i, :, :, :]
-        ptr += hop
+        for i in range(nb_slices):
+            out[:, :, :, ptr:ptr+window] += slicq[:, i, :, :, :]
+            ptr += hop
 
-    return out
+        return out
+    # flatten adjacent slices, just for demo purposes
+    else:
+        slicq = slicq.permute(0, 2, 3, 1, 4)
+        out = torch.flatten(slicq, start_dim=-2, end_dim=-1)
+        return out
 
 
 from argparse import ArgumentParser
@@ -51,6 +58,7 @@ parser.add_argument("--trlen", type=int, default=2**18, help="Transition area in
 parser.add_argument("--plot", action='store_true', help="Plot transform (needs installed matplotlib package)")
 parser.add_argument("--mono", action='store_true', help="Audio is mono")
 parser.add_argument("--nonsliced", action='store_true', help="Use the non-sliced transform")
+parser.add_argument("--flatten", action='store_true', help="Flatten instead of overlap")
 
 args = parser.parse_args()
 if not os.path.exists(args.input):
@@ -132,7 +140,7 @@ if args.plot:
     if args.nonsliced:
         mls = 20.*torch.log10(torch.abs(c))
     else:
-        mls = 20.*torch.log10(torch.abs(overlap_add_slicq(c)))
+        mls = 20.*torch.log10(torch.abs(overlap_add_slicq(c, flatten=args.flatten)))
 
     plt.rcParams.update({'font.size': 14})
     fig, axs = plt.subplots(1)
@@ -148,7 +156,7 @@ if args.plot:
 
     #fs_coef = fs*slicq.coef_factor # frame rate of coefficients
     #mls_dur = len(mls)/fs_coef # final duration of MLS
-    mls_dur = dur
+    mls_dur = dur if not args.flatten else 2*dur
 
     mls_max = torch.quantile(mls, 0.999)
     axs.imshow(mls.T, aspect=mls_dur/mls.shape[1]*0.2, interpolation='nearest', origin='lower', vmin=mls_max-60., vmax=mls_max, extent=(0,mls_dur,0,mls.shape[1]))
