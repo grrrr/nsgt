@@ -89,7 +89,7 @@ NSGT-sliCQ matrix shape: torch.Size([2, 2, 14, 537856])
 recon error (mse): 2.0801778646273306e-06
 ```
 
-### Ragged vs. matrix
+## Ragged vs. matrix
 
 Due to the complicated nature of the sliCQ transform, it's not very simple to describe how to swap between the ragged and matrix forms. There is a zero-padding step, but not just at the final step before the return.
 
@@ -98,7 +98,7 @@ Due to the complicated nature of the sliCQ transform, it's not very simple to de
 
 It's best to think of them separately, and it's important to note that in my experience, trying to use the matrix form in a neural network led to subpar results (most probably due to the murky effect of the zero-padding, or "smearing", of the low time resolutions into larger ones).
 
-### Arbitrary frequency scales
+## Arbitrary frequency scales
 
 I recently included the "power of two" frequency scale, to show that the NSGT/sliCQT is flexible and can use any monotonically-increasing frequency scale. The sliCQT gives you the Fourier transform coefficients for your desired frequency scale, with a perfect inverse operator and no fuss.
 
@@ -116,6 +116,36 @@ Generated with:
 ```
 $ python examples/spectrogram.py --fmin 20 --fmax 22050 --scale pow2 --sr 44100 --bins 15 --nonsliced --plot ./gspi.wav
 ```
+
+## NSGT vs. sliCQT - sllen, trlen, and noninvertible half-overlap of slices
+
+The sliCQT is the sliced version of the NSGT. The spectrogram script takes a `--nonsliced` argument to do the regular NSGT (which processes the entire input signal):
+
+<img src="./.github/nonsliced.png" width=768px />
+
+```
+$ python examples/spectrogram.py --fmin 20 --fmax 22050 --scale bark --sr 44100 --bins 84 --nonsliced ./gspi.wav --plot
+```
+
+Otherwise the sliced version with `--sllen` and `--trlen` (slice and transition, analogous to the STFT window and hop) is used:
+
+<img src="./.github/sliced.png" width=768px />
+
+```
+$ python examples/spectrogram.py --fmin 20 --fmax 22050 --scale bark --sr 44100 --bins 84 --sllen 8192 --trlen 2048 ./gspi.wav --plot
+```
+
+Finally, note that the sliCQT is different from the NSGT in that it outputs slices that have a 50% overlap with the adjacent slices. The `--flatten` argument shows what happens if you don't overlap-add but just flatten the tensor:
+
+<img src="./.github/sliced_flatten.png" width=768px />
+
+```
+$ python examples/spectrogram.py --fmin 20 --fmax 22050 --scale bark --sr 44100 --bins 84 --sllen 8192 --trlen 2048 ./gspi.wav --plot --flatten
+```
+
+This is a non-invertible operation, and to synthesize the time-domain audio back from the transform you need to have the previous, non-overlap-added slices. However, for the neural network to learn from the spectrogram, the overlapped version worked better. In my neural network, [xumx-sliCQ](https://github.com/sevagh/xumx-sliCQ), I had difficulty with this, and needed an extra ConvTranspose2d layer to double the sliCQ coefficients to reproduce the non-overlapped version: https://github.com/sevagh/xumx-sliCQ/blob/main/xumx_slicq/model.py#L92-L94
+
+Also note that [Essentia mentioned the same half-overlap as a tricky situation](https://mtg.github.io/essentia-labs/news/2019/02/07/invertible-constant-q/). Perhaps the next evolution of the sliCQT can make it easier to reason about the half-overlapped slices such that we can go to the half-overlapped representation and back without any reconstruction error.
 
 ## Performance
 
