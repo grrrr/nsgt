@@ -33,7 +33,7 @@ class Scale:
         q = np.array([self.Q(b) for b in range(self.bnds)],dtype=float)
         return f,q
 
-    def suggested_sllen(self, sr):
+    def suggested_sllen_trlen(self, sr):
         f,q = self()
 
         Ls = int(np.ceil(max((q*8.*sr)/f)))
@@ -41,7 +41,12 @@ class Scale:
         # make sure its divisible by 4
         Ls = Ls + -Ls % 4
 
-        return Ls
+        sllen = Ls
+
+        trlen = sllen//4
+        trlen = trlen + -trlen % 2 # make trlen divisible by 2
+
+        return sllen, trlen
 
 
 class OctScale(Scale):

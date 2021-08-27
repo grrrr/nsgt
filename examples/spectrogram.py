@@ -16,31 +16,7 @@ import matplotlib.pyplot as plt
 
 from nsgt import NSGT, NSGT_sliced, LogScale, LinScale, MelScale, OctScale, VQLogScale, BarkScale, SndReader
 from nsgt.fscale import Pow2Scale
-
-
-def overlap_add_slicq(slicq, flatten=False):
-    # proper 50% overlap-add
-    if not flatten:
-        nb_samples, nb_slices, nb_channels, nb_f_bins, nb_m_bins = slicq.shape
-
-        window = nb_m_bins
-        hop = window//2 # 50% overlap window
-
-        ncoefs = nb_slices*nb_m_bins//2 + hop
-        out = torch.zeros((nb_samples, nb_channels, nb_f_bins, ncoefs), dtype=slicq.dtype, device=slicq.device)
-
-        ptr = 0
-
-        for i in range(nb_slices):
-            out[:, :, :, ptr:ptr+window] += slicq[:, i, :, :, :]
-            ptr += hop
-
-        return out
-    # flatten adjacent slices, just for demo purposes
-    else:
-        slicq = slicq.permute(0, 2, 3, 1, 4)
-        out = torch.flatten(slicq, start_dim=-2, end_dim=-1)
-        return out
+from nsgt.slicq import overlap_add_slicq
 
 
 from argparse import ArgumentParser
