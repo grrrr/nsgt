@@ -32,7 +32,7 @@ def slicequads(frec_sliced, hhop):
 
 
 #@profile
-def unslicing(frec_sliced, sl_len, tr_area, dtype=float, usewindow=True, device="cuda"):
+def unslicing(frec_sliced, sl_len, tr_area, dtype=float, usewindow=True, device="cpu"):
     #print("unslicing: {0}".format(frec_sliced.shape))
 
     hhop = sl_len//4    

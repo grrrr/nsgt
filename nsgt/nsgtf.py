@@ -19,7 +19,7 @@ from .util import chkM
 from .fft import fftp, ifftp
 
 
-def nsgtf_sl(f_slices, g, wins, nn, M=None, matrixform=False, real=False, reducedform=0, measurefft=False, multithreading=False, device="cuda"):
+def nsgtf_sl(f_slices, g, wins, nn, M=None, matrixform=False, real=False, reducedform=0, measurefft=False, multithreading=False, device="cpu"):
     M = chkM(M,g)
     dtype = g[0].dtype
     
@@ -104,6 +104,6 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, matrixform=False, real=False, reduce
         
 
 # non-sliced version
-def nsgtf(f, g, wins, nn, M=None, real=False, reducedform=0, measurefft=False, multithreading=False, matrixform=False, device="cuda"):
+def nsgtf(f, g, wins, nn, M=None, real=False, reducedform=0, measurefft=False, multithreading=False, matrixform=False, device="cpu"):
     ret = nsgtf_sl(torch.unsqueeze(f, dim=0), g, wins, nn, M=M, real=real, reducedform=reducedform, measurefft=measurefft, multithreading=multithreading, device=device, matrixform=matrixform)
     return torch.squeeze(ret, dim=0)

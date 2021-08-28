@@ -15,7 +15,7 @@ import numpy as np
 import torch
 
 
-def reblock(sseq, blocksize, dtype=None, fulllast=True, padding=0, multichannel=False, device="cuda"):
+def reblock(sseq, blocksize, dtype=None, fulllast=True, padding=0, multichannel=False, device="cpu"):
     block = None
     dt = None
     chns = None

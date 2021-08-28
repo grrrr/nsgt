@@ -60,7 +60,7 @@ def overlap_add_slicq(slicq, flatten=False):
         return out
 
 
-def arrange(cseq, fwd, device="cuda"):
+def arrange(cseq, fwd, device="cpu"):
     if type(cseq) == torch.Tensor:
         M = cseq.shape[-1]
 
@@ -96,7 +96,7 @@ def starzip(iterables):
 
 
 #@profile
-def chnmap_forward(gen, seq, device="cuda"):
+def chnmap_forward(gen, seq, device="cpu"):
     chns = starzip(seq) # returns a list of generators (one for each channel)
 
     # fuck generators, use a tensor
@@ -121,7 +121,7 @@ class NSGT_sliced(torch.nn.Module):
                  measurefft=False,
                  multithreading=False,
                  dtype=torch.float32,
-                 device="cuda"):
+                 device="cpu"):
         assert fs > 0
         assert sl_len > 0
         assert tr_area >= 0

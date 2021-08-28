@@ -37,7 +37,7 @@ import torch
 from .util import chkM
 
 
-def nsdual(g, wins, nn, M=None, device="cuda"):
+def nsdual(g, wins, nn, M=None, device="cpu"):
     M = chkM(M,g)
 
     # Construct the diagonal of the frame operator matrix explicitly

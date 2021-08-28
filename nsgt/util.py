@@ -16,7 +16,7 @@ import torch
 from math import exp, floor, ceil, pi
 
 
-def hannwin(l, device="cuda"):
+def hannwin(l, device="cpu"):
     r = torch.arange(l,dtype=float, device=torch.device(device))
     r *= np.pi*2./l
     r = torch.cos(r)
@@ -25,7 +25,7 @@ def hannwin(l, device="cuda"):
     return r
 
 
-def blackharr(n, l=None, mod=True, device="cuda"):
+def blackharr(n, l=None, mod=True, device="cpu"):
     if l is None: 
         l = n
     nn = (n//2)*2
@@ -98,7 +98,7 @@ def chkM(M, g):
     return M
 
 
-def calcwinrange(g, rfbas, Ls, device="cuda"):
+def calcwinrange(g, rfbas, Ls, device="cpu"):
     shift = np.concatenate(((np.mod(-rfbas[-1],Ls),), rfbas[1:]-rfbas[:-1]))
     
     timepos = np.cumsum(shift)

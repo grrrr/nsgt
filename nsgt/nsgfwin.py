@@ -37,7 +37,7 @@ EXTERNALS : firwin
 import numpy as np
 from .util import hannwin,_isseq
 
-def nsgfwin(fmin, fmax ,bins, sr, Ls, min_win=4, device="cuda"):
+def nsgfwin(fmin, fmax ,bins, sr, Ls, min_win=4, device="cpu"):
 
     nf = sr/2
     

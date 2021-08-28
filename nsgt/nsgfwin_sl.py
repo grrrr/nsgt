@@ -42,7 +42,7 @@ from itertools import chain
 import torch
 
 
-def nsgfwin(f, q, sr, Ls, sliced=True, min_win=4, Qvar=1, dowarn=True, dtype=np.float64, device="cuda"):
+def nsgfwin(f, q, sr, Ls, sliced=True, min_win=4, Qvar=1, dowarn=True, dtype=np.float64, device="cpu"):
     nf = sr/2.
 
     lim = np.argmax(f > 0)

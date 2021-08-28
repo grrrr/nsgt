@@ -18,7 +18,7 @@ from .reblock import reblock
 from itertools import chain, cycle
 
 
-def makewnd(sl_len, tr_area, device="cuda"):
+def makewnd(sl_len, tr_area, device="cpu"):
     hhop = sl_len//4
     htr = tr_area//2
     # build window function within one slice (centered with transition areas around sl_len/4 and 3*sl_len/4    
@@ -32,7 +32,7 @@ def makewnd(sl_len, tr_area, device="cuda"):
     return tw
 
 
-def slicing(f, sl_len, tr_area, device="cuda"):
+def slicing(f, sl_len, tr_area, device="cpu"):
     if tr_area%2 != 0:
         raise ValueError("Transition area 'tr_area' must be modulo 2")
     if sl_len%4 != 0:
