@@ -27,8 +27,6 @@ parser.add_argument("--fmin", type=float, default=50, help="Minimum frequency in
 parser.add_argument("--fmax", type=float, default=22050, help="Maximum frequency in Hz (default=%(default)s)")
 parser.add_argument("--scale", choices=('oct','cqlog','vqlog','mel','bark'), default='cqlog', help="Frequency scale oct, log, lin, or mel (default='%(default)s')")
 parser.add_argument("--bins", type=int, default=50, help="Number of frequency bins (total or per octave, default=%(default)s)")
-parser.add_argument("--sllen", type=int, default=2**20, help="Slice length in samples (default=%(default)s)")
-parser.add_argument("--trlen", type=int, default=2**18, help="Transition area in samples (default=%(default)s)")
 parser.add_argument("--real", action='store_true', help="Assume real signal")
 parser.add_argument("--old", action='store_true', help="Use old transform")
 parser.add_argument("--matrixform", action='store_true', help="Use regular time division over frequency bins (matrix form)")
@@ -51,13 +49,14 @@ except KeyError:
     parser.error('Scale unknown (--scale option)')
 
 scl = scale(args.fmin, args.fmax, args.bins, beyond=int(args.reducedform == 2))
+sllen, trlen = scl.suggested_sllen_trlen(fs)
 
 # Read audio data
 sf = SndReader(args.input, sr=fs, chns=2)
 signal = sf()
 
 if args.old:
-    slicq = NSGT_sliced_old(scl, args.sllen, args.trlen, fs, 
+    slicq = NSGT_sliced_old(scl, sllen, trlen, fs, 
                         real=True, 
                         matrixform=args.matrixform,
                         multithreading=args.multithreading,
@@ -67,7 +66,7 @@ if args.old:
     # read slices from audio file and mix down signal, if necessary at all
     signal = ((np.mean(s, axis=0),) for s in signal)
 else:
-    slicq = NSGT_sliced(scl, args.sllen, args.trlen, fs, 
+    slicq = NSGT_sliced(scl, sllen, trlen, fs, 
                         real=True, 
                         matrixform=args.matrixform, 
                         multichannel=True,
@@ -87,11 +86,12 @@ if args.old:
     c = slicq.forward(signal)
 
     c_list = list(c)
-    slicq.backward(c_list)
+    sig_recon = slicq.backward(c_list)
+    sig = list(sig_recon)
 else:
     # generator for forward transformation
     c = slicq.forward((signal,))
-    slicq.backward(c, signal.shape[-1])
+    sig_recon = slicq.backward(c, signal.shape[-1])
 
 tot = time.time() - start
 

@@ -203,7 +203,7 @@ class NSGT_sliced(torch.nn.Module):
     def slice_coefs(self):
         return self.ncoefs
     
-    #@profile
+    @profile
     def forward(self, sig):
         'transform - s: iterable sequence of sequences' 
 
@@ -220,7 +220,7 @@ class NSGT_sliced(torch.nn.Module):
 
         return cseq
 
-    #@profile
+    @profile
     def backward(self, cseq, length):
         'inverse transform - c: iterable sequence of coefficients'
         cseq = self.channelize(cseq)

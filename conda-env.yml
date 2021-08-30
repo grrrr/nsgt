@@ -1,0 +1,24 @@
+name: nsgt-torch
+
+channels:
+  - default
+  - pytorch
+  - conda-forge
+
+dependencies:
+  - python=3.9
+  - numpy
+  - numba
+  - scipy
+  - pytorch==1.9
+  - torchaudio
+  - cudatoolkit=11
+  - tqdm
+  - libsndfile
+  - ffmpeg
+  - pip
+  - pip:
+    - matplotlib
+    - line_profiler
+    - memory_profiler
+    - "-e ."
