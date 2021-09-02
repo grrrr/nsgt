@@ -31,8 +31,8 @@ parser.add_argument('-f', "--fmin", type=float, default=50, help="minimum freque
 parser.add_argument('-F', "--fmax", type=float, default=22050, help="maximum frequency (default=%(default)s)")
 parser.add_argument('-s', "--scale", choices=('oct','log','mel'), default='log', help="frequency scale (oct,log,lin,mel)")
 parser.add_argument('-b', "--bins", type=int, default=50, help="frequency bins (total or per octave, default=%(default)s)")
-parser.add_argument("--sllen", type=int, default=2**16, help="slice length (default=%(default)s)")
-parser.add_argument("--trlen", type=int, default=4096, help="transition area (default=%(default)s)")
+parser.add_argument("--sllen", type=int, default=None, help="slice length (default=%(default)s)")
+parser.add_argument("--trlen", type=int, default=None, help="transition area (default=%(default)s)")
 parser.add_argument('-r', "--real", action='store_true', help="assume real signal")
 parser.add_argument('-m', "--matrixform", action='store_true', help="use regular time division (matrix form)")
 parser.add_argument('-l', "--reducedform", action='count', default=0, help="if real==1: omit bins for f=0 and f=fs/2 (lossy=1), or also the transition bands (lossy=2)")
@@ -60,8 +60,14 @@ try:
 except KeyError:
     parser.error('scale unknown')
 
+if args.sllen is None:
+    sllen, trlen = scl.suggested_sllen_trlen(fs)
+else:
+    sllen = args.sllen
+    trlen = args.trlen
+
 scl = scale(args.fmin, args.fmax, args.bins)
-slicq = NSGT_sliced(scl, args.sllen, args.trlen, fs, 
+slicq = NSGT_sliced(scl, sllen, trlen, fs, 
                     real=args.real, recwnd=args.recwnd, 
                     matrixform=args.matrixform, reducedform=args.reducedform, 
                     multithreading=args.multithreading

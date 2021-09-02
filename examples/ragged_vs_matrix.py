@@ -24,8 +24,8 @@ parser.add_argument("--fmin", type=float, default=50, help="Minimum frequency in
 parser.add_argument("--fmax", type=float, default=22050, help="Maximum frequency in Hz (default=%(default)s)")
 parser.add_argument("--scale", choices=('oct','cqlog','mel','bark','vqlog','lin'), default='cqlog', help="Frequency scale oct, cqlog, vqlog, lin, mel, bark (default='%(default)s')")
 parser.add_argument("--bins", type=int, default=50, help="Number of frequency bins (total or per octave, default=%(default)s)")
-parser.add_argument("--sllen", type=int, default=2**20, help="Slice length in samples (default=%(default)s)")
-parser.add_argument("--trlen", type=int, default=2**18, help="Transition area in samples (default=%(default)s)")
+parser.add_argument("--sllen", type=int, default=None, help="Slice length in samples (default=%(default)s)")
+parser.add_argument("--trlen", type=int, default=None, help="Transition area in samples (default=%(default)s)")
 parser.add_argument("--matrixform", action='store_true', help="Use matrixform")
 
 args = parser.parse_args()
@@ -43,7 +43,13 @@ except KeyError:
 
 scl = scale(args.fmin, args.fmax, args.bins)
 
-slicq = NSGT_sliced(scl, args.sllen, args.trlen, fs, 
+if args.sllen is None:
+    sllen, trlen = scl.suggested_sllen_trlen(fs)
+else:
+    sllen = args.sllen
+    trlen = args.trlen
+
+slicq = NSGT_sliced(scl, sllen, trlen, fs, 
                     real=True,
                     matrixform=args.matrixform,
                     multichannel=True,

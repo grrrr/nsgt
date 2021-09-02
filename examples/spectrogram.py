@@ -29,8 +29,8 @@ parser.add_argument("--fmax", type=float, default=22050, help="Maximum frequency
 parser.add_argument("--gamma", type=float, default=15, help="variable-q frequency offset per band")
 parser.add_argument("--scale", choices=('oct','cqlog','mel','bark','vqlog','pow2'), default='cqlog', help="Frequency scale")
 parser.add_argument("--bins", type=int, default=50, help="Number of frequency bins (total or per octave, default=%(default)s)")
-parser.add_argument("--sllen", type=int, default=2**20, help="Slice length in samples (default=%(default)s)")
-parser.add_argument("--trlen", type=int, default=2**18, help="Transition area in samples (default=%(default)s)")
+parser.add_argument("--sllen", type=int, default=None, help="Slice length in samples (default=%(default)s)")
+parser.add_argument("--trlen", type=int, default=None, help="Transition area in samples (default=%(default)s)")
 parser.add_argument("--plot", action='store_true', help="Plot transform (needs installed matplotlib package)")
 parser.add_argument("--mono", action='store_true', help="Audio is mono")
 parser.add_argument("--nonsliced", action='store_true', help="Use the non-sliced transform")
@@ -84,8 +84,14 @@ signal = torch.cat(signal, dim=-1)
 # duration of signal in s
 dur = sf.frames/float(fs)
 
+if args.sllen is None:
+    sllen, trlen = scl.suggested_sllen_trlen(fs)
+else:
+    sllen = args.sllen
+    trlen = args.trlen
+
 if not args.nonsliced:
-    slicq = NSGT_sliced(scl, args.sllen, args.trlen, fs, 
+    slicq = NSGT_sliced(scl, sllen, trlen, fs, 
                         real=True,
                         matrixform=True, 
                         multichannel=True,
