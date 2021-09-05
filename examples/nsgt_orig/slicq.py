@@ -147,7 +147,7 @@ class NSGT_sliced:
     def slice_coefs(self):
         return self.ncoefs
     
-    @profile
+    #@profile
     def forward(self, sig):
         'transform - s: iterable sequence of sequences' 
 
@@ -165,7 +165,7 @@ class NSGT_sliced:
         return cseq
 
 
-    @profile
+    #@profile
     def backward(self, cseq):
         'inverse transform - c: iterable sequence of coefficients'
                 
