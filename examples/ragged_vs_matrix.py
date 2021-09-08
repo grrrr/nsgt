@@ -86,8 +86,8 @@ else:
         freq_start = freq_idx
         freq_idx += C_block.shape[2]
 
-        C_block_ola = overlap_add_slicq(torch.unsqueeze(C_block, dim=0))
-        C_block_flatten = overlap_add_slicq(torch.unsqueeze(C_block, dim=0), flatten=True)
+        C_block_ola = torch.squeeze(overlap_add_slicq(torch.unsqueeze(C_block, dim=0)), dim=0)
+        C_block_flatten = torch.squeeze(overlap_add_slicq(torch.unsqueeze(C_block, dim=0), flatten=True), dim=0)
         print(f'\tblock {i}, f {freq_start}: {C_block.shape}, {C_block_ola.shape}, {C_block_flatten.shape}')
 
 signal_recon = slicq.backward(c, signal.shape[-1])
