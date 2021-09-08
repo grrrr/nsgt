@@ -14,6 +14,7 @@ from warnings import warn
 import torch
 
 from nsgt import NSGT, NSGT_sliced, LogScale, LinScale, MelScale, OctScale, VQLogScale, BarkScale, SndReader
+from nsgt.slicq import overlap_add_slicq
 
 from argparse import ArgumentParser
 parser = ArgumentParser()
@@ -49,6 +50,7 @@ else:
     sllen = args.sllen
     trlen = args.trlen
 
+print(f'sllen: {sllen}, trlen: {trlen}')
 slicq = NSGT_sliced(scl, sllen, trlen, fs, 
                     real=True,
                     matrixform=args.matrixform,
@@ -83,7 +85,10 @@ else:
     for i, C_block in enumerate(c):
         freq_start = freq_idx
         freq_idx += C_block.shape[2]
-        print(f'\tblock {i}, f {freq_start}: {C_block.shape}')
+
+        C_block_ola = overlap_add_slicq(torch.unsqueeze(C_block, dim=0))
+        C_block_flatten = overlap_add_slicq(torch.unsqueeze(C_block, dim=0), flatten=True)
+        print(f'\tblock {i}, f {freq_start}: {C_block.shape}, {C_block_ola.shape}, {C_block_flatten.shape}')
 
 signal_recon = slicq.backward(c, signal.shape[-1])
 
