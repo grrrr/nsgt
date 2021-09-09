@@ -64,8 +64,8 @@ signal = sf()
 
 signal = [torch.tensor(sig) for sig in signal]
 
-pad = signal[0].shape[-1]-signal[-1].shape[-1]
-signal[-1] = torch.nn.functional.pad(signal[-1], (0, pad), mode='constant', value=0)
+#pad = signal[0].shape[-1]-signal[-1].shape[-1]
+#signal[-1] = torch.nn.functional.pad(signal[-1], (0, pad), mode='constant', value=0)
 signal = torch.cat(signal, dim=-1)
 
 # duration of signal in s
@@ -78,18 +78,28 @@ ncoefs = int(sf.frames*slicq.coef_factor)
 c = slicq.forward((signal,))
 
 if args.matrixform:
-    print(f'NSGT-sliCQ matrix shape: {c.shape}')
+    matrix_ola = torch.squeeze(overlap_add_slicq(torch.unsqueeze(c, dim=0)), dim=0)
+    matrix_flat = torch.squeeze(overlap_add_slicq(torch.unsqueeze(c, dim=0), flatten=True), dim=0)
+    print(f'NSGT-sliCQ matrix shape: {c.shape}, {matrix_ola.shape}, {matrix_flat.shape}')
 else:
     print(f'NSGT-sliCQ jagged shape:')
     freq_idx = 0
     for i, C_block in enumerate(c):
         freq_start = freq_idx
-        freq_idx += C_block.shape[2]
+        freq_end = C_block.shape[2]
+        freq_idx += freq_end
 
         C_block_ola = torch.squeeze(overlap_add_slicq(torch.unsqueeze(C_block, dim=0)), dim=0)
         C_block_flatten = torch.squeeze(overlap_add_slicq(torch.unsqueeze(C_block, dim=0), flatten=True), dim=0)
-        print(f'\tblock {i}, f {freq_start}: {C_block.shape}, {C_block_ola.shape}, {C_block_flatten.shape}')
+        print(f'\tblock {i}, f {freq_start}-{freq_start+freq_end-1}: {C_block.shape}, {C_block_ola.shape}, {C_block_flatten.shape}')
 
 signal_recon = slicq.backward(c, signal.shape[-1])
 
 print(f'recon error (mse): {torch.nn.functional.mse_loss(signal_recon, signal)}')
+
+print(f'comparing 4096 stft for fun')
+
+print(f'signal: {signal.shape}')
+S = torch.stft(signal, n_fft=4096, hop_length=1024, return_complex=True, center=False).type(torch.complex64)
+
+print(f'stft with 4096/1024: {S.shape}')
