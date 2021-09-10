@@ -27,6 +27,7 @@ parser.add_argument("--sr", type=int, default=44100, help="Sample rate used for 
 parser.add_argument("--fmin", type=float, default=50, help="Minimum frequency in Hz (default=%(default)s)")
 parser.add_argument("--fmax", type=float, default=22050, help="Maximum frequency in Hz (default=%(default)s)")
 parser.add_argument("--gamma", type=float, default=15, help="variable-q frequency offset per band")
+parser.add_argument("--cmap", type=str, default='hot', help="spectrogram color map")
 parser.add_argument("--scale", choices=('oct','cqlog','mel','bark','vqlog','pow2'), default='cqlog', help="Frequency scale")
 parser.add_argument("--bins", type=int, default=50, help="Number of frequency bins (total or per octave, default=%(default)s)")
 parser.add_argument("--sllen", type=int, default=None, help="Slice length in samples (default=%(default)s)")
@@ -141,8 +142,8 @@ if args.plot:
     mls_dur = dur if not args.flatten else 2*dur
 
     mls_max = torch.quantile(mls, 0.999)
-    axs.imshow(mls.T, aspect=mls_dur/mls.shape[1]*0.2, interpolation='nearest', origin='lower', vmin=mls_max-60., vmax=mls_max, extent=(0,mls_dur,0,mls.shape[1]))
-    axs.set_title('Magnitude NSGT, {0} scale, {1} bins'.format(args.scale, args.bins))
+    axs.imshow(mls.T, aspect=mls_dur/mls.shape[1]*0.2, interpolation='nearest', origin='lower', vmin=mls_max-60., vmax=mls_max, extent=(0,mls_dur,0,mls.shape[1]), cmap=args.cmap)
+    axs.set_title('Magnitude NSGT, {0} scale, {1} bins, {2:.1f}-{3:.1f} Hz'.format(args.scale, args.bins, args.fmin, args.fmax))
     axs.set_xlabel('Time (s)')
     axs.set_ylabel('Frequency bin')
 
