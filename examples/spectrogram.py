@@ -18,8 +18,9 @@ from nsgt import NSGT, NSGT_sliced, LogScale, LinScale, MelScale, OctScale, VQLo
 from nsgt.fscale import Pow2Scale
 from nsgt.slicq import overlap_add_slicq
 
-
 from argparse import ArgumentParser
+
+
 parser = ArgumentParser()
 
 parser.add_argument("input", type=str, help="Input file")
@@ -30,6 +31,7 @@ parser.add_argument("--gamma", type=float, default=15, help="variable-q frequenc
 parser.add_argument("--cmap", type=str, default='hot', help="spectrogram color map")
 parser.add_argument("--scale", choices=('oct','cqlog','mel','bark','vqlog','pow2'), default='cqlog', help="Frequency scale")
 parser.add_argument("--bins", type=int, default=50, help="Number of frequency bins (total or per octave, default=%(default)s)")
+parser.add_argument("--fontsize", type=int, default=14, help="Plot font size, default=%(default)s)")
 parser.add_argument("--sllen", type=int, default=None, help="Slice length in samples (default=%(default)s)")
 parser.add_argument("--trlen", type=int, default=None, help="Transition area in samples (default=%(default)s)")
 parser.add_argument("--plot", action='store_true', help="Plot transform (needs installed matplotlib package)")
@@ -125,7 +127,7 @@ if args.plot:
     else:
         mls = 20.*torch.log10(torch.abs(overlap_add_slicq(c, flatten=args.flatten)))
 
-    plt.rcParams.update({'font.size': 14})
+    plt.rcParams.update({'font.size': args.fontsize})
     fig, axs = plt.subplots(1)
 
     print(f"Plotting t*f space")
@@ -137,7 +139,7 @@ if args.plot:
 
     mls = mls.T
 
-    #fs_coef = fs*slicq.coef_factor # frame rate of coefficients
+    fs_coef = fs*slicq.coef_factor # frame rate of coefficients
     #mls_dur = len(mls)/fs_coef # final duration of MLS
     mls_dur = dur if not args.flatten else 2*dur
 
