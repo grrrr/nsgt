@@ -144,10 +144,11 @@ if args.plot:
     mls_dur = dur if not args.flatten else 2*dur
 
     mls_max = torch.quantile(mls, 0.999)
-    axs.imshow(mls.T, aspect=mls_dur/mls.shape[1]*0.2, interpolation='nearest', origin='lower', vmin=mls_max-60., vmax=mls_max, extent=(0,mls_dur,0,mls.shape[1]), cmap=args.cmap)
+    axs.imshow(mls.T, interpolation='nearest', origin='lower', vmin=mls_max-60., vmax=mls_max, extent=(0,mls_dur,0,fs/2000), cmap=args.cmap, aspect=1000*mls_dur/fs)
     axs.set_title('Magnitude NSGT, {0} scale, {1} bins, {2:.1f}-{3:.1f} Hz'.format(args.scale, args.bins, args.fmin, args.fmax))
     axs.set_xlabel('Time (s)')
-    axs.set_ylabel('Frequency bin')
+    axs.set_ylabel('Frequency (kHz)')
+    axs.yaxis.get_major_locator().set_params(integer=True)
 
     sig = torch.mean(signal, dim=0)
     print(f'sig: {sig.shape} {fs}')
