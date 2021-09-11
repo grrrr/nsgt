@@ -61,27 +61,20 @@ else:
 freqs, qs = scl()
 #print(freqs)
 #print(['{0:.2f}'.format(q) for q in qs])
-
-print(', '.join(['{0:.2f}'.format(freq) for freq in freqs[:5]]))
-print()
-
-print(', '.join(['{0:.2f}'.format(freq) for freq in freqs[-5:]]))
-print()
-
-print(', '.join(['{0:.2f}'.format(q) for q in qs[:5]]))
-print()
-
-print(', '.join(['{0:.2f}'.format(q) for q in qs[-5:]]))
-print()
+#print(', '.join(['{0:.2f}'.format(freq) for freq in freqs[:5]]))
+#print()
+#print(', '.join(['{0:.2f}'.format(freq) for freq in freqs[-5:]]))
+#print()
+#print(', '.join(['{0:.2f}'.format(q) for q in qs[:5]]))
+#print()
+#print(', '.join(['{0:.2f}'.format(q) for q in qs[-5:]]))
+#print()
 
 # Read audio data
 sf = SndReader(args.input, sr=fs, chns=2)
 signal = sf()
 
 signal = [torch.tensor(sig) for sig in signal]
-
-pad = signal[0].shape[-1]-signal[-1].shape[-1]
-signal[-1] = torch.nn.functional.pad(signal[-1], (0, pad), mode='constant', value=0)
 signal = torch.cat(signal, dim=-1)
 
 # duration of signal in s
@@ -120,12 +113,23 @@ else:
 # add a batch
 c = torch.unsqueeze(c, dim=0)
 
+transform_name = 'sliCQT'
+
 if args.plot:
     # dB
     if args.nonsliced:
         mls = 20.*torch.log10(torch.abs(c))
+        transform_name = 'NSGT'
     else:
+        print(f'c shape: {c.shape}')
+        chop = c.shape[-1]
+        print(f'chop: {chop}')
         mls = 20.*torch.log10(torch.abs(overlap_add_slicq(c, flatten=args.flatten)))
+
+        print(f'pre-remove slice portions from the sides, mls: {mls.shape}')
+        mls = mls[:, :, :, int(chop/2):]
+        mls = mls[:, :, :, :-chop]
+        print(f'remove slice portions from the sides, mls: {mls.shape}')
 
     plt.rcParams.update({'font.size': args.fontsize})
     fig, axs = plt.subplots(1)
@@ -144,17 +148,16 @@ if args.plot:
     mls_dur = dur if not args.flatten else 2*dur
 
     mls_max = torch.quantile(mls, 0.999)
-    axs.imshow(mls.T, interpolation='nearest', origin='lower', vmin=mls_max-60., vmax=mls_max, extent=(0,mls_dur,0,fs/2000), cmap=args.cmap, aspect=1000*mls_dur/fs)
-    axs.set_title('Magnitude NSGT, {0} scale, {1} bins, {2:.1f}-{3:.1f} Hz'.format(args.scale, args.bins, args.fmin, args.fmax))
+    im = axs.imshow(mls.T, interpolation='nearest', origin='lower', vmin=mls_max-120., vmax=mls_max, extent=(0,mls_dur,0,fs/2000), cmap=args.cmap, aspect=1000*mls_dur/fs)
+    axs.set_title('Magnitude {4}, {0} scale, {1} bins, {2:.1f}-{3:.1f} Hz'.format(args.scale, args.bins, args.fmin, args.fmax, transform_name))
     axs.set_xlabel('Time (s)')
     axs.set_ylabel('Frequency (kHz)')
     axs.yaxis.get_major_locator().set_params(integer=True)
 
+    fig.colorbar(im, ax=axs, shrink=0.815, pad=0.006, label='dB')
+
     sig = torch.mean(signal, dim=0)
     print(f'sig: {sig.shape} {fs}')
-
-    #axs[1].specgram(sig, Fs=fs, NFFT=2048, noverlap=512, mode='magnitude', scale='dB', sides='onesided')
-    #axs[1].set_title(f'|STFT|')
 
     plt.subplots_adjust(wspace=0.001,hspace=0.001)
     plt.show()
