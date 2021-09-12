@@ -12,12 +12,14 @@ http://grrrr.org/nsgt
 import os
 from warnings import warn
 import torch
+import numpy
 from nsgt.plot import spectrogram
 
 from nsgt import NSGT, NSGT_sliced, LogScale, LinScale, MelScale, OctScale, VQLogScale, BarkScale, SndReader
 from nsgt.fscale import Pow2Scale
 
 from argparse import ArgumentParser
+import matplotlib.pyplot as plt
 
 
 parser = ArgumentParser()
@@ -115,7 +117,7 @@ c = torch.unsqueeze(c, dim=0)
 transform_name = 'sliCQT' if not args.nonsliced else 'NSGT'
 
 if args.fmin > 0.0:
-    freqs = [0.0]+freqs
+    freqs = numpy.r_[[0.], freqs]
 
 if args.plot:
     slicq_params = '{0} scale, {1} bins, {2:.1f}-{3:.1f} Hz'.format(args.scale, args.bins, args.fmin, args.fmax)
