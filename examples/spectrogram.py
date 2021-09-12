@@ -12,11 +12,10 @@ http://grrrr.org/nsgt
 import os
 from warnings import warn
 import torch
-import matplotlib.pyplot as plt
+from nsgt.plot import spectrogram
 
 from nsgt import NSGT, NSGT_sliced, LogScale, LinScale, MelScale, OctScale, VQLogScale, BarkScale, SndReader
 from nsgt.fscale import Pow2Scale
-from nsgt.slicq import overlap_add_slicq
 
 from argparse import ArgumentParser
 
@@ -113,51 +112,24 @@ else:
 # add a batch
 c = torch.unsqueeze(c, dim=0)
 
-transform_name = 'sliCQT'
+transform_name = 'sliCQT' if not args.nonsliced else 'NSGT'
+
+if args.fmin > 0.0:
+    freqs = [0.0]+freqs
 
 if args.plot:
-    # dB
-    if args.nonsliced:
-        mls = 20.*torch.log10(torch.abs(c))
-        transform_name = 'NSGT'
-    else:
-        print(f'c shape: {c.shape}')
-        chop = c.shape[-1]
-        print(f'chop: {chop}')
-        mls = 20.*torch.log10(torch.abs(overlap_add_slicq(c, flatten=args.flatten)))
+    slicq_params = '{0} scale, {1} bins, {2:.1f}-{3:.1f} Hz'.format(args.scale, args.bins, args.fmin, args.fmax)
 
-        print(f'pre-remove slice portions from the sides, mls: {mls.shape}')
-        mls = mls[:, :, :, int(chop/2):]
-        mls = mls[:, :, :, :-chop]
-        print(f'remove slice portions from the sides, mls: {mls.shape}')
-
-    plt.rcParams.update({'font.size': args.fontsize})
-    fig, axs = plt.subplots(1)
-
-    print(f"Plotting t*f space")
-
-    # remove batch
-    mls = torch.squeeze(mls, dim=0)
-    # mix down multichannel
-    mls = torch.mean(mls, dim=0)
-
-    mls = mls.T
-
-    fs_coef = fs*slicq.coef_factor # frame rate of coefficients
-    #mls_dur = len(mls)/fs_coef # final duration of MLS
-    mls_dur = dur if not args.flatten else 2*dur
-
-    mls_max = torch.quantile(mls, 0.999)
-    im = axs.imshow(mls.T, interpolation='nearest', origin='lower', vmin=mls_max-120., vmax=mls_max, extent=(0,mls_dur,0,fs/2000), cmap=args.cmap, aspect=1000*mls_dur/fs)
-    axs.set_title('Magnitude {4}, {0} scale, {1} bins, {2:.1f}-{3:.1f} Hz'.format(args.scale, args.bins, args.fmin, args.fmax, transform_name))
-    axs.set_xlabel('Time (s)')
-    axs.set_ylabel('Frequency (kHz)')
-    axs.yaxis.get_major_locator().set_params(integer=True)
-
-    fig.colorbar(im, ax=axs, shrink=0.815, pad=0.006, label='dB')
-
-    sig = torch.mean(signal, dim=0)
-    print(f'sig: {sig.shape} {fs}')
-
-    plt.subplots_adjust(wspace=0.001,hspace=0.001)
-    plt.show()
+    spectrogram(
+        c,
+        fs,
+        slicq.coef_factor,
+        transform_name,
+        freqs,
+        signal.shape[1],
+        sliced=not args.nonsliced,
+        flatten=args.flatten,
+        fontsize=args.fontsize,
+        cmap=args.cmap,
+        slicq_name=slicq_params
+    )

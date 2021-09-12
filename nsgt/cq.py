@@ -87,7 +87,7 @@ class NSGT:
         
     @property
     def coef_factor(self):
-        return float(self.ncoefs)/self.sl_len
+        return float(self.ncoefs)/self.Ls
     
     @property
     def slice_coefs(self):
