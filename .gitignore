@@ -9,3 +9,4 @@ nsgt/*.c
 .DS_Store
 .settings/
 *.wav
+*.png

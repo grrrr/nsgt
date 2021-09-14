@@ -25,6 +25,7 @@ import matplotlib.pyplot as plt
 parser = ArgumentParser()
 
 parser.add_argument("input", type=str, help="Input file")
+parser.add_argument("--output", type=str, help="output png path", default=None)
 parser.add_argument("--sr", type=int, default=44100, help="Sample rate used for the NSGT (default=%(default)s)")
 parser.add_argument("--fmin", type=float, default=50, help="Minimum frequency in Hz (default=%(default)s)")
 parser.add_argument("--fmax", type=float, default=22050, help="Maximum frequency in Hz (default=%(default)s)")
@@ -133,5 +134,6 @@ if args.plot:
         flatten=args.flatten,
         fontsize=args.fontsize,
         cmap=args.cmap,
-        slicq_name=slicq_params
+        slicq_name=slicq_params,
+        output_file=args.output
     )

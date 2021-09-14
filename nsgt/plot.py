@@ -4,7 +4,7 @@ import numpy
 from nsgt.slicq import overlap_add_slicq
 
 
-def spectrogram(c, fs, coef_factor, transform_name, freqs, frames, sliced=True, flatten=False, fontsize=14, cmap='inferno', slicq_name=''):
+def spectrogram(c, fs, coef_factor, transform_name, freqs, frames, sliced=True, flatten=False, fontsize=14, cmap='inferno', slicq_name='', output_file=None):
     # dB
     if not sliced:
         mls = 20.*torch.log10(torch.abs(c))
@@ -38,7 +38,11 @@ def spectrogram(c, fs, coef_factor, transform_name, freqs, frames, sliced=True, 
 
     mls_max = torch.quantile(mls, 0.999)
     print(f'mls_dur: {mls_dur}')
-    im = axs.pcolormesh(numpy.linspace(0.0, mls_dur, num=ncoefs), freqs/1000., mls.T, vmin=mls_max-120., vmax=mls_max, cmap=cmap)
+    try:
+        im = axs.pcolormesh(numpy.linspace(0.0, mls_dur, num=ncoefs), freqs/1000., mls.T, vmin=mls_max-120., vmax=mls_max, cmap=cmap)
+    except TypeError:
+        freqs = numpy.r_[[0.], freqs]
+        im = axs.pcolormesh(numpy.linspace(0.0, mls_dur, num=ncoefs), freqs/1000., mls.T, vmin=mls_max-120., vmax=mls_max, cmap=cmap)
 
     title = f'Magnitude {transform_name}'
 
@@ -54,4 +58,10 @@ def spectrogram(c, fs, coef_factor, transform_name, freqs, frames, sliced=True, 
     fig.colorbar(im, ax=axs, shrink=1.0, pad=0.006, label='dB')
 
     plt.subplots_adjust(wspace=0.001,hspace=0.001)
-    plt.show()
+
+    if output_file is not None:
+        DPI = fig.get_dpi()
+        fig.set_size_inches(2560.0/float(DPI),1440.0/float(DPI))
+        fig.savefig(output_file, dpi=DPI, bbox_inches='tight')
+    else:
+        plt.show()
