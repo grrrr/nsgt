@@ -47,7 +47,7 @@ def spectrogram(c, fs, coef_factor, transform_name, freqs, frames, sliced=True, 
     title = f'Magnitude {transform_name}'
 
     if slicq_name != '':
-        title += f' {slicq_name}'
+        title += f', {slicq_name}'
 
     axs.set_title(title)
 
