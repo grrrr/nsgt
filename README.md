@@ -12,25 +12,19 @@ This is the standalone version of the sliCQ transform used in https://github.com
 
 The NSGT or sliCQ allow for nonuniform time-frequency resolution. Following the example of the constant-Q transform, music can be analyzed by maintaining a constant-Q center frequency to frequency resolution ratio per bin, to have high frequency resolution at low frequencies and high time resolution at high frequencies.
 
-The spectrograms below show the magnitude transform of an excerpt of music (10 seconds from [Mestis - El Mestizo](https://www.youtube.com/watch?v=0kn2doStfp4)):
+The spectrograms below compares the magnitude STFT and the magnitude sliCQT of the [LTFAT glockenspiel signal](https://github.com/ltfat/ltfat/blob/master/signals/gspi.wav) with the xumx-sliCQ defaults of 262 bins on the Bark scale between 32.9-22050 Hz:
 
-<img src="./.github/spectrograms.png" width=768px />
+![specs](./.github/spectrograms.png)
 
 By using a varying time-frequency resolution, transients and tonal sounds are distinguished more clearly, making it a good choice for representing the spectral content of musical signals.
 
-The spectrogram above was generated with the [examples/spectrogram.py](https://github.com/sevagh/nsgt/blob/torch/examples/spectrogram.py) script with a 48-bin log scale (i.e. CQT) from 83-22050 Hz:
+The spectrogram above was generated with the [examples/spectrogram.py](https://github.com/sevagh/nsgt/blob/torch/examples/spectrogram.py) script:
 ```
 (nsgt-torch) $ python examples/spectrogram.py \
-                ./mestis.wav --sr 44100 \
-                --scale=cqlog --fmin 83.0 --fmax 22050 --bins 48 --sllen=32768 --trlen=4096 \
+                ./gspi.wav --sr 44100 \
+                --scale=bark --fmin 32.9 --fmax 22050 --bins 262 \
                 --plot
 ```
-
-Another example of a spectrogram showing the sliCQ's capability for good spectral representations for music is from my [xumx-sliCQ](https://github.com/sevagh/xumx-sliCQ) project:
-
-<img src="./.github/spectrograms_xumx_slicq.png" width=768px />
-
-The parameters are the same sliCQ used by default in the model: Bark, 262 bins, 32.9-22020 Hz, 18060 sllen, 4514 trlen.
 
 ## Tensor sliCQ transform
 
