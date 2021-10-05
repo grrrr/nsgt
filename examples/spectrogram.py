@@ -31,7 +31,7 @@ parser.add_argument("--fmin", type=float, default=50, help="Minimum frequency in
 parser.add_argument("--fmax", type=float, default=22050, help="Maximum frequency in Hz (default=%(default)s)")
 parser.add_argument("--gamma", type=float, default=15, help="variable-q frequency offset per band")
 parser.add_argument("--cmap", type=str, default='hot', help="spectrogram color map")
-parser.add_argument("--scale", choices=('oct','cqlog','mel','bark','vqlog','pow2'), default='cqlog', help="Frequency scale")
+parser.add_argument("--scale", choices=('oct','cqlog','mel','bark','Bark','vqlog','pow2'), default='cqlog', help="Frequency scale")
 parser.add_argument("--bins", type=int, default=50, help="Number of frequency bins (total or per octave, default=%(default)s)")
 parser.add_argument("--fontsize", type=int, default=14, help="Plot font size, default=%(default)s)")
 parser.add_argument("--sllen", type=int, default=None, help="Slice length in samples (default=%(default)s)")
@@ -48,7 +48,7 @@ if not os.path.exists(args.input):
 fs = args.sr
 
 # build transform
-scales = {'cqlog':LogScale, 'lin':LinScale, 'mel':MelScale, 'oct':OctScale, 'bark':BarkScale, 'vqlog':VQLogScale, 'pow2':Pow2Scale}
+scales = {'cqlog':LogScale, 'lin':LinScale, 'mel':MelScale, 'oct':OctScale, 'bark':BarkScale, 'Bark':BarkScale, 'vqlog':VQLogScale, 'pow2':Pow2Scale}
 try:
     scale = scales[args.scale]
 except KeyError:
