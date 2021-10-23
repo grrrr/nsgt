@@ -82,7 +82,12 @@ class SndReader:
                 m = re.match(r"^(ffmpeg|avconv) version.*Duration: (\d\d:\d\d:\d\d.\d\d),.*Audio: (.+), (\d+) Hz, (.+), (.+), (\d+) kb/s", " ".join(fmtout.split('\n')))
                 if m is not None:
                     self.samplerate = int(m.group(4)) if not sr else int(sr)
-                    self.channels = {'mono':1, '1 channels (FL+FR)':1, 'stereo':2}[m.group(5)] if not chns else chns
+                    chdef = m.group(5)
+                    try:
+                        self.channels = {'mono':1, '1 channels (FL+FR)':1, 'stereo':2, 'hexadecagonal':16}[chdef] if not chns else chns
+                    except:
+                        print(f"Channel definition '{chdef}' unknown")
+                        raise
                     dur = reduce(lambda x,y: x*60+y, list(map(float, m.group(2).split(':'))))
                     self.frames = int(dur*self.samplerate)  # that's actually an estimation, because of potential resampling with round-off errors
                     pipe = sp.Popen([ffmpeg,
