@@ -83,11 +83,14 @@ class SndReader:
                 if m is not None:
                     self.samplerate = int(m.group(4)) if not sr else int(sr)
                     chdef = m.group(5)
-                    try:
-                        self.channels = {'mono':1, '1 channels (FL+FR)':1, 'stereo':2, 'hexadecagonal':16}[chdef] if not chns else chns
-                    except:
-                        print(f"Channel definition '{chdef}' unknown")
-                        raise
+                    if chdef.endswith(" channels") and len(chdef.split()) == 2:
+                        self.channels = int(chdef.split()[0])
+                    else:
+                        try:
+                            self.channels = {'mono':1, '1 channels (FL+FR)':1, 'stereo':2, 'hexadecagonal':16}[chdef] if not chns else chns
+                        except:
+                            print(f"Channel definition '{chdef}' unknown")
+                            raise
                     dur = reduce(lambda x,y: x*60+y, list(map(float, m.group(2).split(':'))))
                     self.frames = int(dur*self.samplerate)  # that's actually an estimation, because of potential resampling with round-off errors
                     pipe = sp.Popen([ffmpeg,
