@@ -71,7 +71,7 @@ class SndReader:
                     self.frames = sf.frames()
                 
                     self.rdr = sndreader(sf, blksz, dtype=dtype)
-                    fnd = True                
+                    fnd = True
         
         if not fnd:
             ffmpeg = findfile('ffmpeg') or findfile('avconv')
@@ -109,9 +109,10 @@ class SndReader:
                             data = pipe.stdout.read(bufsz)
                             if len(data) == 0:
                                 break
-                            yield np.fromstring(data, dtype=dtype).reshape((-1, self.channels)).T
+                            data = np.fromstring(data, dtype=dtype)
+                            yield data.reshape((-1, self.channels)).T
                     self.rdr = rdr()
-                    fnd = True                
+                    fnd = True
                 
         if not fnd:
             raise IOError("Format not usable")
