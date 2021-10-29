@@ -4,7 +4,7 @@
 Python implementation of Non-Stationary Gabor Transform (NSGT)
 derived from MATLAB code by NUHAG, University of Vienna, Austria
 
-Thomas Grill, 2011-2015
+Thomas Grill, 2011-2021
 http://grrrr.org/nsgt
 
 Austrian Research Institute for Artificial Intelligence (OFAI)
@@ -19,21 +19,22 @@ import sys
 from functools import reduce
 
 try:
-    from scikits.audiolab import Sndfile, Format
+    from pysndfile import PySndfile, construct_format
 except:
-    Sndfile = None
+    PySndfile = None
     
 def sndreader(sf, blksz=2**16, dtype=np.float32):
+    frames = sf.frames()
     if dtype is float:
         dtype = np.float64 # scikits.audiolab needs numpy types
     if blksz < 0:
-        blksz = sf.nframes
-    if sf.channels > 1: 
+        blksz = frames
+    if sf.channels() > 1: 
         channels = lambda s: s.T
     else:
         channels = lambda s: s.reshape((1,-1))
-    for offs in range(0, sf.nframes, blksz):
-        data = sf.read_frames(min(sf.nframes-offs, blksz), dtype=dtype)
+    for offs in range(0, frames, blksz):
+        data = sf.read_frames(min(frames-offs, blksz), dtype=dtype)
         yield channels(data)
     
 def sndwriter(sf, blkseq, maxframes=None):
@@ -57,17 +58,17 @@ class SndReader:
     def __init__(self, fn, sr=None, chns=None, blksz=2**16, dtype=np.float32):
         fnd = False
                 
-        if not fnd and (Sndfile is not None):
+        if not fnd and (PySndfile is not None):
             try:
-                sf = Sndfile(fn)
+                sf = PySndfile(fn, mode='r')
             except IOError:
                 pass
             else:
-                if (sr is None or sr == sf.samplerate) and (chns is None or chns == sf.channels):
+                if (sr is None or sr == sf.samplerate()) and (chns is None or chns == sf.channels()):
                     # no resampling required
-                    self.channels = sf.channels
-                    self.samplerate = sf.samplerate
-                    self.frames = sf.nframes
+                    self.channels = sf.channels()
+                    self.samplerate = sf.samplerate()
+                    self.frames = sf.frames()
                 
                     self.rdr = sndreader(sf, blksz, dtype=dtype)
                     fnd = True                
@@ -103,7 +104,7 @@ class SndReader:
     #                    bufsize=self.samplerate*self.channels*4*50,
                         stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
                     def rdr():
-                        bufsz = ((blksz*4)//self.channels)*self.channels
+                        bufsz = (blksz//self.channels)*self.channels*4
                         while True:
                             data = pipe.stdout.read(bufsz)
                             if len(data) == 0:
@@ -121,8 +122,8 @@ class SndReader:
 
 class SndWriter:
     def __init__(self, fn, samplerate, filefmt='wav', datafmt='pcm16', channels=1):
-        fmt = Format(filefmt, datafmt)
-        self.sf = Sndfile(fn, mode='w', format=fmt, channels=channels, samplerate=samplerate)
+        fmt = construct_format(filefmt, datafmt)
+        self.sf = PySndfile(fn, mode='w', format=fmt, channels=channels, samplerate=samplerate)
         
     def __call__(self, sigblks, maxframes=None):
         sndwriter(self.sf, sigblks, maxframes=None)
