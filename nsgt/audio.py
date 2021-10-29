@@ -103,8 +103,9 @@ class SndReader:
     #                    bufsize=self.samplerate*self.channels*4*50,
                         stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
                     def rdr():
+                        bufsz = ((blksz*4)//self.channels)*self.channels
                         while True:
-                            data = pipe.stdout.read(blksz*4)
+                            data = pipe.stdout.read(bufsz)
                             if len(data) == 0:
                                 break
                             yield np.fromstring(data, dtype=dtype).reshape((-1, self.channels)).T
