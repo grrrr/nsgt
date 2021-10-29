@@ -1,7 +1,7 @@
 Python implementation of Non-Stationary Gabor Transform (NSGT)
 derived from MATLAB code by NUHAG, University of Vienna, Austria
 
-Thomas Grill, 2011-2017
+Thomas Grill, 2011-2021
 http://grrrr.org/nsgt
 
 Austrian Research Institute for Artificial Intelligence (OFAI)
@@ -20,8 +20,8 @@ Optional dependencies:
 PyFFTW3 (https://launchpad.net/pyfftw)
 will greatly speed up the NSGT transformation if fftw3 is installed on your system
 
-scikits.audiolab (http://pypi.python.org/pypi/scikits.audiolab)
-is needed for using the built-in audio import/streaming functionality
+pysndfile (https://pypi.org/project/pysndfile)
+is recommended for using the built-in audio import/streaming functionality (otherwise ffmpeg would be tried)
 
 
 Installation:
