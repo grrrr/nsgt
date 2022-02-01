@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import torch
 import numpy
-from nsgt.slicq import overlap_add_slicq
+from .slicq import overlap_add_slicq
 
 
 def spectrogram(c, fs, coef_factor, transform_name, freqs, frames, sliced=True, flatten=False, fontsize=14, cmap='inferno', slicq_name='', output_file=None):

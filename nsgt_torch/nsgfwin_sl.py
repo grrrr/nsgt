@@ -1,5 +1,5 @@
 import numpy as np
-from .util import hannwin, blackharr, blackharrcw
+from .util import hannwin, blackharr
 from math import ceil
 from warnings import warn
 from itertools import chain
