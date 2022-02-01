@@ -32,22 +32,18 @@ minor edit by Gino Velasco 23.02.11
 """
 
 import numpy as np
-import torch
 
 from .util import chkM
 
+def nsdual(g, wins, nn, M=None):
 
-def nsdual(g, wins, nn, M=None, device="cpu"):
     M = chkM(M,g)
 
     # Construct the diagonal of the frame operator matrix explicitly
-    x = torch.zeros((nn,), dtype=float, device=torch.device(device))
+    x = np.zeros((nn,), dtype=float)
     for gi,mii,sl in zip(g, M, wins):
-        xa = torch.square(torch.fft.fftshift(gi))
+        xa = np.square(np.fft.fftshift(gi))
         xa *= mii
-
-        #print('xa: {0} {1} {2}'.format(xa.shape, xa.dtype, xa.device))
-        #print('x: {0} {1} {2}'.format(x.shape, x.dtype, x.device))
         x[sl] += xa
 
         # could be more elegant...
@@ -64,5 +60,5 @@ def nsdual(g, wins, nn, M=None, device="cpu"):
     # Using the frame operator and the original window sequence, compute 
     # the dual window sequence
 #    gd = [gi/N.fft.ifftshift(N.hstack((x[wi[0][0]],x[wi[0][1]],x[wi[1][0]],x[wi[1][1]]))) for gi,wi in izip(g,wins)]
-    gd = [gi/torch.fft.ifftshift(x[wi]) for gi,wi in zip(g,wins)]
+    gd = [gi/np.fft.ifftshift(x[wi]) for gi,wi in zip(g,wins)]
     return gd

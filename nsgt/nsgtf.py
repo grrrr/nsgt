@@ -12,14 +12,35 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 """
 
 import numpy as np
-import torch
 from math import ceil
 
 from .util import chkM
 from .fft import fftp, ifftp
 
+try:
+    # try to import cython version
+    from _nsgtf_loop import nsgtf_loop
+except ImportError:
+    nsgtf_loop = None
 
-def nsgtf_sl(f_slices, g, wins, nn, M=None, matrixform=False, real=False, reducedform=0, measurefft=False, multithreading=False, device="cpu"):
+if nsgtf_loop is None:
+    from .nsgtf_loop import nsgtf_loop
+
+if False:
+    # what about theano?
+    try:
+        import theano as T
+    except ImportError:
+        T = None
+
+try:
+    import multiprocessing as MP
+except ImportError:
+    MP = None
+
+
+#@profile
+def nsgtf_sl(f_slices, g, wins, nn, M=None, real=False, reducedform=0, measurefft=False, multithreading=False):
     M = chkM(M,g)
     dtype = g[0].dtype
     
@@ -35,75 +56,46 @@ def nsgtf_sl(f_slices, g, wins, nn, M=None, matrixform=False, real=False, reduce
     maxLg = max(int(ceil(float(len(gii))/mii))*mii for mii,gii in zip(M[sl],g[sl]))
     temp0 = None
     
-    mmap = map
+    if multithreading and MP is not None:
+        mmap = MP.Pool().map
+    else:
+        mmap = map
 
     loopparams = []
     for mii,gii,win_range in zip(M[sl],g[sl],wins[sl]):
         Lg = len(gii)
         col = int(ceil(float(Lg)/mii))
         assert col*mii >= Lg
-        assert col == 1
-
-        p = (mii,win_range,Lg,col)
+        gi1 = gii[:(Lg+1)//2]
+        gi2 = gii[-(Lg//2):]
+        p = (mii,gii,gi1,gi2,win_range,Lg,col)
         loopparams.append(p)
 
-    jagged_indices = [None]*len(loopparams)
-
-    ragged_giis = [torch.nn.functional.pad(torch.unsqueeze(gii, dim=0), (0, maxLg-gii.shape[0])) for gii in g[sl]]
-    giis = torch.conj(torch.cat(ragged_giis))
-
-    ft = fft(f_slices)
-
-    Ls = f_slices.shape[-1]
-
-    assert nn == Ls
-
-    if matrixform:
-        c = torch.zeros(*f_slices.shape[:2], len(loopparams), maxLg, dtype=ft.dtype, device=torch.device(device))
-
-        for j, (mii,win_range,Lg,col) in enumerate(loopparams):
-            t = ft[:, :, win_range]*torch.fft.fftshift(giis[j, :Lg])
-
-            sl1 = slice(None,(Lg+1)//2)
-            sl2 = slice(-(Lg//2),None)
-
-            c[:, :, j, sl1] = t[:, :, Lg//2:]  # if mii is odd, this is of length mii-mii//2
-            c[:, :, j, sl2] = t[:, :, :Lg//2]  # if mii is odd, this is of length mii//2
-
-        return ifft(c)
-    else:
-        block_ptr = -1
-        bucketed_tensors = []
-        ret = []
-
-        for j, (mii,win_range,Lg,col) in enumerate(loopparams):
-            
-            c = torch.zeros(*f_slices.shape[:2], 1, Lg, dtype=ft.dtype, device=torch.device(device))
-
-            t = ft[:, :, win_range]*torch.fft.fftshift(giis[j, :Lg])
-
-            sl1 = slice(None,(Lg+1)//2)
-            sl2 = slice(-(Lg//2),None)
-
-            c[:, :, 0, sl1] = t[:, :, Lg//2:]  # if mii is odd, this is of length mii-mii//2
-            c[:, :, 0, sl2] = t[:, :, :Lg//2]  # if mii is odd, this is of length mii//2
-
-            # start a new block
-            if block_ptr == -1 or bucketed_tensors[block_ptr][0].shape[-1] != Lg:
-                bucketed_tensors.append(c)
-                block_ptr += 1
-            else:
-                # concat block to previous contiguous frequency block with same time resolution
-                bucketed_tensors[block_ptr] = torch.cat([bucketed_tensors[block_ptr], c], dim=2)
-
-        # bucket-wise ifft
-        for bucketed_tensor in bucketed_tensors:
-            ret.append(ifft(bucketed_tensor))
-
-        return ret
+    # main loop over slices
+    for f in f_slices:
+        Ls = len(f)
         
+        # some preparation    
+        ft = fft(f)
 
+        if temp0 is None:
+            # pre-allocate buffer (delayed because of dtype)
+            temp0 = np.empty(maxLg, dtype=ft.dtype)
+        
+        # A small amount of zero-padding might be needed (e.g. for scale frames)
+        if nn > Ls:
+            ft = np.concatenate((ft, np.zeros(nn-Ls, dtype=ft.dtype)))
+        
+        # The actual transform
+        c = nsgtf_loop(loopparams, ft, temp0)
+            
+        # TODO: if matrixform, perform "2D" FFT along one axis
+        # this could also be nicely parallelized
+        y = list(mmap(ifft,c))
+        
+        yield y
+
+        
 # non-sliced version
-def nsgtf(f, g, wins, nn, M=None, real=False, reducedform=0, measurefft=False, multithreading=False, matrixform=False, device="cpu"):
-    ret = nsgtf_sl(torch.unsqueeze(f, dim=0), g, wins, nn, M=M, real=real, reducedform=reducedform, measurefft=measurefft, multithreading=multithreading, device=device, matrixform=matrixform)
-    return torch.squeeze(ret, dim=0)
+def nsgtf(f, g, wins, nn, M=None, real=False, reducedform=0, measurefft=False, multithreading=False):
+    return next(nsgtf_sl((f,), g, wins, nn, M=M, real=real, reducedform=reducedform, measurefft=measurefft, multithreading=multithreading))

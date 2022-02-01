@@ -33,21 +33,6 @@ class Scale:
         q = np.array([self.Q(b) for b in range(self.bnds)],dtype=float)
         return f,q
 
-    def suggested_sllen_trlen(self, sr):
-        f,q = self()
-
-        Ls = int(np.ceil(max((q*8.*sr)/f)))
-
-        # make sure its divisible by 4
-        Ls = Ls + -Ls % 4
-
-        sllen = Ls
-
-        trlen = sllen//4
-        trlen = trlen + -trlen % 2 # make trlen divisible by 2
-
-        return sllen, trlen
-
 
 class OctScale(Scale):
     def __init__(self, fmin, fmax, bpo, beyond=0):
@@ -100,32 +85,7 @@ class LogScale(Scale):
     
     def Q(self, bnd=None):
         return self.q
-
-
-class VQLogScale(Scale):
-    def __init__(self, fmin, fmax, bnds, gamma=0, beyond=0):
-        """
-        @param fmin: minimum frequency (Hz)
-        @param fmax: maximum frequency (Hz)
-        @param bnds: number of frequency bands (int)
-        @param gamma: decrease q at low frequencies with an offset
-        @param beyond: number of frequency bands below fmin and above fmax (int)
-        """
-        Scale.__init__(self, bnds+beyond*2)
-        lfmin = np.log2(fmin)
-        lfmax = np.log2(fmax)
-        odiv = (lfmax-lfmin)/(bnds-1)
-        lfmin_ = lfmin-odiv*beyond
-        lfmax_ = lfmax+odiv*beyond
-        self.fmin = 2**lfmin_
-        self.fmax = 2**lfmax_
-        self.pow2n = 2**odiv
-        #self.q = np.sqrt(self.pow2n)/(self.pow2n-1.)/2.
-        self.gamma = gamma
-        
-    def F(self, bnd=None):
-        return self.fmin*self.pow2n**(bnd if bnd is not None else np.arange(self.bnds)) + self.gamma
-
+    
 
 class LinScale(Scale):
     def __init__(self, fmin, fmax, bnds, beyond=0):
@@ -189,66 +149,3 @@ class MelScale(Scale):
         pow2n = np.power(2, 1./odivs)
         return np.sqrt(pow2n)/(pow2n-1.)/2.
     
-
-def hz2bark(f):
-    #       HZ2BARK         Converts frequencies Hertz (Hz) to Bark
-    #
-    b = 6 * np.arcsinh(f/600)
-    return b
-
-
-def bark2hz(b):
-    #       BARK2HZ         Converts frequencies Bark to Hertz (HZ)
-    #
-    f = 600*np.sinh(b/6)
-    return f
-
-
-class BarkScale(Scale):
-    def __init__(self, fmin, fmax, bnds, beyond=0):
-        """
-        @param fmin: minimum frequency (Hz)
-        @param fmax: maximum frequency (Hz)
-        @param bnds: number of frequency bands (int)
-        @param beyond: number of frequency bands below fmin and above fmax (int)
-        """
-        bmin = hz2bark(fmin)
-        bmax = hz2bark(fmax)
-        Scale.__init__(self, bnds+beyond*2)
-        self.fmin = float(fmin)
-        self.fmax = float(fmax)
-        self.bbnd = (bmax-bmin)/(bnds-1)  # mels per band
-        self.bmin = bmin-self.bbnd*beyond
-        self.bmax = bmax+self.bbnd*beyond
-
-    def F(self, bnd=None):
-        if bnd is None:
-            bnd = np.arange(self.bnds)
-        return bark2hz(bnd*self.bbnd+self.bmin)
-
-
-'''
-a toy frequency scale based on powers of two
-to demonstrate the flexibility of the sliCQT
-'''
-class Pow2Scale(Scale):
-    def __init__(self, fmin, fmax, bnds, beyond=0):
-        """
-        @param fmin: minimum frequency (Hz)
-        @param fmax: maximum frequency (Hz)
-        @param bnds: number of frequency bands (int)
-        @param beyond: number of frequency bands below fmin and above fmax (int)
-        """
-        self.start = 0
-        while 2**self.start < fmin:
-            self.start += 1
-
-        Scale.__init__(self, bnds-self.start+beyond*2)
-
-        if 2**(bnds-1) >= fmax:
-            raise ValueError(f'too many frequency bands!')
-
-    def F(self, bnd=None):
-        if bnd is None:
-            bnd = np.arange(self.bnds)
-        return 2**(bnd+self.start)

@@ -1,43 +1,8 @@
-# -*- coding: utf-8
-
-"""
-Thomas Grill, 2011-2015
-http://grrrr.org/nsgt
-
---
-Original matlab code comments follow:
-
-NSGFWIN.M
----------------------------------------------------------------
- [g,rfbas,M]=nsgfwin(fmin,bins,sr,Ls) creates a set of windows whose
- centers correspond to center frequencies to be
- used for the nonstationary Gabor transform with varying Q-factor. 
----------------------------------------------------------------
-
-INPUT : fmin ...... Minimum frequency (in Hz)
-        bins ...... Vector consisting of the number of bins per octave
-        sr ........ Sampling rate (in Hz)
-        Ls ........ Length of signal (in samples)
-
-OUTPUT : g ......... Cell array of window functions.
-         rfbas ..... Vector of positions of the center frequencies.
-         M ......... Vector of lengths of the window functions.
-
-AUTHOR(s) : Monika Dörfler, Gino Angelo Velasco, Nicki Holighaus, 2010
-
-COPYRIGHT : (c) NUHAG, Dept.Math., University of Vienna, AUSTRIA
-http://nuhag.eu/
-Permission is granted to modify and re-distribute this
-code in any manner as long as this notice is preserved.
-All standard disclaimers apply.
-
-EXTERNALS : firwin
-"""
-
 import numpy as np
 from .util import hannwin,_isseq
 
-def nsgfwin(fmin, fmax ,bins, sr, Ls, min_win=4):
+
+def nsgfwin(fmin, fmax ,bins, sr, Ls, min_win=4, device="cpu"):
 
     nf = sr/2
     
@@ -78,7 +43,7 @@ def nsgfwin(fmin, fmax ,bins, sr, Ls, min_win=4):
     M[-1] = np.round(Ls-fbas[-2])
     
     M = np.clip(M, min_win, np.inf).astype(int)
-    g = [hannwin(m) for m in M]
+    g = [hannwin(m, device=device) for m in M]
     
     fbas[lbas] = (fbas[lbas-1]+fbas[lbas+1])/2
     fbas[lbas+2] = Ls-fbas[lbas]

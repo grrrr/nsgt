@@ -30,15 +30,13 @@ from .nsigtf import nsigtf
 from .util import calcwinrange
 from .fscale import OctScale
 from math import ceil
-import torch
-
 
 class NSGT:
-    def __init__(self, scale, fs, Ls, real=True, matrixform=False, reducedform=0, multichannel=False, measurefft=False, multithreading=False, dtype=torch.float32, device="cpu"):
+    def __init__(self, scale, fs, Ls, real=True, matrixform=False, reducedform=0, multichannel=False, measurefft=False, multithreading=False, dtype=float):
         assert fs > 0
         assert Ls > 0
         assert 0 <= reducedform <= 2
-
+        
         self.scale = scale
         self.fs = fs
         self.Ls = Ls
@@ -46,13 +44,11 @@ class NSGT:
         self.measurefft = measurefft
         self.multithreading = multithreading
         self.reducedform = reducedform
-
-        self.device = torch.device(device)
         
         self.frqs,self.q = scale()
 
         # calculate transform parameters
-        self.g,rfbas,self.M = nsgfwin(self.frqs, self.q, self.fs, self.Ls, sliced=False, dtype=dtype, device=self.device)
+        self.g,rfbas,self.M = nsgfwin(self.frqs, self.q, self.fs, self.Ls, sliced=False, dtype=dtype)
 
         if real:
             assert 0 <= reducedform <= 2
@@ -78,33 +74,32 @@ class NSGT:
             self.unchannelize = lambda s: s[0]
 
         # calculate shifts
-        self.wins,self.nn = calcwinrange(self.g, rfbas, self.Ls, device=self.device)
+        self.wins,self.nn = calcwinrange(self.g, rfbas, self.Ls)
         # calculate dual windows
-        self.gd = nsdual(self.g, self.wins, self.nn, self.M, device=self.device)
+        self.gd = nsdual(self.g, self.wins, self.nn, self.M)
         
-        self.fwd = lambda s: nsgtf(s, self.g, self.wins, self.nn, self.M, real=self.real, reducedform=self.reducedform, measurefft=self.measurefft, multithreading=self.multithreading, device=self.device, matrixform=matrixform)
-        self.bwd = lambda c: nsigtf(c, self.gd, self.wins, self.nn, self.Ls, real=self.real, reducedform=self.reducedform, measurefft=self.measurefft, multithreading=self.multithreading, device=self.device)
+        self.fwd = lambda s: nsgtf(s, self.g, self.wins, self.nn, self.M, real=self.real, reducedform=self.reducedform, measurefft=self.measurefft, multithreading=self.multithreading)
+        self.bwd = lambda c: nsigtf(c, self.gd, self.wins, self.nn, self.Ls, real=self.real, reducedform=self.reducedform, measurefft=self.measurefft, multithreading=self.multithreading)
         
     @property
     def coef_factor(self):
-        return float(self.ncoefs)/self.Ls
+        return float(self.ncoefs)/self.sl_len
     
     @property
     def slice_coefs(self):
         return self.ncoefs
     
+
     def forward(self, s):
         'transform'
         s = self.channelize(s)
-        #c = list(map(self.fwd, s))
-        c = self.fwd(s)
+        c = list(map(self.fwd, s))
         return self.unchannelize(c)
 
     def backward(self, c):
         'inverse transform'
         c = self.channelize(c)
-        #s = list(map(self.bwd,c))
-        s = self.bwd(c)
+        s = list(map(self.bwd,c))
         return self.unchannelize(s)
     
 class CQ_NSGT(NSGT):

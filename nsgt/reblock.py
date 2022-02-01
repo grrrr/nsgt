@@ -12,10 +12,9 @@ AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 """
 
 import numpy as np
-import torch
 
 
-def reblock(sseq, blocksize, dtype=None, fulllast=True, padding=0, multichannel=False, device="cpu"):
+def reblock(sseq, blocksize, dtype=None, fulllast=True, padding=0, multichannel=False):
     block = None
     dt = None
     chns = None
@@ -42,15 +41,13 @@ def reblock(sseq, blocksize, dtype=None, fulllast=True, padding=0, multichannel=
                         dt = dtype
                 chns = len(si)
 
-                block = torch.empty(chns,blocksize, dtype=torch.float32, device=torch.device(device))
+                block = np.empty((chns,blocksize), dtype=dt)
                 blockrem = block
                 
-            sout = torch.cat([torch.unsqueeze(sj[:blockrem.shape[1]], dim=0) for sj in si])
-
-            avail = sout.shape[1]
-
-            blockrem[:, :avail] = sout[:, :]
-
+            sout = [sj[:blockrem.shape[1]] for sj in si]
+            avail = len(sout[0])
+            for blr,souti in zip(blockrem, sout):
+                blr[:avail] = souti # copy data per channel
             si = [sj[avail:] for sj in si]  # move ahead in input block
             blockrem = blockrem[:,avail:]  # move ahead in output block
             
