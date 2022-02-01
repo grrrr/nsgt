@@ -10,3 +10,4 @@ nsgt/*.c
 .settings/
 *.wav
 *.png
+src/

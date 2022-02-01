@@ -1,24 +1,3 @@
-# -*- coding: utf-8
-
-"""
-Python implementation of Non-Stationary Gabor Transform (NSGT)
-derived from MATLAB code by NUHAG, University of Vienna, Austria
-
-Thomas Grill, 2011-2015
-http://grrrr.org/nsgt
-
-Austrian Research Institute for Artificial Intelligence (OFAI)
-AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
-
---
-
-% Perfect reconstruction sliCQ
-
-% right now, even slice length (sl_len) is required. Parameters are the
-% same as NSGTF plus slice length, minimal required window length, 
-% Q-factor variation, and test run parameters.
-"""
-
 import torch
 import numpy as np
 from itertools import cycle, chain, tee

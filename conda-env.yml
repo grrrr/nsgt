@@ -1,4 +1,4 @@
-name: slicqt-torch
+name: nsgt-torch
 
 channels:
   - default
