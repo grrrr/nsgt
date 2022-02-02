@@ -7,48 +7,31 @@ import torch.nn as nn
 from torch.nn.functional import interpolate
 import warnings
 
-from .slicq import NSGT_sliced
+from .slicq import NSGT
 from .fscale import SCALES_BY_NAME
-
-
-
-def atan2(y, x):
-    r"""Element-wise arctangent function of y/x.
-    Returns a new tensor with signed angles in radians.
-    It is an alternative implementation of torch.atan2
-
-    Args:
-        y (Tensor): First input tensor
-        x (Tensor): Second input tensor [shape=y.shape]
-
-    Returns:
-        Tensor: [shape=y.shape].
-    """
-    pi = 2 * torch.asin(torch.tensor(1.0))
-    x += ((x == 0) & (y == 0)) * 1.0
-    out = torch.atan(y / x)
-    out += ((y >= 0) & (x < 0)) * pi
-    out -= ((y < 0) & (x < 0)) * pi
-    out *= 1 - ((y > 0) & (x == 0)) * 1.0
-    out += ((y > 0) & (x == 0)) * (pi / 2)
-    out *= 1 - ((y < 0) & (x == 0)) * 1.0
-    out += ((y < 0) & (x == 0)) * (-pi / 2)
-    return out
 
 
 def make_filterbanks(nsgt_base, sample_rate=44100.0):
     if sample_rate != 44100.0:
         raise ValueError('i was lazy and harcoded a lot of 44100.0, forgive me')
 
-    encoder = SliCQT(nsgt_base)
-    decoder = ISliCQT(nsgt_base)
+    encoder = TorchNSGT(nsgt_base)
+    decoder = TorchINSGT(nsgt_base)
 
     return encoder, decoder
 
 
-class SliCQTBase(nn.Module):
-    def __init__(self, scale, fbins, fmin, fmax=22050, fs=44100, device="cuda", gamma=25.):
-        super(SliCQTBase, self).__init__()
+class NSGTBase(nn.Module):
+    allowed_matrixforms = ['ragged', 'interpolated', 'zeropad']
+    allowed_chunk_strategies = ['no_overlap', 'hann']
+
+    def __init__(self,
+        scale, fbins, fmin, N, fmax=22050, gamma=25.,
+        matrixform='ragged',
+        chunk_strategy='no_overlap', n_overlap=None,
+        fs=44100, device="cpu"
+    ):
+        super(NSGTBase self).__init__()
         self.fbins = fbins
         self.fmin = fmin
         self.gamma = gamma
@@ -69,15 +52,24 @@ class SliCQTBase(nn.Module):
             scl_args = (self.fmin, self.fmax, self.fbins, self.gamma)
         else:
             scl_args = (self.fmin, self.fmax, self.fbins)
-
         self.scl = scl_fn(*scl_args)
 
-        self.sllen, self.trlen = self.scl.suggested_sllen_trlen(fs)
-        print(f'sllen, trlen: {self.sllen}, {self.trlen}')
-
-        self.nsgt = NSGT_sliced(self.scl, self.sllen, self.trlen, fs, real=True, multichannel=True, device=device)
-        self.M = self.nsgt.ncoefs
+        self.device = device
         self.fs = fs
+
+        if matrixform not in NSGTBase.allowed_matrixforms:
+            raise ValueError(f'{matrixform} is not one of the allowed values: {NSGTBase.allowed_matrixforms}')
+
+        self.matrixform = matrixform
+        self.chunk_strategy = chunk_strategy
+
+        self.nsgt = None
+        if self.matrixform == 'zeropad':
+            self.nsgt = NSGT(self.scl, self.sllen, self.trlen, fs, N, real=True, multichannel=True, matrixform=True, device=self.device)
+        else:
+            self.nsgt = NSGT(self.scl, self.sllen, self.trlen, fs, N, real=True, multichannel=True, matrixform=False, device=self.device)
+
+        self.M = self.nsgt.ncoefs
         self.fbins_actual = self.nsgt.fbins_actual
 
     def max_bins(self, bandwidth): # convert hz bandwidth into bins
@@ -88,7 +80,7 @@ class SliCQTBase(nn.Module):
         return max_bin+1
 
     def predict_input_size(self, batch_size, nb_channels, seq_dur_s):
-        fwd = SliCQT(self)
+        fwd = TorchNSGT(self)
 
         x = torch.rand((batch_size, nb_channels, int(seq_dur_s*self.fs)), dtype=torch.float32)
         shape = x.size()
@@ -102,9 +94,9 @@ class SliCQTBase(nn.Module):
         return self
 
 
-class SliCQT(nn.Module):
+class TorchNSGT(nn.Module):
     def __init__(self, nsgt):
-        super(SliCQT, self).__init__()
+        super(TorchNSGT, self).__init__()
         self.nsgt = nsgt
 
     def _apply(self, fn):
@@ -118,45 +110,22 @@ class SliCQT(nn.Module):
         # pack batch
         x = x.view(-1, shape[-1])
 
-        C = self.nsgt.nsgt.forward((x,))
+        C = self.nsgt.nsgt.forward(x)
 
         for i, nsgt_f in enumerate(C):
-            nsgt_f = torch.moveaxis(nsgt_f, 0, -2)
             nsgt_f = torch.view_as_real(nsgt_f)
             # unpack batch
-            nsgt_f = nsgt_f.view(shape[:-1] + nsgt_f.shape[-4:])
+            nsgt_f = nsgt_f.view(shape[:-1] + nsgt_f.shape[-3:])
             C[i] = nsgt_f
 
+        if self.nsgt.matrixform == 'ragged':
+            return C
+
+        # do some interpolation here
         return C
 
-    def overlap_add(self, slicq):
-        if type(slicq) == list:
-            ret = [None]*len(slicq)
-            for i, slicq_ in enumerate(slicq):
-                ret[i] = self.overlap_add(slicq_)
-            return ret
-        nb_samples, nb_channels, nb_f_bins, nb_slices, nb_m_bins = slicq.shape
-
-        nwin = nb_m_bins
-
-        ncoefs = ((1+nb_slices)*nb_m_bins)//2
-
-        hop = nwin//2 # 50% overlap window
-
-        out = torch.zeros((nb_samples, nb_channels, nb_f_bins, ncoefs), dtype=slicq.dtype, device=slicq.device)
-
-        ptr = 0
-
-        for i in range(nb_slices):
-            # weighted overlap-add with last `hop` samples
-            # rectangular window
-            out[:, :, :, ptr:ptr+nwin] += slicq[:, :, :, i, :]
-            ptr += hop
-
-        return out
-
     @torch.no_grad()
-    def interpolate(self, slicq: List[Tensor]) -> Tensor:
+    def interpolate(self, nsgt: List[Tensor]) -> Tensor:
         nb_samples, nb_channels = slicq[0].shape[:2]
         total_f_bins = sum([slicq_.shape[-2] for slicq_ in slicq])
         max_t_bins = max([slicq_.shape[-1] for slicq_ in slicq])
@@ -207,19 +176,9 @@ class SliCQT(nn.Module):
         return full_slicq
 
 
-class ISliCQT(nn.Module):
-    '''
-    wrapper for torch.istft to support batches
-    Args:
-         NSGT (Tensor): complex stft of
-             shape (nb_samples, nb_channels, nb_bins, nb_frames, complex=2)
-             last axis is stacked real and imaginary
-        OR
-             shape (nb_samples, nb_targets, nb_channels, nb_bins, nb_frames, complex=2)
-             last axis is stacked real and imaginary
-     '''
+class TorchINSGT(nn.Module):
     def __init__(self, nsgt):
-        super(ISliCQT, self).__init__()
+        super(TorchINSGT, self).__init__()
         self.nsgt = nsgt
 
     def _apply(self, fn):
@@ -279,3 +238,27 @@ def magphase_2_complex(C_mag, C_phase):
         C_cplx[i] = C_cplx_block
 
     return C_cplx
+
+
+def atan2(y, x):
+    r"""Element-wise arctangent function of y/x.
+    Returns a new tensor with signed angles in radians.
+    It is an alternative implementation of torch.atan2
+
+    Args:
+        y (Tensor): First input tensor
+        x (Tensor): Second input tensor [shape=y.shape]
+
+    Returns:
+        Tensor: [shape=y.shape].
+    """
+    pi = 2 * torch.asin(torch.tensor(1.0))
+    x += ((x == 0) & (y == 0)) * 1.0
+    out = torch.atan(y / x)
+    out += ((y >= 0) & (x < 0)) * pi
+    out -= ((y < 0) & (x < 0)) * pi
+    out *= 1 - ((y > 0) & (x == 0)) * 1.0
+    out += ((y > 0) & (x == 0)) * (pi / 2)
+    out *= 1 - ((y < 0) & (x == 0)) * 1.0
+    out += ((y < 0) & (x == 0)) * (-pi / 2)
+    return out

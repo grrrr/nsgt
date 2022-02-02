@@ -4,12 +4,11 @@ from itertools import chain
 from .fft import fftp, ifftp, irfftp
     
 
-#@profile
-def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, matrixform=False, measurefft=False, multithreading=False, device="cpu"):
+def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, matrixform=False, device="cpu"):
     dtype = gd[0].dtype
 
-    fft = fftp(measure=measurefft, dtype=dtype)
-    ifft = irfftp(measure=measurefft, dtype=dtype) if real else ifftp(measure=measurefft, dtype=dtype)
+    fft = fftp()
+    ifft = irfftp() if real else ifftp()
 
     if real:
         ln = len(gd)//2+1-reducedform*2
@@ -108,6 +107,6 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, matrixform
 
 
 # non-sliced version
-def nsigtf(c, gd, wins, nn, Ls=None, real=False, reducedform=0, measurefft=False, multithreading=False, device="cpu"):
-    ret = nsigtf_sl([torch.unsqueeze(c_, dim=0) for c_ in c], gd, wins, nn, Ls=Ls, real=real, reducedform=reducedform, measurefft=measurefft, multithreading=multithreading, device=device)
+def nsigtf(c, gd, wins, nn, Ls=None, real=False, reducedform=0, device="cpu"):
+    ret = nsigtf_sl([torch.unsqueeze(c_, dim=0) for c_ in c], gd, wins, nn, Ls=Ls, real=real, reducedform=reducedform, device=device)
     return torch.squeeze(ret, dim=0)

@@ -240,3 +240,17 @@ class Pow2Scale(Scale):
         if bnd is None:
             bnd = np.arange(self.bnds)
         return 2**(bnd+self.start)
+
+
+SCALES_BY_NAME = {
+    'cqlog': LogScale,
+    'lin': LinScale,
+    'mel': MelScale,
+    'bark': BarkScale,
+    'Bark': BarkScale,
+    'vqlog': VQLogScale,
+    'pow2': Pow2Scale
+}
+
+
+

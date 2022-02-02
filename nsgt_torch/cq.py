@@ -9,7 +9,7 @@ import torch
 
 
 class NSGT(torch.nn.Module):
-    def __init__(self, scale, fs, Ls, real=True, matrixform=False, reducedform=0, multichannel=False, measurefft=False, multithreading=False, dtype=torch.float32, device="cpu"):
+    def __init__(self, scale, fs, Ls, real=True, matrixform=False, reducedform=0, multichannel=False, dtype=torch.float32, device="cpu"):
         assert fs > 0
         assert Ls > 0
         assert 0 <= reducedform <= 2
@@ -20,8 +20,6 @@ class NSGT(torch.nn.Module):
         self.fs = fs
         self.Ls = Ls
         self.real = real
-        self.measurefft = measurefft
-        self.multithreading = multithreading
         self.reducedform = reducedform
         self.matrixform = matrixform
 
@@ -64,8 +62,8 @@ class NSGT(torch.nn.Module):
         self.setup_lambdas()
 
     def setup_lambdas(self):
-        self.fwd = lambda s: nsgtf(s, self.g, self.wins, self.nn, self.M, real=self.real, reducedform=self.reducedform, measurefft=self.measurefft, multithreading=self.multithreading, device=self.device, matrixform=self.matrixform)
-        self.bwd = lambda c: nsigtf(c, self.gd, self.wins, self.nn, self.Ls, real=self.real, reducedform=self.reducedform, measurefft=self.measurefft, multithreading=self.multithreading, device=self.device)
+        self.fwd = lambda s: nsgtf(s, self.g, self.wins, self.nn, self.M, real=self.real, reducedform=self.reducedform, device=self.device, matrixform=self.matrixform)
+        self.bwd = lambda c: nsigtf(c, self.gd, self.wins, self.nn, self.Ls, real=self.real, reducedform=self.reducedform, device=self.device)
 
     def _apply(self, fn):
         super(NSGT, self)._apply(fn)
@@ -97,7 +95,7 @@ class NSGT(torch.nn.Module):
         return self.unchannelize(s)
     
 class CQ_NSGT(NSGT):
-    def __init__(self, fmin, fmax, bins, fs, Ls, real=True, matrixform=False, reducedform=0, multichannel=False, measurefft=False, multithreading=False):
+    def __init__(self, fmin, fmax, bins, fs, Ls, real=True, matrixform=False, reducedform=0, multichannel=False):
         assert fmin > 0
         assert fmax > fmin
         assert bins > 0
@@ -107,4 +105,4 @@ class CQ_NSGT(NSGT):
         self.bins = bins
 
         scale = OctScale(fmin, fmax, bins)
-        NSGT.__init__(self, scale, fs, Ls, real, matrixform=matrixform, reducedform=reducedform, multichannel=multichannel, measurefft=measurefft, multithreading=multithreading)
+        NSGT.__init__(self, scale, fs, Ls, real, matrixform=matrixform, reducedform=reducedform, multichannel=multichannel)

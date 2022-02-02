@@ -97,8 +97,6 @@ class NSGT_sliced(torch.nn.Module):
                  min_win=16, Qvar=1,
                  real=False, recwnd=False, matrixform=False, reducedform=0,
                  multichannel=False,
-                 measurefft=False,
-                 multithreading=False,
                  dtype=torch.float32,
                  device="cpu"):
         assert fs > 0
@@ -119,8 +117,6 @@ class NSGT_sliced(torch.nn.Module):
         self.tr_area = tr_area
         self.fs = fs
         self.real = real
-        self.measurefft = measurefft
-        self.multithreading = multithreading
         self.userecwnd = recwnd
         self.reducedform = reducedform
         self.multichannel = multichannel
@@ -164,8 +160,8 @@ class NSGT_sliced(torch.nn.Module):
         self.setup_lambdas()
         
     def setup_lambdas(self):
-        self.fwd = lambda fc: nsgtf_sl(fc, self.g, self.wins, self.nn, self.M, real=self.real, reducedform=self.reducedform, matrixform=self.matrixform, measurefft=self.measurefft, multithreading=self.multithreading, device=self.device)
-        self.bwd = lambda cc: nsigtf_sl(cc, self.gd, self.wins, self.nn, self.sl_len ,real=self.real, reducedform=self.reducedform, matrixform=self.matrixform, measurefft=self.measurefft, multithreading=self.multithreading, device=self.device)
+        self.fwd = lambda fc: nsgtf_sl(fc, self.g, self.wins, self.nn, self.M, real=self.real, reducedform=self.reducedform, matrixform=self.matrixform, device=self.device)
+        self.bwd = lambda cc: nsigtf_sl(cc, self.gd, self.wins, self.nn, self.sl_len ,real=self.real, reducedform=self.reducedform, matrixform=self.matrixform, device=self.device)
 
     def _apply(self, fn):
         super(NSGT_sliced, self)._apply(fn)
@@ -221,7 +217,7 @@ class NSGT_sliced(torch.nn.Module):
 
 
 class CQ_NSGT_sliced(NSGT_sliced):
-    def __init__(self, fmin, fmax, bins, sl_len, tr_area, fs, min_win=16, Qvar=1, real=False, recwnd=False, matrixform=False, reducedform=0, multichannel=False, measurefft=False, multithreading=False):
+    def __init__(self, fmin, fmax, bins, sl_len, tr_area, fs, min_win=16, Qvar=1, real=False, recwnd=False, matrixform=False, reducedform=0, multichannel=False):
         assert fmin > 0
         assert fmax > fmin
         assert bins > 0
@@ -231,4 +227,4 @@ class CQ_NSGT_sliced(NSGT_sliced):
         self.bins = bins  # bins per octave
 
         scale = OctScale(fmin, fmax, bins)
-        NSGT_sliced.__init__(self, scale, sl_len, tr_area, fs, min_win, Qvar, real, recwnd, matrixform=matrixform, reducedform=reducedform, multichannel=multichannel, measurefft=measurefft, multithreading=multithreading)
+        NSGT_sliced.__init__(self, scale, sl_len, tr_area, fs, min_win, Qvar, real, recwnd, matrixform=matrixform, reducedform=reducedform, multichannel=multichannel)
