@@ -1,16 +1,3 @@
-# -*- coding: utf-8
-
-"""
-Python implementation of Non-Stationary Gabor Transform (NSGT)
-derived from MATLAB code by NUHAG, University of Vienna, Austria
-
-Thomas Grill, 2011-2015
-http://grrrr.org/nsgt
-
-Austrian Research Institute for Artificial Intelligence (OFAI)
-AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
-"""
-
 import numpy as np
 import subprocess as sp
 import os.path
@@ -73,7 +60,7 @@ class SndReader:
                     fnd = True                
         
         if not fnd:
-            ffmpeg = findfile('ffmpeg') or findfile('avconv')
+            ffmpeg = findfile('ffmpeg') or findfile('avconv') or findfile('ffmpeg.exe') or findfile('avconv.exe')
             if ffmpeg is not None:
                 pipe = sp.Popen([ffmpeg,'-i', fn,'-'],stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
                 fmtout = pipe.stderr.read()
@@ -114,7 +101,6 @@ class SndWriter:
     def __init__(self, fn, samplerate, filefmt='wav', datafmt='pcm16', channels=1):
         fmt = Format(filefmt, datafmt)
         self.sf = Sndfile(fn, mode='w', format=fmt, channels=channels, samplerate=samplerate)
-        
+
     def __call__(self, sigblks, maxframes=None):
         sndwriter(self.sf, sigblks, maxframes=None)
-

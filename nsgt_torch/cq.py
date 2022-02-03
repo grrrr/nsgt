@@ -2,10 +2,12 @@ from .nsgfwin_sl import nsgfwin
 from .nsdual import nsdual
 from .nsgtf import nsgtf
 from .nsigtf import nsigtf
-from .util import calcwinrange
-from .fscale import OctScale
+from .util import calcwinrange, complex_2_magphase, magphase_2_complex
+from .fscale import OctScale, SCALES_BY_NAME
 from math import ceil
 import torch
+from torch import Tensor
+from .interpolation import ALLOWED_MATRIX_FORMS, interpolate, deinterpolate
 
 
 class NSGT(torch.nn.Module):
@@ -118,13 +120,10 @@ def make_nsgt_filterbanks(nsgt_base, sample_rate=44100.0):
     return encoder, decoder
 
 
-class NSGTBase(nn.Module):
-    allowed_chunk_windows = ['rectangular', 'hann']
-
+class NSGTBase(torch.nn.Module):
     def __init__(self,
-        scale, fbins, fmin, N, fmax=22050, gamma=25.,
+        scale, fbins, fmin, chunk_N, fmax=22050, gamma=25.,
         matrixform='ragged',
-        chunk_window='rectangular', n_overlap=0,
         fs=44100, device="cpu"
     ):
         super(NSGTBase, self).__init__()
@@ -153,21 +152,17 @@ class NSGTBase(nn.Module):
         self.device = device
         self.fs = fs
 
-        if matrixform not in ALLOWED_MATRIXFORMS:
-            raise ValueError(f'{matrixform} is not one of the allowed values: {ALLOWED_MATRIXFORMS}')
+        if matrixform not in ALLOWED_MATRIX_FORMS:
+            raise ValueError(f'{matrixform} is not one of the allowed values: {NSGTBase.allowed_matrix_forms}')
         self.matrixform = matrixform
 
-        if chunk_window not in NSGTBase.allowed_chunk_windows:
-            raise ValueError(f"{chunk_window} is not one of the allowed values: {NSGTBase.allowed_chunk_windows}")
-        self.chunk_window = chunk_window
-        self.chunk_nwin = N
-        self.chunk_overlap = chunk_overlap
+        self.chunk_N = chunk_N
 
         self.nsgt = None
         if self.matrixform == 'zeropad':
-            self.nsgt = NSGT(self.scl, fs, N, real=True, multichannel=True, matrixform=True, device=self.device)
+            self.nsgt = NSGT(self.scl, fs, self.chunk_N, real=True, multichannel=True, matrixform=True, device=self.device)
         else:
-            self.nsgt = NSGT(self.scl, fs, N, real=True, multichannel=True, matrixform=False, device=self.device)
+            self.nsgt = NSGT(self.scl, fs, self.chunk_N, real=True, multichannel=True, matrixform=False, device=self.device)
 
         self.M = self.nsgt.ncoefs
         self.fbins_actual = self.nsgt.fbins_actual
@@ -184,7 +179,7 @@ class NSGTBase(nn.Module):
         return self
 
 
-class TorchNSGT(nn.Module):
+class TorchNSGT(torch.nn.Module):
     def __init__(self, nsgt):
         super(TorchNSGT, self).__init__()
         self.nsgt = nsgt
@@ -194,81 +189,45 @@ class TorchNSGT(nn.Module):
         return self
 
     def forward(self, x):
+        N = self.nsgt.chunk_N
         shape = x.size()
         nb_samples, nb_channels, nb_timesteps = shape
 
+        if nb_timesteps > N:
+            # do the padding and chunking
+            n_chunks = 1 + nb_timesteps//N
+            n_pad = N*n_chunks - nb_timesteps
+
+            # stack validation tracks into huge pile of segments of size N
+            x = torch.nn.functional.pad(x, (0, n_pad)).reshape(-1, nb_channels, N)
+
         # pack batch
-        x = x.view(-1, shape[-1])
+        x = x.view(-1, N)
 
         C = self.nsgt.nsgt.forward(x)
 
         for i, nsgt_f in enumerate(C):
             nsgt_f = torch.view_as_real(nsgt_f)
             # unpack batch
-            nsgt_f = nsgt_f.view(shape[:-1] + nsgt_f.shape[-3:])
+            nsgt_f = nsgt_f.view((-1, nb_channels) + nsgt_f.shape[-3:])
             C[i] = nsgt_f
 
         if self.nsgt.matrixform == 'ragged':
-            return C
+            return C, None
         elif self.nsgt.matrixform == 'zeropad':
-            return C[0]
-
-        # interpolation here
-        return C
-
-    @torch.no_grad()
-    def interpolate(self, nsgt: List[Tensor]) -> Tensor:
-        nb_samples, nb_channels = slicq[0].shape[:2]
-        total_f_bins = sum([slicq_.shape[-2] for slicq_ in slicq])
-        max_t_bins = max([slicq_.shape[-1] for slicq_ in slicq])
-
-        interpolated = torch.zeros((nb_samples, nb_channels, total_f_bins, max_t_bins), dtype=slicq[0].dtype, device=slicq[0].device)
-
-        fbin_ptr = 0
-        for i, slicq_ in enumerate(slicq):
-            nb_samples, nb_channels, nb_f_bins, nb_t_bins = slicq_.shape
-
-            if nb_t_bins == max_t_bins:
-                # same time width, no interpolation
-                interpolated[:, :, fbin_ptr:fbin_ptr+nb_f_bins, :] = slicq_
-            else:
-                # repeated interpolation
-                interp_factor = max_t_bins//nb_t_bins
-                max_assigned = nb_t_bins*interp_factor
-                rem = max_t_bins - max_assigned
-                interpolated[:, :, fbin_ptr:fbin_ptr+nb_f_bins, : max_assigned] = torch.repeat_interleave(slicq_, interp_factor, dim=-1)
-                interpolated[:, :, fbin_ptr:fbin_ptr+nb_f_bins, max_assigned : ] = torch.unsqueeze(slicq_[..., -1], dim=-1).repeat(1, 1, 1, rem)
-            fbin_ptr += nb_f_bins
-        return interpolated
-
-    @torch.no_grad()
-    def deinterpolate(self, interpolated: Tensor, ragged_shapes: List[Tuple[int]]) -> List[Tensor]:
-        max_t_bins = interpolated.shape[-1]
-        full_slicq = []
-        fbin_ptr = 0
-        for i, bucket_shape in enumerate(ragged_shapes):
-            curr_slicq = torch.zeros(bucket_shape, dtype=interpolated.dtype, device=interpolated.device)
-
-            nb_t_bins = bucket_shape[-1]
-            freqs = bucket_shape[-2]
-
-            if bucket_shape[-1] == interpolated.shape[-1]:
-                # same time width, no interpolation
-                curr_slicq = interpolated[:, :, fbin_ptr:fbin_ptr+freqs, :]
-            else:
-                # inverse of repeated interpolation
-                interp_factor = max_t_bins//nb_t_bins
-                select = torch.arange(0, max_t_bins,interp_factor, device=interpolated.device)
-                curr_slicq = torch.index_select(interpolated[:, :, fbin_ptr:fbin_ptr+freqs, :], -1, select)
-
-            # crop just in case
-            full_slicq.append(curr_slicq[..., : bucket_shape[-1]])
-
-            fbin_ptr += freqs
-        return full_slicq
+            return C[0], None
+        else:
+            Cmag, Cphase = complex_2_magphase(C)
+            Cmag, prev_shapes = interpolate(Cmag, self.nsgt.matrixform)
+            Cphase, prev_shapes = interpolate(Cphase, self.nsgt.matrixform)
+            print(f'Cmag: {Cmag[0].shape}')
+            print(f'Cphase: {Cphase[0].shape}')
+            C = magphase_2_complex(Cmag, Cphase)
+            print(f'C: {C[0].shape}')
+            return C[0], prev_shapes
 
 
-class TorchINSGT(nn.Module):
+class TorchINSGT(torch.nn.Module):
     def __init__(self, nsgt):
         super(TorchINSGT, self).__init__()
         self.nsgt = nsgt
@@ -278,6 +237,8 @@ class TorchINSGT(nn.Module):
         return self
 
     def forward(self, X_list, length: int) -> Tensor:
+        nb_samples, nb_channels, _ = X_list[0].shape
+
         X_complex = [None]*len(X_list)
         for i, X in enumerate(X_list):
             Xshape = len(X.shape)
@@ -296,9 +257,14 @@ class TorchINSGT(nn.Module):
 
             X_complex[i] = X
 
-        y = self.nsgt.nsgt.backward(X_complex, length)
+        y = self.nsgt.nsgt.backward(X_complex)
 
-        # unpack batch
-        y = y.view(*shape[:-3], -1)
+        N = self.nsgt.chunk_N
+        if length > N:
+            # undo the stacking and create the full original track
+            y = y.reshape(nb_samples, nb_channels, -1)[..., : length]
+        else:
+            # simply unpack batch
+            y = y.view(*shape[:-3], -1)
 
         return y

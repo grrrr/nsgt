@@ -1,10 +1,9 @@
 import matplotlib.pyplot as plt
 import torch
 import numpy
-from .slicq import overlap_add_slicq
 
 
-def spectrogram(c, fs, chop, coef_factor, transform_name, freqs, frames, sliced=True, flatten=False, fontsize=14, cmap='inferno', slicq_name='', output_file=None):
+def spectrogram(c, fs, chop, coef_factor, transform_name, freqs, frames, sliced=True, fontsize=14, cmap='inferno', slicq_name='', output_file=None):
     if type(c) != torch.Tensor:
         raise ValueError('only use this with interpolated_matrixform')
 

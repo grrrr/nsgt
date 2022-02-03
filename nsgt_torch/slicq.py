@@ -1,4 +1,5 @@
 import torch
+from torch import Tensor
 import numpy as np
 from itertools import cycle, chain, tee
 from math import ceil
@@ -9,35 +10,10 @@ from .nsdual import nsdual
 from .nsgfwin_sl import nsgfwin
 from .nsgtf import nsgtf_sl
 from .nsigtf import nsigtf_sl
-from .util import calcwinrange, ALLOWED_MATRIXFORMS
-from .fscale import OctScale
+from .util import calcwinrange
+from .interpolation import ALLOWED_MATRIX_FORMS, interpolate, deinterpolate
 from .reblock import reblock
-from .fscale import SCALES_BY_NAME
-
-
-def overlap_add_slicq(slicq, flatten=False):
-    # proper 50% overlap-add
-    if not flatten:
-        nb_samples, nb_slices, nb_channels, nb_f_bins, nb_m_bins = slicq.shape
-
-        window = nb_m_bins
-        hop = window//2 # 50% overlap window
-
-        ncoefs = nb_slices*nb_m_bins//2 + hop
-        out = torch.zeros((nb_samples, nb_channels, nb_f_bins, ncoefs), dtype=slicq.dtype, device=slicq.device)
-
-        ptr = 0
-
-        for i in range(nb_slices):
-            out[:, :, :, ptr:ptr+window] += slicq[:, i, :, :, :]
-            ptr += hop
-
-        return out
-    # flatten adjacent slices, just for demo purposes
-    else:
-        slicq = slicq.permute(0, 2, 3, 1, 4)
-        out = torch.flatten(slicq, start_dim=-2, end_dim=-1)
-        return out
+from .fscale import SCALES_BY_NAME, OctScale
 
 
 def arrange(cseq, fwd, device="cpu"):
@@ -126,8 +102,7 @@ class NSGT_sliced(torch.nn.Module):
         self.frqs,self.q = self.scale()
 
         self.g,self.rfbas,self.M = nsgfwin(self.frqs, self.q, self.fs, self.sl_len, sliced=True, min_win=min_win, Qvar=Qvar, dtype=dtype, device=self.device)
-        
-#        print "rfbas",self.rfbas/float(self.sl_len)*self.fs
+
         if real:
             assert 0 <= reducedform <= 2
             sl = slice(reducedform,len(self.g)//2+1-reducedform)
@@ -283,8 +258,8 @@ class SliCQTBase(torch.nn.Module):
 
         self.fs = fs
 
-        if matrixform not in ALLOWED_MATRIXFORMS:
-            raise ValueError(f'{matrixform} is not one of the allowed values: {ALLOWED_MATRIXFORMS}')
+        if matrixform not in ALLOWED_MATRIX_FORMS:
+            raise ValueError(f'{matrixform} is not one of the allowed values: {ALLOWED_MATRIX_FORMS}')
         self.matrixform = matrixform
 
         self.nsgt = None
@@ -337,16 +312,21 @@ class TorchSliCQT(torch.nn.Module):
             return C
         elif self.nsgt.matrixform == 'zeropad':
             return C[0]
+        else:
+            return interpolate(C)
 
-        # interpolation here
-        return C
-
-    def overlap_add(self, slicq):
+    @torch.no_grad()
+    def overlap_add(self, slicq, flatten=False):
         if type(slicq) == list:
             ret = [None]*len(slicq)
             for i, slicq_ in enumerate(slicq):
-                ret[i] = self.overlap_add(slicq_)
+                ret[i] = self.overlap_add(slicq_, flatten=flatten)
             return ret
+
+        if flatten:
+            out = torch.flatten(slicq, start_dim=-2, end_dim=-1)
+            return out
+
         nb_samples, nb_channels, nb_f_bins, nb_slices, nb_m_bins = slicq.shape
 
         nwin = nb_m_bins
@@ -366,57 +346,6 @@ class TorchSliCQT(torch.nn.Module):
             ptr += hop
 
         return out
-
-    @torch.no_grad()
-    def interpolate(self, slicq: List[Tensor]) -> Tensor:
-        nb_samples, nb_channels = slicq[0].shape[:2]
-        total_f_bins = sum([slicq_.shape[-2] for slicq_ in slicq])
-        max_t_bins = max([slicq_.shape[-1] for slicq_ in slicq])
-
-        interpolated = torch.zeros((nb_samples, nb_channels, total_f_bins, max_t_bins), dtype=slicq[0].dtype, device=slicq[0].device)
-
-        fbin_ptr = 0
-        for i, slicq_ in enumerate(slicq):
-            nb_samples, nb_channels, nb_f_bins, nb_t_bins = slicq_.shape
-
-            if nb_t_bins == max_t_bins:
-                # same time width, no interpolation
-                interpolated[:, :, fbin_ptr:fbin_ptr+nb_f_bins, :] = slicq_
-            else:
-                # repeated interpolation
-                interp_factor = max_t_bins//nb_t_bins
-                max_assigned = nb_t_bins*interp_factor
-                rem = max_t_bins - max_assigned
-                interpolated[:, :, fbin_ptr:fbin_ptr+nb_f_bins, : max_assigned] = torch.repeat_interleave(slicq_, interp_factor, dim=-1)
-                interpolated[:, :, fbin_ptr:fbin_ptr+nb_f_bins, max_assigned : ] = torch.unsqueeze(slicq_[..., -1], dim=-1).repeat(1, 1, 1, rem)
-            fbin_ptr += nb_f_bins
-        return interpolated
-
-    @torch.no_grad()
-    def deinterpolate(self, interpolated: Tensor, ragged_shapes: List[Tuple[int]]) -> List[Tensor]:
-        max_t_bins = interpolated.shape[-1]
-        full_slicq = []
-        fbin_ptr = 0
-        for i, bucket_shape in enumerate(ragged_shapes):
-            curr_slicq = torch.zeros(bucket_shape, dtype=interpolated.dtype, device=interpolated.device)
-
-            nb_t_bins = bucket_shape[-1]
-            freqs = bucket_shape[-2]
-
-            if bucket_shape[-1] == interpolated.shape[-1]:
-                # same time width, no interpolation
-                curr_slicq = interpolated[:, :, fbin_ptr:fbin_ptr+freqs, :]
-            else:
-                # inverse of repeated interpolation
-                interp_factor = max_t_bins//nb_t_bins
-                select = torch.arange(0, max_t_bins,interp_factor, device=interpolated.device)
-                curr_slicq = torch.index_select(interpolated[:, :, fbin_ptr:fbin_ptr+freqs, :], -1, select)
-
-            # crop just in case
-            full_slicq.append(curr_slicq[..., : bucket_shape[-1]])
-
-            fbin_ptr += freqs
-        return full_slicq
 
 
 class TorchISliCQT(torch.nn.Module):

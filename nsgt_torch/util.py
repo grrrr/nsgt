@@ -2,8 +2,6 @@ import numpy as np
 import torch
 from math import exp, floor, ceil, pi
 
-ALLOWED_MATRIXFORMS = ['ragged', 'zeropad', 'linear', 'bilinear', 'nearest', 'area', 'repeat']
-
 
 def hannwin(l, device="cpu"):
     r = torch.arange(l,dtype=float, device=torch.device(device))

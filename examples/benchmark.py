@@ -6,7 +6,7 @@ from warnings import warn
 
 from nsgt_torch.slicq import NSGT_sliced
 from nsgt_torch.fscale import SCALES_BY_NAME
-from nsgt_torch.audio import SndReader
+from nsgt.audio import SndReader
 from nsgt import NSGT_sliced as NSGT_sliced_old
 import time
 from argparse import ArgumentParser
