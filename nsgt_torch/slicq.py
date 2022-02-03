@@ -2,16 +2,17 @@ import torch
 import numpy as np
 from itertools import cycle, chain, tee
 from math import ceil
-
+from typing import List
 from .slicing import slicing
 from .unslicing import unslicing
 from .nsdual import nsdual
 from .nsgfwin_sl import nsgfwin
 from .nsgtf import nsgtf_sl
 from .nsigtf import nsigtf_sl
-from .util import calcwinrange
+from .util import calcwinrange, ALLOWED_MATRIXFORMS
 from .fscale import OctScale
 from .reblock import reblock
+from .fscale import SCALES_BY_NAME
 
 
 def overlap_add_slicq(slicq, flatten=False):
@@ -228,3 +229,227 @@ class CQ_NSGT_sliced(NSGT_sliced):
 
         scale = OctScale(fmin, fmax, bins)
         NSGT_sliced.__init__(self, scale, sl_len, tr_area, fs, min_win, Qvar, real, recwnd, matrixform=matrixform, reducedform=reducedform, multichannel=multichannel)
+
+
+def make_slicqt_filterbanks(slicqt_base, sample_rate=44100.0):
+    if sample_rate != 44100.0:
+        raise ValueError('i was lazy and harcoded a lot of 44100.0, forgive me')
+
+    encoder = TorchSliCQT(slicqt_base)
+    decoder = TorchISliCQT(slicqt_base)
+
+    return encoder, decoder
+
+
+class SliCQTBase(torch.nn.Module):
+    def __init__(self,
+        scale, fbins, fmin, fmax=22050, gamma=25.,
+        sllen=None, trlen=None,
+        matrixform='ragged',
+        fs=44100, device="cpu"
+    ):
+        super(SliCQTBase, self).__init__()
+        self.fbins = fbins
+        self.fmin = fmin
+        self.gamma = gamma
+        self.fmax = fmax
+
+        scl_fn = None
+        self.scl = None
+        scl_args = None
+        try:
+            scl_fn = SCALES_BY_NAME[scale]
+        except KeyError:
+            msg = f'unsupported frequency scale {scale}'
+            if scale == 'oct':
+                msg += '\n\tuse `cqlog` instead of `oct`'
+            raise ValueError(msg)
+
+        if scale == 'vqlog':
+            scl_args = (self.fmin, self.fmax, self.fbins, self.gamma)
+        else:
+            scl_args = (self.fmin, self.fmax, self.fbins)
+
+        self.scl = scl_fn(*scl_args)
+        self.device = device
+
+        self.sllen, self.trlen = self.scl.suggested_sllen_trlen(fs)
+
+        if sllen is not None and trlen is not None:
+            print(f'using user-supplied sllen, trlen: {sllen}, {trlen}')
+            self.sllen, self.trlen = sllen, trlen
+        else:
+            print(f'using suggested sllen, trlen: {self.sllen}, {self.trlen}')
+
+        self.fs = fs
+
+        if matrixform not in ALLOWED_MATRIXFORMS:
+            raise ValueError(f'{matrixform} is not one of the allowed values: {ALLOWED_MATRIXFORMS}')
+        self.matrixform = matrixform
+
+        self.nsgt = None
+        if self.matrixform == 'zeropad':
+            self.nsgt = NSGT_sliced(self.scl, self.sllen, self.trlen, fs, real=True, multichannel=True, matrixform=True, device=self.device)
+        else:
+            self.nsgt = NSGT_sliced(self.scl, self.sllen, self.trlen, fs, real=True, multichannel=True, matrixform=False, device=self.device)
+
+        self.M = self.nsgt.ncoefs
+        self.fbins_actual = self.nsgt.fbins_actual
+
+    def max_bins(self, bandwidth): # convert hz bandwidth into bins
+        if bandwidth is None:
+            return None
+        freqs, _ = self.scl()
+        max_bin = min(np.argwhere(freqs > bandwidth))[0]
+        return max_bin+1
+
+    def _apply(self, fn):
+        self.nsgt._apply(fn)
+        return self
+
+
+class TorchSliCQT(torch.nn.Module):
+    def __init__(self, nsgt):
+        super(TorchSliCQT, self).__init__()
+        self.nsgt = nsgt
+
+    def _apply(self, fn):
+        self.nsgt._apply(fn)
+        return self
+
+    def forward(self, x):
+        shape = x.size()
+        nb_samples, nb_channels, nb_timesteps = shape
+
+        # pack batch
+        x = x.view(-1, shape[-1])
+
+        C = self.nsgt.nsgt.forward((x,))
+
+        for i, nsgt_f in enumerate(C):
+            nsgt_f = torch.moveaxis(nsgt_f, 0, -2)
+            nsgt_f = torch.view_as_real(nsgt_f)
+            # unpack batch
+            nsgt_f = nsgt_f.view(shape[:-1] + nsgt_f.shape[-4:])
+            C[i] = nsgt_f
+
+        if self.nsgt.matrixform == 'ragged':
+            return C
+        elif self.nsgt.matrixform == 'zeropad':
+            return C[0]
+
+        # interpolation here
+        return C
+
+    def overlap_add(self, slicq):
+        if type(slicq) == list:
+            ret = [None]*len(slicq)
+            for i, slicq_ in enumerate(slicq):
+                ret[i] = self.overlap_add(slicq_)
+            return ret
+        nb_samples, nb_channels, nb_f_bins, nb_slices, nb_m_bins = slicq.shape
+
+        nwin = nb_m_bins
+
+        ncoefs = ((1+nb_slices)*nb_m_bins)//2
+
+        hop = nwin//2 # 50% overlap window
+
+        out = torch.zeros((nb_samples, nb_channels, nb_f_bins, ncoefs), dtype=slicq.dtype, device=slicq.device)
+
+        ptr = 0
+
+        for i in range(nb_slices):
+            # weighted overlap-add with last `hop` samples
+            # rectangular window
+            out[:, :, :, ptr:ptr+nwin] += slicq[:, :, :, i, :]
+            ptr += hop
+
+        return out
+
+    @torch.no_grad()
+    def interpolate(self, slicq: List[Tensor]) -> Tensor:
+        nb_samples, nb_channels = slicq[0].shape[:2]
+        total_f_bins = sum([slicq_.shape[-2] for slicq_ in slicq])
+        max_t_bins = max([slicq_.shape[-1] for slicq_ in slicq])
+
+        interpolated = torch.zeros((nb_samples, nb_channels, total_f_bins, max_t_bins), dtype=slicq[0].dtype, device=slicq[0].device)
+
+        fbin_ptr = 0
+        for i, slicq_ in enumerate(slicq):
+            nb_samples, nb_channels, nb_f_bins, nb_t_bins = slicq_.shape
+
+            if nb_t_bins == max_t_bins:
+                # same time width, no interpolation
+                interpolated[:, :, fbin_ptr:fbin_ptr+nb_f_bins, :] = slicq_
+            else:
+                # repeated interpolation
+                interp_factor = max_t_bins//nb_t_bins
+                max_assigned = nb_t_bins*interp_factor
+                rem = max_t_bins - max_assigned
+                interpolated[:, :, fbin_ptr:fbin_ptr+nb_f_bins, : max_assigned] = torch.repeat_interleave(slicq_, interp_factor, dim=-1)
+                interpolated[:, :, fbin_ptr:fbin_ptr+nb_f_bins, max_assigned : ] = torch.unsqueeze(slicq_[..., -1], dim=-1).repeat(1, 1, 1, rem)
+            fbin_ptr += nb_f_bins
+        return interpolated
+
+    @torch.no_grad()
+    def deinterpolate(self, interpolated: Tensor, ragged_shapes: List[Tuple[int]]) -> List[Tensor]:
+        max_t_bins = interpolated.shape[-1]
+        full_slicq = []
+        fbin_ptr = 0
+        for i, bucket_shape in enumerate(ragged_shapes):
+            curr_slicq = torch.zeros(bucket_shape, dtype=interpolated.dtype, device=interpolated.device)
+
+            nb_t_bins = bucket_shape[-1]
+            freqs = bucket_shape[-2]
+
+            if bucket_shape[-1] == interpolated.shape[-1]:
+                # same time width, no interpolation
+                curr_slicq = interpolated[:, :, fbin_ptr:fbin_ptr+freqs, :]
+            else:
+                # inverse of repeated interpolation
+                interp_factor = max_t_bins//nb_t_bins
+                select = torch.arange(0, max_t_bins,interp_factor, device=interpolated.device)
+                curr_slicq = torch.index_select(interpolated[:, :, fbin_ptr:fbin_ptr+freqs, :], -1, select)
+
+            # crop just in case
+            full_slicq.append(curr_slicq[..., : bucket_shape[-1]])
+
+            fbin_ptr += freqs
+        return full_slicq
+
+
+class TorchISliCQT(torch.nn.Module):
+    def __init__(self, nsgt):
+        super(TorchISliCQT, self).__init__()
+        self.nsgt = nsgt
+
+    def _apply(self, fn):
+        self.nsgt._apply(fn)
+        return self
+
+    def forward(self, X_list, length: int) -> Tensor:
+        X_complex = [None]*len(X_list)
+        for i, X in enumerate(X_list):
+            Xshape = len(X.shape)
+
+            X = torch.view_as_complex(X)
+
+            shape = X.shape
+
+            if Xshape == 6:
+                X = X.view(X.shape[0]*X.shape[1], *X.shape[2:])
+            else:
+                X = X.view(X.shape[0]*X.shape[1]*X.shape[2], *X.shape[3:])
+
+            # moveaxis back into into T x [packed-channels] x F1 x F2
+            X = torch.moveaxis(X, -2, 0)
+
+            X_complex[i] = X
+
+        y = self.nsgt.nsgt.backward(X_complex, length)
+
+        # unpack batch
+        y = y.view(*shape[:-3], -1)
+
+        return y

@@ -4,9 +4,17 @@ import torch
 import numpy
 
 from nsgt_torch.plot import spectrogram
-from nsgt_torch import NSGT, NSGT_sliced
 from nsgt_torch.fscale import SCALES_BY_NAME
 from nsgt_torch.audio import SndReader
+
+# non-sliced NSGT
+from nsgt_torch.cq import NSGTBase, make_nsgt_filterbanks
+
+# sliced sliCQT
+from nsgt_torch.slicq import SliCQTBase, make_slicqt_filterbanks
+
+# misc utils
+from nsgt_torch.utils import ALLOWED_MATRIXFORMS, complex_2_magphase, magphase_2_complex
 
 from argparse import ArgumentParser
 import matplotlib.pyplot as plt
@@ -34,6 +42,10 @@ if __name__ == '__main__':
     parser.add_argument("--plot-stft", action='store_true', help="Plot STFT and exit")
     parser.add_argument("--stft-window", type=int, default=4096, help="STFT window to use")
     parser.add_argument("--stft-overlap", type=int, default=1024, help="STFT overlap to use")
+    parser.add_argument("--nsgt-chunk-window", choices=NSGTBase.allowed_chunk_windows, default='rectangular', help="NSGT chunking window to use")
+    parser.add_argument("--nsgt-chunk-nwin", type=int, default=16384, help="NSGT chunked window size to use")
+    parser.add_argument("--nsgt-chunk-overlap", type=int, default=0, help="NSGT chunked overlap to use")
+    parser.add_argument("--matrixform", choices=ALLOWED_MATRIXFORMS, default='zeropad', help="Matrix form/interpolation strategy to use")
 
     args = parser.parse_args()
     if not os.path.exists(args.input):
@@ -85,39 +97,32 @@ if __name__ == '__main__':
         else:
             plt.show()
 
-    try:
-        scale = SCALES_BY_NAME[args.scale]
-    except KeyError:
-        parser.error('Scale unknown (--scale option)')
-
-    if args.scale != 'vqlog':
-        scl = scale(args.fmin, args.fmax, args.bins)
+    if args.nonsliced:
+        nsgt_base = NSGTBase(
+            args.scale, args.bins, args.fmin, args.nsgt_chunk_nwin, fmax=args.fmax, gamma=args.gamma,
+            matrixform=args.matrixform,
+            chunk_window=args.nsgt_chunk_window, n_overlap=args.nsgt_chunk_overlap,
+            fs=fs, device="cpu",
+        )
+        nsgt, insgt = make_nsgt_filterbanks(nsgt_base)
     else:
-        scl = scale(args.fmin, args.fmax, args.bins, gamma=args.gamma)
-
-    freqs, qs = scl()
-
-    if args.sllen is None:
-        sllen, trlen = scl.suggested_sllen_trlen(fs)
-    else:
-        sllen = args.sllen
-        trlen = args.trlen
-
-    if not args.nonsliced:
-    nsgt = TorchNSGT(
-        scl, sllen, trlen, fs, real=True, multichannel=True, device="cpu",
-        matrixform=args.matrixform,
-        chunk_strategy=args.chunk_strategy,
-    )
+        nsgt_base = SliCQTBase(
+            args.scale, args.bins, args.fmin,
+            sllen=args.sllen, trlen=args.trlen,
+            matrixform=args.matrixform,
+            fs=fs, device="cpu",
+        )
+        nsgt, insgt = make_slicqt_filterbanks(nsgt_base)
 
     # generator for forward transformation
-    if args.nonsliced:
-        C = slicq.forward(signal)
-    else:
-        C = slicq.forward(signal)
+    C = nsgt(signal)
+    Cmag, Cphase = complex_2_magphase(C)
 
-    transform_name = 'sliCQT' if not args.nonsliced else 'NSGT'
+    transform_name = 'NSGT'
+    if not args.nonsliced:
+        Cmag = nsgt.overlap_add(Cmag)
 
+    freqs, qs = nsgt.nsgt.scl()
     if args.fmin > 0.0:
         freqs = numpy.r_[[0.], freqs]
 
@@ -125,12 +130,13 @@ if __name__ == '__main__':
         slicq_params = '{0} scale, {1} bins, {2:.1f}-{3:.1f} Hz'.format(args.scale, args.bins, args.fmin, args.fmax)
 
         spectrogram(
-            C,
+            Cmag.detach(),
             fs,
-            slicq.coef_factor,
+            nsgt.nsgt.M,
+            nsgt.nsgt.nsgt.coef_factor,
             transform_name,
             freqs,
-            signal.shape[1],
+            signal.shape[-1],
             sliced=not args.nonsliced,
             flatten=args.flatten,
             fontsize=args.fontsize,
