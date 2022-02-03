@@ -51,6 +51,8 @@ if __name__ == '__main__':
 
     if args.matrixform == 'ragged':
         raise ValueError('spectrogram is not supported for the ragged form')
+    elif args.matrixform == 'repeat':
+        warn('This is probably not what you want! but the code is neat so i left it in there...')
 
     fs = args.sr
 
