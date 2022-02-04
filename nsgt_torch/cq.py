@@ -123,7 +123,7 @@ def make_nsgt_filterbanks(nsgt_base, sample_rate=44100.0):
 
 class NSGTBase(torch.nn.Module):
     def __init__(self,
-        scale, fbins, fmin, chunk_N, fmax=22050, gamma=25.,
+        scale, fbins, fmin, N, fmax=22050, gamma=25.,
         matrixform='ragged',
         fs=44100, device="cpu"
     ):
@@ -157,13 +157,12 @@ class NSGTBase(torch.nn.Module):
             raise ValueError(f'{matrixform} is not one of the allowed values: {NSGTBase.allowed_matrix_forms}')
         self.matrixform = matrixform
 
-        self.chunk_N = chunk_N
-
+        self.N = N
         self.nsgt = None
         if self.matrixform == 'zeropad':
-            self.nsgt = NSGT(self.scl, fs, self.chunk_N, real=True, multichannel=True, matrixform=True, device=self.device)
+            self.nsgt = NSGT(self.scl, fs, self.N, real=True, multichannel=True, matrixform=True, device=self.device)
         else:
-            self.nsgt = NSGT(self.scl, fs, self.chunk_N, real=True, multichannel=True, matrixform=False, device=self.device)
+            self.nsgt = NSGT(self.scl, fs, self.N, real=True, multichannel=True, matrixform=False, device=self.device)
 
         self.M = self.nsgt.ncoefs
         self.fbins_actual = self.nsgt.fbins_actual
@@ -190,20 +189,11 @@ class TorchNSGT(torch.nn.Module):
         return self
 
     def forward(self, x):
-        N = self.nsgt.chunk_N
         shape = x.size()
         nb_samples, nb_channels, nb_timesteps = shape
 
-        if nb_timesteps > N:
-            # do the padding and chunking
-            n_chunks = 1 + nb_timesteps//N
-            n_pad = N*n_chunks - nb_timesteps
-
-            # stack validation tracks into huge pile of segments of size N
-            x = torch.nn.functional.pad(x, (0, n_pad)).reshape(-1, nb_channels, N)
-
         # pack batch
-        x = x.view(-1, N)
+        x = x.view(-1, nb_timesteps)
 
         C = self.nsgt.nsgt.forward(x)
 
@@ -214,15 +204,15 @@ class TorchNSGT(torch.nn.Module):
             C[i] = nsgt_f
 
         if self.nsgt.matrixform == 'ragged':
-            return C, None, None
+            return C, None
         elif self.nsgt.matrixform == 'zeropad':
-            return C[0], None, None
+            return C[0], None
         else:
             Cmag, Cphase = complex_2_magphase(C)
             Cmag, ragged_shapes = interpolate_nsgt(Cmag)
             Cphase, ragged_shapes = interpolate_nsgt(Cphase)
             C_interp = magphase_2_complex(Cmag, Cphase)
-            return C_interp, None, ragged_shapes
+            return C_interp, ragged_shapes
 
 
 class TorchINSGT(torch.nn.Module):
@@ -234,7 +224,7 @@ class TorchINSGT(torch.nn.Module):
         self.nsgt._apply(fn)
         return self
 
-    def forward(self, X, length: int, nb_slices: Optional[int], ragged_shapes: Optional[List[int]]) -> Tensor:
+    def forward(self, X, length: int, ragged_shapes=None) -> Tensor:
         if self.nsgt.matrixform == 'interpolate':
             Xmag, Xphase = complex_2_magphase(X)
             Xmag = deinterpolate_nsgt(Xmag, ragged_shapes)
@@ -265,13 +255,7 @@ class TorchINSGT(torch.nn.Module):
 
         y = self.nsgt.nsgt.backward(X_complex)
 
-        N = self.nsgt.chunk_N
-        if length > N:
-            n_chunks = 1 + length//N
-            # undo the stacking to create the full original track
-            y = y.reshape(nb_samples//n_chunks, nb_channels, -1)[..., : length]
-        else:
-            # simply unpack batch
-            y = y.view(*shape[:-2], -1)
+        # simply unpack batch
+        y = y.view(*shape[:-2], -1)
 
         return y

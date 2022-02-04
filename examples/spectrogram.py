@@ -37,7 +37,6 @@ if __name__ == '__main__':
     parser.add_argument("--sllen", type=int, default=None, help="Slice length in samples (default=%(default)s)")
     parser.add_argument("--trlen", type=int, default=None, help="Transition area in samples (default=%(default)s)")
     parser.add_argument("--plot", action='store_true', help="Plot transform (needs installed matplotlib package)")
-    parser.add_argument("--mono", action='store_true', help="Audio is mono")
     parser.add_argument("--nonsliced", action='store_true', help="Use the NSGT instead of the sliCQT")
     parser.add_argument("--plot-stft", action='store_true', help="Plot STFT and exit")
     parser.add_argument("--stft-window", type=int, default=4096, help="STFT window to use")

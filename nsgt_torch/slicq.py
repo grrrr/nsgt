@@ -311,18 +311,16 @@ class TorchSliCQT(torch.nn.Module):
             nsgt_f = nsgt_f.view(shape[:-1] + nsgt_f.shape[-4:])
             C[i] = nsgt_f
 
-        nb_slices = C[0].shape[-3]
-
         if self.nsgt.matrixform == 'ragged':
-            return C, nb_slices, None
+            return C, None
         elif self.nsgt.matrixform == 'zeropad':
-            return C[0], nb_slices, None
+            return C[0], None
         else:
             Cmag, Cphase = complex_2_magphase(C)
             Cmag, ragged_shapes = interpolate_slicqt(Cmag)
             Cphase, ragged_shapes = interpolate_slicqt(Cphase)
             C_interp = magphase_2_complex(Cmag, Cphase)
-            return C_interp, nb_slices, ragged_shapes
+            return C_interp, ragged_shapes
 
     @torch.no_grad()
     def overlap_add(self, slicq, dont=False):
@@ -365,7 +363,7 @@ class TorchISliCQT(torch.nn.Module):
         self.nsgt._apply(fn)
         return self
 
-    def forward(self, X, length: int, nb_slices: int, ragged_shapes: Optional[List[int]]) -> Tensor:
+    def forward(self, X, length: int, ragged_shapes: Optional[List[int]] = None) -> Tensor:
         Xmag, Xphase = complex_2_magphase(X)
 
         if self.nsgt.matrixform == 'interpolate':

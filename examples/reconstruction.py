@@ -26,12 +26,8 @@ if __name__ == '__main__':
     parser.add_argument("--bins", type=int, default=50, help="Number of frequency bins (total or per octave, default=%(default)s)")
     parser.add_argument("--sllen", type=int, default=None, help="Slice length in samples (default=%(default)s)")
     parser.add_argument("--trlen", type=int, default=None, help="Transition area in samples (default=%(default)s)")
-    parser.add_argument("--mono", action='store_true', help="Audio is mono")
     parser.add_argument("--nonsliced", action='store_true', help="Use the NSGT instead of the sliCQT")
-    parser.add_argument("--stft-window", type=int, default=4096, help="STFT window to use")
-    parser.add_argument("--stft-overlap", type=int, default=1024, help="STFT overlap to use")
     parser.add_argument("--matrixform", choices=ALLOWED_MATRIX_FORMS, default='zeropad', help="Matrix form/interpolation strategy to use")
-    parser.add_argument("-N", type=int, default=-1, help="chunked NSGT size (-1 = full signal length)")
 
     args = parser.parse_args()
     if not os.path.exists(args.input):
@@ -54,9 +50,8 @@ if __name__ == '__main__':
     print(f'input signal: duration {dur:.2f}, shape {signal.shape}')
 
     if args.nonsliced:
-        N = args.N if args.N != -1 else sf.frames
         nsgt_base = NSGTBase(
-            args.scale, args.bins, args.fmin, N, fmax=args.fmax, gamma=args.gamma,
+            args.scale, args.bins, args.fmin, sf.frames, fmax=args.fmax, gamma=args.gamma,
             matrixform=args.matrixform,
             fs=fs, device="cpu",
         )

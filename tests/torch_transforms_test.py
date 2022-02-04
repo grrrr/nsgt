@@ -1,8 +1,8 @@
 import pytest
 import numpy as np
 import torch
-from slicqt import torch_transforms as transforms
-from slicqt import torch_utils
+from nsgt_torch.cq import NSGTBase, make_nsgt_filterbanks
+from nsgt_torch.slicq import SliCQTBase, make_slicqt_filterbanks
 import auraloss
 
 
@@ -21,106 +21,89 @@ def nb_channels(request):
 def nb_samples(request):
     return request.param
 
+
 @pytest.fixture
 def audio(request, nb_samples, nb_channels, nb_timesteps):
     return torch.rand((nb_samples, nb_channels, nb_timesteps), dtype=torch.float64, device="cpu")
 
 
-def test_nsgt_cpu_fwd_inv(audio):
-    nsgt, insgt = transforms.make_filterbanks(transforms.SliCQTBase(scale='mel', fbins=200, fmin=32.9, device="cpu"))
+def test_nsgt_cpu_fwd_inv_ragged(audio):
+    audio_n_samples = audio.shape[-1]
 
-    X = nsgt(audio)
+    nsgt, insgt = make_nsgt_filterbanks(NSGTBase("mel", 200, 32.9, audio_n_samples, device="cpu"))
 
-    out = insgt(X, length=audio.shape[-1])
+    X, *_ = nsgt(audio)
 
-    print(auraloss.time.SNRLoss()(audio, out))
-    assert np.sqrt(np.mean((audio.detach().numpy() - out.detach().numpy()) ** 2)) < 1e-6
-
-
-def test_nsgt_cpu_fwd_inv_ola_interpolate_deoverlapnet(audio):
-    nsgt, insgt = transforms.make_filterbanks(
-        transforms.SliCQTBase(scale='bark', fbins=287, fmin=29.8, device="cpu")
-    )
-
-    X = nsgt(audio)
-    Xmag, Xphase = transforms.complex_2_magphase(X)
-    shapes = [X_.shape for X_ in Xmag]
-    nb_slices = Xmag[0].shape[-2]
-
-    deoverlapnet = torch_utils.load_deoverlapnet(device="cpu")
-
-    Xmag_interp = nsgt.interpolate(Xmag)
-    Xmag_ola = nsgt.overlap_add(Xmag_interp)
-    Xmag_deoverlapnet, _ = deoverlapnet(harmonic_inputs=(Xmag_ola, nb_slices, shapes))
-
-    Xrecon_complex = transforms.phasemix_sep(X, Xmag_deoverlapnet)
-    out = insgt(Xrecon_complex, length=audio.shape[-1])
+    out = insgt(X, audio_n_samples)
 
     print(auraloss.time.SNRLoss()(audio, out))
     assert np.sqrt(np.mean((audio.detach().numpy() - out.detach().numpy()) ** 2)) < 1e-6
 
 
-def test_nsgt_cpu_fwd_inv_ola_interpolate_deoverlapnet_percussive(audio):
-    nsgt, insgt = transforms.make_filterbanks(
-        transforms.SliCQTBase(scale='bark', fbins=265, fmin=33.4, device="cpu")
-    )
+def test_nsgt_cpu_fwd_inv_zeropad(audio):
+    audio_n_samples = audio.shape[-1]
 
-    X = nsgt(audio)
-    Xmag, Xphase = transforms.complex_2_magphase(X)
-    shapes = [X_.shape for X_ in Xmag]
-    nb_slices = Xmag[0].shape[-2]
+    nsgt, insgt = make_nsgt_filterbanks(NSGTBase("mel", 200, 32.9, audio_n_samples, matrixform="zeropad", device="cpu"))
 
-    deoverlapnet = torch_utils.load_deoverlapnet(device="cpu")
+    X, *_ = nsgt(audio)
 
-    Xmag_interp = nsgt.interpolate(Xmag)
-    Xmag_ola = nsgt.overlap_add(Xmag_interp)
-    _, Xmag_deoverlapnet = deoverlapnet(percussive_inputs=(Xmag_ola, nb_slices, shapes))
-
-    Xrecon_complex = transforms.phasemix_sep(X, Xmag_deoverlapnet)
-    out = insgt(Xrecon_complex, length=audio.shape[-1])
+    out = insgt(X, audio_n_samples)
 
     print(auraloss.time.SNRLoss()(audio, out))
     assert np.sqrt(np.mean((audio.detach().numpy() - out.detach().numpy()) ** 2)) < 1e-6
 
 
-def test_nsgt_cuda_fwd_inv(audio):
-    audio = audio.to(device="cuda")
+def test_nsgt_cpu_fwd_inv_interpolate(audio):
+    audio_n_samples = audio.shape[-1]
 
-    nsgt, insgt = transforms.make_filterbanks(transforms.SliCQTBase(scale='mel', fbins=200, fmin=32.9, device="cuda"))
+    nsgt, insgt = make_nsgt_filterbanks(NSGTBase("mel", 200, 32.9, audio_n_samples, matrixform="interpolate", device="cpu"))
 
-    X = nsgt(audio)
+    X, ragged_shapes = nsgt(audio)
 
-    out = insgt(X, length=audio.shape[-1])
-
-    print(auraloss.time.SNRLoss()(audio, out))
-    assert np.sqrt(np.mean((audio.detach().cpu().numpy() - out.detach().cpu().numpy()) ** 2)) < 1e-6
-
-
-def test_nsgt_cuda_fwd_inv_ola_interpolate_deoverlapnet(audio):
-    audio = audio.to(device="cuda")
-
-    nsgt, insgt = transforms.make_filterbanks(
-        transforms.SliCQTBase(scale='bark', fbins=287, fmin=29.8, device="cuda")
-    )
-
-    X = nsgt(audio)
-    Xmag, Xphase = transforms.complex_2_magphase(X)
-
-    shapes = [X_.shape for X_ in Xmag]
-    nb_slices = Xmag[0].shape[-2]
-
-    deoverlapnet = torch_utils.load_deoverlapnet(device="cuda")
-
-    Xmag_interp = nsgt.interpolate(Xmag)
-    Xmag_ola = nsgt.overlap_add(Xmag_interp)
-    Xmag_deoverlapnet, _ = deoverlapnet(harmonic_inputs=(Xmag_ola, nb_slices, shapes))
-
-    Xrecon_complex = transforms.phasemix_sep(X, Xmag_deoverlapnet)
-    out = insgt(Xrecon_complex, length=audio.shape[-1])
+    out = insgt(X, audio_n_samples, ragged_shapes=ragged_shapes)
 
     print(auraloss.time.SNRLoss()(audio, out))
-    assert np.sqrt(np.mean((audio.detach().cpu().numpy() - out.detach().cpu().numpy()) ** 2)) < 1e-6
+    assert np.sqrt(np.mean((audio.detach().numpy() - out.detach().numpy()) ** 2)) < 1e-1
+
+
+def test_slicqt_cpu_fwd_inv_ragged(audio):
+    audio_n_samples = audio.shape[-1]
+
+    slicqt, islicqt = make_slicqt_filterbanks(SliCQTBase("mel", 200, 32.9, device="cpu"))
+
+    X, *_ = slicqt(audio)
+
+    out = islicqt(X, audio_n_samples)
+
+    print(auraloss.time.SNRLoss()(audio, out))
+    assert np.sqrt(np.mean((audio.detach().numpy() - out.detach().numpy()) ** 2)) < 1e-6
+
+
+def test_slicqt_cpu_fwd_inv_zeropad(audio):
+    audio_n_samples = audio.shape[-1]
+
+    slicqt, islicqt = make_slicqt_filterbanks(SliCQTBase("mel", 200, 32.9, matrixform="zeropad", device="cpu"))
+
+    X, *_ = slicqt(audio)
+
+    out = islicqt(X, audio_n_samples)
+
+    print(auraloss.time.SNRLoss()(audio, out))
+    assert np.sqrt(np.mean((audio.detach().numpy() - out.detach().numpy()) ** 2)) < 1e-6
+
+
+def test_slicqt_cpu_fwd_inv_interpolate(audio):
+    audio_n_samples = audio.shape[-1]
+
+    slicqt, islicqt = make_slicqt_filterbanks(SliCQTBase("mel", 200, 32.9, matrixform="interpolate", device="cpu"))
+
+    X, ragged_shapes = slicqt(audio)
+
+    out = islicqt(X, audio_n_samples, ragged_shapes=ragged_shapes)
+
+    print(auraloss.time.SNRLoss()(audio, out))
+    assert np.sqrt(np.mean((audio.detach().numpy() - out.detach().numpy()) ** 2)) < 1e-1
 
 
 import pytest
-pytest.main(["-s", "tests/torch_transforms_test.py::test_nsgt_cpu_fwd_inv"])
+pytest.main(["-s", "tests/torch_test.py::test_nsgt_cpu_fwd_inv_ragged"])
