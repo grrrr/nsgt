@@ -62,7 +62,8 @@ def calcwinrange(g, rfbas, Ls, device="cpu"):
 
 def complex_2_magphase(spec):
     if type(spec) == torch.Tensor:
-        return torch.abs(torch.view_as_complex(spec)), atan2(spec[..., 1], spec[..., 0])
+        ret_mag, ret_phase = torch.abs(torch.view_as_complex(spec)), atan2(spec[..., 1], spec[..., 0])
+        return ret_mag, ret_phase
 
     ret_mag = [None]*len(spec)
     ret_phase = [None]*len(spec)
@@ -82,6 +83,7 @@ def magphase_2_complex(C_mag, C_phase):
         C_cplx = torch.empty(*(*C_mag.shape, 2), dtype=C_mag.dtype, device=C_mag.device)
         C_cplx[..., 0] = C_mag * torch.cos(C_phase)
         C_cplx[..., 1] = C_mag * torch.sin(C_phase)
+
         return C_cplx
 
     C_cplx = [None]*len(C_mag)

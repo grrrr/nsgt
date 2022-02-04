@@ -81,7 +81,7 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, matrixform
             for i,(wr1,wr2,Lg) in enumerate(loopparams[fbin_ptr:fbin_ptr+nb_fbins][:fbins]):
                 freq_idx = fbin_ptr+i
 
-                assert Lg == Lg_outer
+                #assert Lg == Lg_outer
                 t = fc[:, :, i]
 
                 r = (Lg+1)//2

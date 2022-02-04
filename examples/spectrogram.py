@@ -39,7 +39,6 @@ if __name__ == '__main__':
     parser.add_argument("--plot", action='store_true', help="Plot transform (needs installed matplotlib package)")
     parser.add_argument("--mono", action='store_true', help="Audio is mono")
     parser.add_argument("--nonsliced", action='store_true', help="Use the NSGT instead of the sliCQT")
-    parser.add_argument("--flatten", action='store_true', help="Flatten instead of overlap")
     parser.add_argument("--plot-stft", action='store_true', help="Plot STFT and exit")
     parser.add_argument("--stft-window", type=int, default=4096, help="STFT window to use")
     parser.add_argument("--stft-overlap", type=int, default=1024, help="STFT overlap to use")
@@ -51,8 +50,6 @@ if __name__ == '__main__':
 
     if args.matrixform == 'ragged':
         raise ValueError('spectrogram is not supported for the ragged form')
-    elif args.matrixform == 'repeat':
-        warn('This is probably not what you want! but the code is neat so i left it in there...')
 
     fs = args.sr
 
@@ -117,12 +114,10 @@ if __name__ == '__main__':
         nsgt, insgt = make_slicqt_filterbanks(nsgt_base)
 
     # generator for forward transformation
-    C, prev_shapes = nsgt(signal)
+    C, *_ = nsgt(signal)
     Cmag, Cphase = complex_2_magphase(C)
 
     transform_name = 'NSGT'
-    if not args.nonsliced:
-        Cmag = nsgt.overlap_add(Cmag, flatten=args.flatten)
 
     freqs, qs = nsgt.nsgt.scl()
     if args.fmin > 0.0:

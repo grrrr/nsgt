@@ -8,6 +8,7 @@ from math import ceil
 import torch
 from torch import Tensor
 from .interpolation import ALLOWED_MATRIX_FORMS, interpolate, deinterpolate
+from typing import Optional, List
 
 
 class NSGT(torch.nn.Module):
@@ -213,18 +214,15 @@ class TorchNSGT(torch.nn.Module):
             C[i] = nsgt_f
 
         if self.nsgt.matrixform == 'ragged':
-            return C, None
+            return C, None, None
         elif self.nsgt.matrixform == 'zeropad':
-            return C[0], None
+            return C[0], None, None
         else:
             Cmag, Cphase = complex_2_magphase(C)
-            Cmag, prev_shapes = interpolate(Cmag, self.nsgt.matrixform)
-            Cphase, prev_shapes = interpolate(Cphase, self.nsgt.matrixform)
-            print(f'Cmag: {Cmag[0].shape}')
-            print(f'Cphase: {Cphase[0].shape}')
-            C = magphase_2_complex(Cmag, Cphase)
-            print(f'C: {C[0].shape}')
-            return C[0], prev_shapes
+            Cmag, ragged_shapes = interpolate(Cmag)
+            Cphase, ragged_shapes = interpolate(Cphase)
+            C_interp = magphase_2_complex(Cmag, Cphase)
+            return C_interp, None, ragged_shapes
 
 
 class TorchINSGT(torch.nn.Module):
@@ -236,24 +234,32 @@ class TorchINSGT(torch.nn.Module):
         self.nsgt._apply(fn)
         return self
 
-    def forward(self, X_list, length: int) -> Tensor:
-        nb_samples, nb_channels, _ = X_list[0].shape
+    def forward(self, X, length: int, nb_slices: Optional[int], ragged_shapes: Optional[List[int]]) -> Tensor:
+        if self.nsgt.matrixform == 'interpolate':
+            Xmag, Xphase = complex_2_magphase(X)
+            Xmag = deinterpolate(Xmag, ragged_shapes)
+            Xphase = deinterpolate(Xphase, ragged_shapes)
+            X = magphase_2_complex(Xmag, Xphase)
+
+        if type(X) == Tensor:
+            X_list = [X]
+        else:
+            X_list = X
+
+        nb_samples, nb_channels, *_ = X_list[0].shape
 
         X_complex = [None]*len(X_list)
         for i, X in enumerate(X_list):
-            Xshape = len(X.shape)
+            Xdims = len(X.shape)
 
             X = torch.view_as_complex(X)
 
             shape = X.shape
 
-            if Xshape == 6:
+            if Xdims == 5:
                 X = X.view(X.shape[0]*X.shape[1], *X.shape[2:])
             else:
                 X = X.view(X.shape[0]*X.shape[1]*X.shape[2], *X.shape[3:])
-
-            # moveaxis back into into T x [packed-channels] x F1 x F2
-            X = torch.moveaxis(X, -2, 0)
 
             X_complex[i] = X
 
@@ -261,10 +267,11 @@ class TorchINSGT(torch.nn.Module):
 
         N = self.nsgt.chunk_N
         if length > N:
-            # undo the stacking and create the full original track
-            y = y.reshape(nb_samples, nb_channels, -1)[..., : length]
+            n_chunks = 1 + length//N
+            # undo the stacking to create the full original track
+            y = y.reshape(nb_samples//n_chunks, nb_channels, -1)[..., : length]
         else:
             # simply unpack batch
-            y = y.view(*shape[:-3], -1)
+            y = y.view(*shape[:-2], -1)
 
         return y

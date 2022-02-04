@@ -2,21 +2,15 @@ import os
 from warnings import warn
 import torch
 import numpy
-
+import auraloss
+from argparse import ArgumentParser
+from torch import Tensor
 from nsgt_torch.fscale import SCALES_BY_NAME
 from nsgt.audio import SndReader
-
-# non-sliced NSGT
 from nsgt_torch.cq import NSGTBase, make_nsgt_filterbanks
-
-# sliced sliCQT
 from nsgt_torch.slicq import SliCQTBase, make_slicqt_filterbanks
-
-# misc utils
 from nsgt_torch.util import complex_2_magphase, magphase_2_complex
 from nsgt_torch.interpolation import ALLOWED_MATRIX_FORMS
-
-from argparse import ArgumentParser
 
 
 if __name__ == '__main__':
@@ -36,17 +30,14 @@ if __name__ == '__main__':
     parser.add_argument("--trlen", type=int, default=None, help="Transition area in samples (default=%(default)s)")
     parser.add_argument("--mono", action='store_true', help="Audio is mono")
     parser.add_argument("--nonsliced", action='store_true', help="Use the NSGT instead of the sliCQT")
-    parser.add_argument("--flatten", action='store_true', help="Flatten instead of overlap")
     parser.add_argument("--stft-window", type=int, default=4096, help="STFT window to use")
     parser.add_argument("--stft-overlap", type=int, default=1024, help="STFT overlap to use")
     parser.add_argument("--matrixform", choices=ALLOWED_MATRIX_FORMS, default='zeropad', help="Matrix form/interpolation strategy to use")
+    parser.add_argument("-N", type=int, default=-1, help="chunked NSGT size (-1 = full signal length)")
 
     args = parser.parse_args()
     if not os.path.exists(args.input):
         parser.error("Input file '%s' not found"%args.input)
-
-    if args.matrixform == 'ragged':
-        raise ValueError('spectrogram is not supported for the ragged form')
 
     fs = args.sr
 
@@ -62,10 +53,12 @@ if __name__ == '__main__':
 
     # duration of signal in s
     dur = sf.frames/float(fs)
+    print(f'input signal: duration {dur:.2f}, shape {signal.shape}')
 
     if args.nonsliced:
+        N = args.N if args.N != -1 else sf.frames
         nsgt_base = NSGTBase(
-            args.scale, args.bins, args.fmin, sf.frames, fmax=args.fmax, gamma=args.gamma,
+            args.scale, args.bins, args.fmin, N, fmax=args.fmax, gamma=args.gamma,
             matrixform=args.matrixform,
             fs=fs, device="cpu",
         )
@@ -80,8 +73,24 @@ if __name__ == '__main__':
         nsgt, insgt = make_slicqt_filterbanks(nsgt_base)
 
     # generator for forward transformation
-    C = nsgt(signal)
-    Cmag, Cphase = complex_2_magphase(C)
+    C, nb_slices, ragged_shapes_for_deinterp = nsgt(signal)
+    print(f'C: {type(C)}')
 
-    if not args.nonsliced:
-        Cmag = nsgt.overlap_add(Cmag, flatten=args.flatten)
+    if type(C) == list:
+        print(f'ragged form, C len: {len(C)}')
+        print(f'\tC[0]: {C[0].shape} {C[0].dtype}')
+        print(f'\t...')
+        print(f'\tC[-1]: {C[-1].shape} {C[-1].dtype}')
+    elif type(C) == Tensor:
+        print(f'matrix form, C: {C.shape} {C.dtype}')
+
+    #Cmag_hat = deoverlapnet(Cmag_ola, nb_slices, ragged_ola_shapes)
+    #C_hat = transforms.magphase_2_complex(Cmag_hat, C_phase)
+    signal_recon = insgt(C, sf.frames, nb_slices, ragged_shapes_for_deinterp)
+
+    print('signal reconstruction errors:')
+
+    print(f'\tSNR: {-1*auraloss.time.SNRLoss()(signal_recon, signal)}')
+    print(f'\tMSE (time-domain waveform): {torch.sqrt(torch.mean((signal_recon - signal)**2))}')
+    print(f'\tSI-SDR: {-1*auraloss.time.SISDRLoss()(signal_recon, signal)}')
+    print(f'\tSD-SDR: {-1*auraloss.time.SDSDRLoss()(signal_recon, signal)}')
