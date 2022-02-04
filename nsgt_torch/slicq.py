@@ -265,11 +265,7 @@ class SliCQTBase(torch.nn.Module):
             raise ValueError(f'{matrixform} is not one of the allowed values: {ALLOWED_MATRIX_FORMS}')
         self.matrixform = matrixform
 
-        self.nsgt = None
-        if self.matrixform == 'zeropad':
-            self.nsgt = NSGT_sliced(self.scl, self.sllen, self.trlen, fs, real=True, multichannel=True, matrixform=True, device=self.device)
-        else:
-            self.nsgt = NSGT_sliced(self.scl, self.sllen, self.trlen, fs, real=True, multichannel=True, matrixform=False, device=self.device)
+        self.nsgt = NSGT_sliced(self.scl, self.sllen, self.trlen, fs, real=True, multichannel=True, matrixform=(matrixform=='zeropad'), device=self.device)
 
         self.M = self.nsgt.ncoefs
         self.fbins_actual = self.nsgt.fbins_actual
@@ -395,6 +391,7 @@ class TorchISliCQT(torch.nn.Module):
 
             X_complex[i] = X
 
+        print(f'X_complex backward: {X_complex[0].shape}')
         y = self.nsgt.nsgt.backward(X_complex, length)
 
         # unpack batch

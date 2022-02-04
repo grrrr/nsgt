@@ -66,7 +66,7 @@ class NSGT(torch.nn.Module):
 
     def setup_lambdas(self):
         self.fwd = lambda s: nsgtf(s, self.g, self.wins, self.nn, self.M, real=self.real, reducedform=self.reducedform, device=self.device, matrixform=self.matrixform)
-        self.bwd = lambda c: nsigtf(c, self.gd, self.wins, self.nn, self.Ls, real=self.real, reducedform=self.reducedform, device=self.device)
+        self.bwd = lambda c: nsigtf(c, self.gd, self.wins, self.nn, self.Ls, real=self.real, reducedform=self.reducedform, device=self.device, matrixform=self.matrixform)
 
     def _apply(self, fn):
         super(NSGT, self)._apply(fn)
@@ -158,11 +158,7 @@ class NSGTBase(torch.nn.Module):
         self.matrixform = matrixform
 
         self.N = N
-        self.nsgt = None
-        if self.matrixform == 'zeropad':
-            self.nsgt = NSGT(self.scl, fs, self.N, real=True, multichannel=True, matrixform=True, device=self.device)
-        else:
-            self.nsgt = NSGT(self.scl, fs, self.N, real=True, multichannel=True, matrixform=False, device=self.device)
+        self.nsgt = NSGT(self.scl, fs, N, real=True, multichannel=True, matrixform=(matrixform=='zeropad'), device=self.device)
 
         self.M = self.nsgt.ncoefs
         self.fbins_actual = self.nsgt.fbins_actual
@@ -253,7 +249,11 @@ class TorchINSGT(torch.nn.Module):
 
             X_complex[i] = X
 
-        y = self.nsgt.nsgt.backward(X_complex)
+        print(f'X_complex backward: {X_complex[0].shape}')
+        if self.nsgt.matrixform == 'zeropad':
+            y = self.nsgt.nsgt.backward(X_complex[0])
+        else:
+            y = self.nsgt.nsgt.backward(X_complex)
 
         # simply unpack batch
         y = y.view(*shape[:-2], -1)

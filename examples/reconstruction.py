@@ -66,7 +66,7 @@ if __name__ == '__main__':
         nsgt, insgt = make_slicqt_filterbanks(nsgt_base)
 
     # generator for forward transformation
-    C, nb_slices, ragged_shapes_for_deinterp = nsgt(signal)
+    C, ragged_shapes_for_deinterp = nsgt(signal)
     print(f'C: {type(C)}')
 
     if type(C) == list:
@@ -77,7 +77,7 @@ if __name__ == '__main__':
     elif type(C) == Tensor:
         print(f'matrix form, C: {C.shape} {C.dtype}')
 
-    signal_recon = insgt(C, sf.frames, nb_slices, ragged_shapes_for_deinterp)
+    signal_recon = insgt(C, sf.frames, ragged_shapes=ragged_shapes_for_deinterp)
 
     print('signal reconstruction errors:')
 
