@@ -119,6 +119,10 @@ if __name__ == '__main__':
 
     transform_name = 'NSGT'
 
+    if not args.nonsliced:
+        transform_name = 'sliCQT'
+        Cmag = nsgt.overlap_add(Cmag)
+
     freqs, qs = nsgt.nsgt.scl()
     if args.fmin > 0.0:
         freqs = numpy.r_[[0.], freqs]

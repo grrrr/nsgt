@@ -1,4 +1,5 @@
 import torch
+import math
 from torch import Tensor
 import numpy as np
 from itertools import cycle, chain, tee
@@ -11,7 +12,7 @@ from .nsgfwin_sl import nsgfwin
 from .nsgtf import nsgtf_sl
 from .nsigtf import nsigtf_sl
 from .util import calcwinrange, complex_2_magphase, magphase_2_complex
-from .interpolation import ALLOWED_MATRIX_FORMS, interpolate, deinterpolate
+from .interpolation import ALLOWED_MATRIX_FORMS, interpolate_slicqt, deinterpolate_slicqt
 from .reblock import reblock
 from .fscale import SCALES_BY_NAME, OctScale
 
@@ -217,16 +218,15 @@ def make_slicqt_filterbanks(slicqt_base, sample_rate=44100.0):
 
 
 class SliCQTBase(torch.nn.Module):
-    allowed_deoverlap_wins = ['rectangular', 'hann']
-
     def __init__(self,
         scale, fbins, fmin, fmax=22050, gamma=25.,
         sllen=None, trlen=None,
         matrixform='ragged',
-        deoverlapwin='rectangular',
+        per_slice=False,
         fs=44100, device="cpu"
     ):
         super(SliCQTBase, self).__init__()
+
         self.fbins = fbins
         self.fmin = fmin
         self.gamma = gamma
@@ -263,11 +263,6 @@ class SliCQTBase(torch.nn.Module):
 
         if matrixform not in ALLOWED_MATRIX_FORMS:
             raise ValueError(f'{matrixform} is not one of the allowed values: {ALLOWED_MATRIX_FORMS}')
-        self.matrixform = matrixform
-
-        if deoverlapwin not in SliCQTBase.allowed_deoverlap_wins:
-            raise ValueError(f'{deoverlapwin} is not one of the allowed values: {SliCQTBase.allowed_deoverlap_wins}')
-        self.window_fn = torch.ones if deoverlapwin == 'rectangular' else torch.hann_window
         self.matrixform = matrixform
 
         self.nsgt = None
@@ -316,22 +311,24 @@ class TorchSliCQT(torch.nn.Module):
             nsgt_f = nsgt_f.view(shape[:-1] + nsgt_f.shape[-4:])
             C[i] = nsgt_f
 
-        nb_slices = C[0].shape[-2]
-
-        Cmag, Cphase = complex_2_magphase(C)
+        nb_slices = C[0].shape[-3]
 
         if self.nsgt.matrixform == 'ragged':
-            return magphase_2_complex(self.overlap_add(Cmag), self.overlap_add(Cphase)), nb_slices, None
+            return C, nb_slices, None
         elif self.nsgt.matrixform == 'zeropad':
-            return magphase_2_complex(self.overlap_add(Cmag), self.overlap_add(Cphase))[0], nb_slices, None
+            return C[0], nb_slices, None
         else:
-            Cmag, ragged_shapes = interpolate(self.overlap_add(Cmag))
-            Cphase, ragged_shapes = interpolate(self.overlap_add(Cphase))
+            Cmag, Cphase = complex_2_magphase(C)
+            Cmag, ragged_shapes = interpolate_slicqt(Cmag)
+            Cphase, ragged_shapes = interpolate_slicqt(Cphase)
             C_interp = magphase_2_complex(Cmag, Cphase)
             return C_interp, nb_slices, ragged_shapes
 
     @torch.no_grad()
-    def overlap_add(self, slicq):
+    def overlap_add(self, slicq, dont=False):
+        if dont:
+            return slicq
+
         if type(slicq) == list:
             ret = [None]*len(slicq)
             for i, slicq_ in enumerate(slicq):
@@ -341,9 +338,8 @@ class TorchSliCQT(torch.nn.Module):
         nb_samples, nb_channels, nb_f_bins, nb_slices, nb_m_bins = slicq.shape
 
         nwin = nb_m_bins
-        window = self.nsgt.window_fn(nwin, device=slicq.device, dtype=slicq.dtype)
 
-        ncoefs = ((1+nb_slices)*nb_m_bins)//2
+        ncoefs = int(math.floor((1+nb_slices)*nb_m_bins)/2)
 
         hop = nwin//2 # 50% overlap window
 
@@ -353,8 +349,8 @@ class TorchSliCQT(torch.nn.Module):
 
         for i in range(nb_slices):
             # weighted overlap-add with last `hop` samples
-            # rectangular window
-            out[:, :, :, ptr:ptr+nwin] += window*slicq[:, :, :, i, :]
+            # implicit rectangular window
+            out[:, :, :, ptr:ptr+nwin] += slicq[:, :, :, i, :]
             ptr += hop
 
         return out
@@ -369,42 +365,12 @@ class TorchISliCQT(torch.nn.Module):
         self.nsgt._apply(fn)
         return self
 
-    @torch.no_grad()
-    def deoverlap_add(self, slicq, nb_slices: int):
-        if type(slicq) == list:
-            ret = [None]*len(slicq)
-            for i, slicq_ in enumerate(slicq):
-                ret[i] = self.deoverlap_add(slicq_, nb_slices)
-            return ret
-
-        nb_samples, nb_channels, nb_f_bins, ncoefs = slicq.shape
-
-        nwin = int((2*ncoefs)//(1 + nb_slices))
-
-        window = self.nsgt.window_fn(nwin, device=slicq.device, dtype=slicq.dtype)
-        hop = nwin//2
-        nb_m_bins = nwin
-
-        out = torch.zeros((nb_samples, nb_channels, nb_f_bins, nb_slices, nwin), dtype=slicq.dtype, device=slicq.device)
-
-        # each slice considers nwin coefficients
-        ptr = 0
-        for j in range(nb_slices):
-            # inverse of overlap-add
-            out[:, :, :, j, :] = window*slicq[:, :, :, ptr:ptr+nwin]
-            ptr += hop
-
-        return out
-
     def forward(self, X, length: int, nb_slices: int, ragged_shapes: Optional[List[int]]) -> Tensor:
         Xmag, Xphase = complex_2_magphase(X)
 
         if self.nsgt.matrixform == 'interpolate':
-            Xmag = deinterpolate(Xmag, ragged_shapes)
-            Xphase = deinterpolate(Xphase, ragged_shapes)
-
-        Xmag = self.deoverlap_add(Xmag, nb_slices)
-        Xphase = self.deoverlap_add(Xphase, nb_slices)
+            Xmag = deinterpolate_slicqt(Xmag, ragged_shapes)
+            Xphase = deinterpolate_slicqt(Xphase, ragged_shapes)
 
         X = magphase_2_complex(Xmag, Xphase)
 

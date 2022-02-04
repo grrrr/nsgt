@@ -25,19 +25,13 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, matrixform
     ragged_gdiis = [torch.nn.functional.pad(torch.unsqueeze(gdii, dim=0), (0, maxLg-gdii.shape[0])) for gdii in sl(gd)]
     gdiis = torch.conj(torch.cat(ragged_gdiis))
 
-    if not matrixform:
-        assert type(cseq) == list
-        nfreqs = 0
-        for i, cseq_tsor in enumerate(cseq):
-            cseq_dtype = cseq_tsor.dtype
-            cseq[i] = fft(cseq_tsor)
-            nfreqs += cseq_tsor.shape[2]
-        cseq_shape = (*cseq_tsor.shape[:2], nfreqs)
-    else:
-        assert type(cseq) == torch.Tensor
-        cseq_shape = cseq.shape[:3]
-        cseq_dtype = cseq.dtype
-        fc = fft(cseq)
+    assert type(cseq) == list
+    nfreqs = 0
+    for i, cseq_tsor in enumerate(cseq):
+        cseq_dtype = cseq_tsor.dtype
+        cseq[i] = fft(cseq_tsor)
+        nfreqs += cseq_tsor.shape[2]
+    cseq_shape = (*cseq_tsor.shape[:2], nfreqs)
 
     fr = torch.zeros(*cseq_shape[:2], nn, dtype=cseq_dtype, device=torch.device(device))  # Allocate output
     temp0 = torch.empty(*cseq_shape[:2], maxLg, dtype=fr.dtype, device=torch.device(device))  # pre-allocation
@@ -52,9 +46,17 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, matrixform
         p = (wr1,wr2,Lg)
         loopparams.append(p)
 
-    # The overlap-add procedure including multiplication with the synthesis windows
-    if matrixform:
-        for i,(wr1,wr2,Lg) in enumerate(loopparams[:fbins]):
+    # frequencies are bucketed by same time resolution
+    # the matrixform produces one monolithic bucket
+    fbin_ptr = 0
+    for i, fc in enumerate(cseq):
+        Lg_outer = fc.shape[-1]
+
+        nb_fbins = fc.shape[2]
+        for i,(wr1,wr2,Lg) in enumerate(loopparams[fbin_ptr:fbin_ptr+nb_fbins][:fbins]):
+            freq_idx = fbin_ptr+i
+
+            #assert Lg == Lg_outer
             t = fc[:, :, i]
 
             r = (Lg+1)//2
@@ -64,41 +66,14 @@ def nsigtf_sl(cseq, gd, wins, nn, Ls=None, real=False, reducedform=0, matrixform
             t2 = temp0[:, :, Lg-l:Lg]
 
             t1[:, :, :] = t[:, :, :r]
-            t2[:, :, :] = t[:, :, maxLg-l:maxLg]
+            t2[:, :, :] = t[:, :, Lg-l:Lg]
 
-            temp0[:, :, :Lg] *= gdiis[i, :Lg] 
-            temp0[:, :, :Lg] *= maxLg
+            temp0[:, :, :Lg] *= gdiis[freq_idx, :Lg] 
+            temp0[:, :, :Lg] *= Lg
 
             fr[:, :, wr1] += t2
             fr[:, :, wr2] += t1
-    else:
-        # frequencies are bucketed by same time resolution
-        fbin_ptr = 0
-        for i, fc in enumerate(cseq):
-            Lg_outer = fc.shape[-1]
-
-            nb_fbins = fc.shape[2]
-            for i,(wr1,wr2,Lg) in enumerate(loopparams[fbin_ptr:fbin_ptr+nb_fbins][:fbins]):
-                freq_idx = fbin_ptr+i
-
-                #assert Lg == Lg_outer
-                t = fc[:, :, i]
-
-                r = (Lg+1)//2
-                l = (Lg//2)
-
-                t1 = temp0[:, :, :r]
-                t2 = temp0[:, :, Lg-l:Lg]
-
-                t1[:, :, :] = t[:, :, :r]
-                t2[:, :, :] = t[:, :, Lg-l:Lg]
-
-                temp0[:, :, :Lg] *= gdiis[freq_idx, :Lg] 
-                temp0[:, :, :Lg] *= Lg
-
-                fr[:, :, wr1] += t2
-                fr[:, :, wr2] += t1
-            fbin_ptr += nb_fbins
+        fbin_ptr += nb_fbins
 
     ftr = fr[:, :, :nn//2+1] if real else fr
     sig = ifft(ftr, outn=nn)

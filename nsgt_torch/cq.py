@@ -7,7 +7,7 @@ from .fscale import OctScale, SCALES_BY_NAME
 from math import ceil
 import torch
 from torch import Tensor
-from .interpolation import ALLOWED_MATRIX_FORMS, interpolate, deinterpolate
+from .interpolation import ALLOWED_MATRIX_FORMS, interpolate_nsgt, deinterpolate_nsgt
 from typing import Optional, List
 
 
@@ -219,8 +219,8 @@ class TorchNSGT(torch.nn.Module):
             return C[0], None, None
         else:
             Cmag, Cphase = complex_2_magphase(C)
-            Cmag, ragged_shapes = interpolate(Cmag)
-            Cphase, ragged_shapes = interpolate(Cphase)
+            Cmag, ragged_shapes = interpolate_nsgt(Cmag)
+            Cphase, ragged_shapes = interpolate_nsgt(Cphase)
             C_interp = magphase_2_complex(Cmag, Cphase)
             return C_interp, None, ragged_shapes
 
@@ -237,8 +237,8 @@ class TorchINSGT(torch.nn.Module):
     def forward(self, X, length: int, nb_slices: Optional[int], ragged_shapes: Optional[List[int]]) -> Tensor:
         if self.nsgt.matrixform == 'interpolate':
             Xmag, Xphase = complex_2_magphase(X)
-            Xmag = deinterpolate(Xmag, ragged_shapes)
-            Xphase = deinterpolate(Xphase, ragged_shapes)
+            Xmag = deinterpolate_nsgt(Xmag, ragged_shapes)
+            Xphase = deinterpolate_nsgt(Xphase, ragged_shapes)
             X = magphase_2_complex(Xmag, Xphase)
 
         if type(X) == Tensor:

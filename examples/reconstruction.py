@@ -22,10 +22,8 @@ if __name__ == '__main__':
     parser.add_argument("--fmin", type=float, default=50, help="Minimum frequency in Hz (default=%(default)s)")
     parser.add_argument("--fmax", type=float, default=22050, help="Maximum frequency in Hz (default=%(default)s)")
     parser.add_argument("--gamma", type=float, default=15, help="variable-q frequency offset per band")
-    parser.add_argument("--cmap", type=str, default='hot', help="spectrogram color map")
     parser.add_argument("--scale", choices=('oct','cqlog','mel','bark','Bark','vqlog','pow2'), default='cqlog', help="Frequency scale")
     parser.add_argument("--bins", type=int, default=50, help="Number of frequency bins (total or per octave, default=%(default)s)")
-    parser.add_argument("--fontsize", type=int, default=14, help="Plot font size, default=%(default)s)")
     parser.add_argument("--sllen", type=int, default=None, help="Slice length in samples (default=%(default)s)")
     parser.add_argument("--trlen", type=int, default=None, help="Transition area in samples (default=%(default)s)")
     parser.add_argument("--mono", action='store_true', help="Audio is mono")
@@ -84,8 +82,6 @@ if __name__ == '__main__':
     elif type(C) == Tensor:
         print(f'matrix form, C: {C.shape} {C.dtype}')
 
-    #Cmag_hat = deoverlapnet(Cmag_ola, nb_slices, ragged_ola_shapes)
-    #C_hat = transforms.magphase_2_complex(Cmag_hat, C_phase)
     signal_recon = insgt(C, sf.frames, nb_slices, ragged_shapes_for_deinterp)
 
     print('signal reconstruction errors:')
