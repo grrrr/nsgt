@@ -222,7 +222,7 @@ class TorchINSGT(torch.nn.Module):
 
     def forward(self, X, length: int, ragged_shapes=None) -> Tensor:
         if self.nsgt.matrixform == 'interpolate':
-            Xmag, Xphase = complex_2_magphase(torch.view_as_real(X))
+            Xmag, Xphase = complex_2_magphase(X)
             Xmag = deinterpolate_nsgt(Xmag, ragged_shapes)
             Xphase = deinterpolate_nsgt(Xphase, ragged_shapes)
             X = magphase_2_complex(Xmag, Xphase)
@@ -236,9 +236,6 @@ class TorchINSGT(torch.nn.Module):
 
         X_complex = [None]*len(X_list)
         for i, X in enumerate(X_list):
-            if X.dtype != torch.float32:
-                X = torch.view_as_real(X)
-
             Xdims = len(X.shape)
 
             X = torch.view_as_complex(X)

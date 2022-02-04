@@ -69,8 +69,8 @@ def complex_2_magphase(spec):
     ret_phase = [None]*len(spec)
 
     for i, C_block in enumerate(spec):
-        C_block_phase = torch.angle(torch.view_as_complex(C_block))
         C_block_mag = torch.abs(torch.view_as_complex(C_block))
+        C_block_phase = torch.angle(torch.view_as_complex(C_block))
 
         ret_mag[i] = C_block_mag
         ret_phase[i] = C_block_phase
@@ -80,7 +80,7 @@ def complex_2_magphase(spec):
 
 def magphase_2_complex(C_mag, C_phase):
     if type(C_mag) == torch.Tensor:
-        return torch.polar(C_mag, C_phase)
+        return magphase_2_complex([C_mag], [C_phase])[0]
 
     C_cplx = [None]*len(C_mag)
 

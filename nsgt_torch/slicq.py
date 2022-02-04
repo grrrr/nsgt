@@ -361,7 +361,7 @@ class TorchISliCQT(torch.nn.Module):
 
     def forward(self, X, length: int, ragged_shapes: Optional[List[int]] = None) -> Tensor:
         if self.nsgt.matrixform == 'interpolate':
-            Xmag, Xphase = complex_2_magphase(torch.view_as_real(X))
+            Xmag, Xphase = complex_2_magphase(X)
             Xmag = deinterpolate_slicqt(Xmag, ragged_shapes)
             Xphase = deinterpolate_slicqt(Xphase, ragged_shapes)
             X = magphase_2_complex(Xmag, Xphase)

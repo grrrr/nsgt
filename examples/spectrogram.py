@@ -31,6 +31,7 @@ if __name__ == '__main__':
     parser.add_argument("--sllen", type=int, default=None, help="Slice length in samples (default=%(default)s)")
     parser.add_argument("--trlen", type=int, default=None, help="Transition area in samples (default=%(default)s)")
     parser.add_argument("--plot", action='store_true', help="Plot transform (needs installed matplotlib package)")
+    parser.add_argument("--debug-magphase", action='store_true', help="Plot transform (needs installed matplotlib package)")
     parser.add_argument("--nonsliced", action='store_true', help="Use the NSGT instead of the sliCQT")
     parser.add_argument("--plot-stft", action='store_true', help="Plot STFT and exit")
     parser.add_argument("--stft-window", type=int, default=4096, help="STFT window to use")
@@ -120,17 +121,27 @@ if __name__ == '__main__':
     signal_recon = insgt(C, sf.frames, ragged_shapes=ragged_shapes_for_deinterp)
 
     print('signal reconstruction errors:')
-
     print(f'\tSNR: {-1*auraloss.time.SNRLoss()(signal_recon, signal)}')
     print(f'\tMSE (time-domain waveform): {torch.sqrt(torch.mean((signal_recon - signal)**2))}')
     print(f'\tSI-SDR: {-1*auraloss.time.SISDRLoss()(signal_recon, signal)}')
     print(f'\tSD-SDR: {-1*auraloss.time.SDSDRLoss()(signal_recon, signal)}')
 
+    Cmag, Cphase = complex_2_magphase(C)
+
+    if args.debug_magphase:
+        Chat = magphase_2_complex(Cmag, Cphase)
+
+        signal_recon2 = insgt(Chat, sf.frames, ragged_shapes=ragged_shapes_for_deinterp)
+
+        print('signal reconstruction errors after magphase roundtrip:')
+        print(f'\tSNR: {-1*auraloss.time.SNRLoss()(signal_recon2, signal)}')
+        print(f'\tMSE (time-domain waveform): {torch.sqrt(torch.mean((signal_recon2 - signal)**2))}')
+        print(f'\tSI-SDR: {-1*auraloss.time.SISDRLoss()(signal_recon2, signal)}')
+        print(f'\tSD-SDR: {-1*auraloss.time.SDSDRLoss()(signal_recon2, signal)}')
+
     if args.plot:
         if args.matrixform == 'ragged':
             raise ValueError('spectrogram is not supported for the ragged form')
-
-        Cmag, Cphase = complex_2_magphase(C)
 
         transform_name = 'NSGT'
         if not args.nonsliced:
