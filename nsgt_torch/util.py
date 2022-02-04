@@ -62,7 +62,9 @@ def calcwinrange(g, rfbas, Ls, device="cpu"):
 
 def complex_2_magphase(spec):
     if type(spec) == torch.Tensor:
-        ret_mag, ret_phase = torch.abs(torch.view_as_complex(spec)), atan2(spec[..., 1], spec[..., 0])
+        ret_mag = torch.abs(torch.view_as_complex(spec))
+        ret_phase = atan2(spec[..., 1], spec[..., 0])
+
         return ret_mag, ret_phase
 
     ret_mag = [None]*len(spec)
@@ -99,7 +101,7 @@ def magphase_2_complex(C_mag, C_phase):
     return C_cplx
 
 
-def atan2(y, x):
+def atan2(y, x_input):
     r"""Element-wise arctangent function of y/x.
     Returns a new tensor with signed angles in radians.
     It is an alternative implementation of torch.atan2
@@ -112,6 +114,10 @@ def atan2(y, x):
         Tensor: [shape=y.shape].
     """
     pi = 2 * torch.asin(torch.tensor(1.0))
+
+    # clone the input to not modify it in-place
+    x = x_input.clone()
+
     x += ((x == 0) & (y == 0)) * 1.0
     out = torch.atan(y / x)
     out += ((y >= 0) & (x < 0)) * pi

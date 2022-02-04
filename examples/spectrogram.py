@@ -1,24 +1,18 @@
 import os
 from warnings import warn
 import torch
+from torch import Tensor
+import auraloss
 import numpy
-
-from nsgt_torch.plot import spectrogram
-from nsgt_torch.fscale import SCALES_BY_NAME
-from nsgt.audio import SndReader
-
-# non-sliced NSGT
-from nsgt_torch.cq import NSGTBase, make_nsgt_filterbanks
-
-# sliced sliCQT
-from nsgt_torch.slicq import SliCQTBase, make_slicqt_filterbanks
-
-# misc utils
-from nsgt_torch.util import complex_2_magphase, magphase_2_complex
-from nsgt_torch.interpolation import ALLOWED_MATRIX_FORMS
-
 from argparse import ArgumentParser
 import matplotlib.pyplot as plt
+from nsgt.audio import SndReader
+from nsgt_torch.plot import spectrogram
+from nsgt_torch.fscale import SCALES_BY_NAME
+from nsgt_torch.cq import NSGTBase, make_nsgt_filterbanks
+from nsgt_torch.slicq import SliCQTBase, make_slicqt_filterbanks
+from nsgt_torch.util import complex_2_magphase, magphase_2_complex
+from nsgt_torch.interpolation import ALLOWED_MATRIX_FORMS
 
 
 if __name__ == '__main__':
@@ -47,9 +41,6 @@ if __name__ == '__main__':
     if not os.path.exists(args.input):
         parser.error("Input file '%s' not found"%args.input)
 
-    if args.matrixform == 'ragged':
-        raise ValueError('spectrogram is not supported for the ragged form')
-
     fs = args.sr
 
     # Read audio data
@@ -64,6 +55,7 @@ if __name__ == '__main__':
 
     # duration of signal in s
     dur = sf.frames/float(fs)
+    print(f'input signal: duration {dur:.2f}, shape {signal.shape}')
 
     if args.plot_stft:
         fig = plt.figure()
@@ -113,20 +105,42 @@ if __name__ == '__main__':
         nsgt, insgt = make_slicqt_filterbanks(nsgt_base)
 
     # generator for forward transformation
-    C, *_ = nsgt(signal)
-    Cmag, Cphase = complex_2_magphase(C)
+    C, ragged_shapes_for_deinterp = nsgt(signal)
 
-    transform_name = 'NSGT'
+    print(f'C: {type(C)}')
 
-    if not args.nonsliced:
-        transform_name = 'sliCQT'
-        Cmag = nsgt.overlap_add(Cmag)
+    if type(C) == list:
+        print(f'ragged form, C len: {len(C)}')
+        print(f'\tC[0]: {C[0].shape} {C[0].dtype}')
+        print(f'\t...')
+        print(f'\tC[-1]: {C[-1].shape} {C[-1].dtype}')
+    elif type(C) == Tensor:
+        print(f'matrix form, C: {C.shape} {C.dtype}')
 
-    freqs, qs = nsgt.nsgt.scl()
-    if args.fmin > 0.0:
-        freqs = numpy.r_[[0.], freqs]
+    signal_recon = insgt(C, sf.frames, ragged_shapes=ragged_shapes_for_deinterp)
+
+    print('signal reconstruction errors:')
+
+    print(f'\tSNR: {-1*auraloss.time.SNRLoss()(signal_recon, signal)}')
+    print(f'\tMSE (time-domain waveform): {torch.sqrt(torch.mean((signal_recon - signal)**2))}')
+    print(f'\tSI-SDR: {-1*auraloss.time.SISDRLoss()(signal_recon, signal)}')
+    print(f'\tSD-SDR: {-1*auraloss.time.SDSDRLoss()(signal_recon, signal)}')
 
     if args.plot:
+        if args.matrixform == 'ragged':
+            raise ValueError('spectrogram is not supported for the ragged form')
+
+        Cmag, Cphase = complex_2_magphase(C)
+
+        transform_name = 'NSGT'
+        if not args.nonsliced:
+            transform_name = 'sliCQT'
+            Cmag = nsgt.overlap_add(Cmag)
+
+        freqs, qs = nsgt.nsgt.scl()
+        if args.fmin > 0.0:
+            freqs = numpy.r_[[0.], freqs]
+
         slicq_params = '{0} scale, {1} bins, {2:.1f}-{3:.1f} Hz'.format(args.scale, args.bins, args.fmin, args.fmax)
 
         spectrogram(

@@ -360,13 +360,11 @@ class TorchISliCQT(torch.nn.Module):
         return self
 
     def forward(self, X, length: int, ragged_shapes: Optional[List[int]] = None) -> Tensor:
-        Xmag, Xphase = complex_2_magphase(X)
-
         if self.nsgt.matrixform == 'interpolate':
+            Xmag, Xphase = complex_2_magphase(X)
             Xmag = deinterpolate_slicqt(Xmag, ragged_shapes)
             Xphase = deinterpolate_slicqt(Xphase, ragged_shapes)
-
-        X = magphase_2_complex(Xmag, Xphase)
+            X = magphase_2_complex(Xmag, Xphase)
 
         if type(X) == Tensor:
             X_list = [X]
@@ -391,8 +389,10 @@ class TorchISliCQT(torch.nn.Module):
 
             X_complex[i] = X
 
-        print(f'X_complex backward: {X_complex[0].shape}')
-        y = self.nsgt.nsgt.backward(X_complex, length)
+        if self.nsgt.matrixform == 'zeropad':
+            y = self.nsgt.nsgt.backward(X_complex[0], length)
+        else:
+            y = self.nsgt.nsgt.backward(X_complex, length)
 
         # unpack batch
         y = y.view(*shape[:-3], -1)

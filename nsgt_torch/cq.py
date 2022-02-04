@@ -249,7 +249,6 @@ class TorchINSGT(torch.nn.Module):
 
             X_complex[i] = X
 
-        print(f'X_complex backward: {X_complex[0].shape}')
         if self.nsgt.matrixform == 'zeropad':
             y = self.nsgt.nsgt.backward(X_complex[0])
         else:
