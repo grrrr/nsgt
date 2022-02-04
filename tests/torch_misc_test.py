@@ -120,5 +120,30 @@ def test_magphase_complex_roundtrip_ragged(audio):
     assert np.sqrt(np.mean((audio.detach().numpy() - out.detach().numpy()) ** 2)) < 1e-6
 
 
+def test_polar(audio):
+    audio_n_samples = audio.shape[-1]
+
+    slicqt, islicqt = make_slicqt_filterbanks(SliCQTBase("mel", 200, 32.9, matrixform="zeropad", device="cpu"))
+
+    X, ragged_shapes = slicqt(audio)
+
+    phase = torch.angle(X)
+    mag = torch.abs(X)
+
+    X_hat = torch.polar(mag, phase)
+
+    out = islicqt(X_hat, audio_n_samples, ragged_shapes=ragged_shapes)
+
+    print(auraloss.time.SNRLoss()(audio, out))
+    err = 0.
+    for i, X_hat_block in enumerate(X_hat):
+        err += np.sqrt(np.mean((X_hat_block.detach().numpy() - X[i].detach().numpy()) ** 2))
+
+    err /= len(X_hat)
+    assert err < 1e-6
+    assert np.sqrt(np.mean((audio.detach().numpy() - out.detach().numpy()) ** 2)) < 1e-6
+
+
+
 import pytest
-pytest.main(["-s", "tests/torch_test.py::test_nsgt_cpu_fwd_inv_ragged"])
+pytest.main(["-s", "tests/torch_misc_test.py::test_polar"])

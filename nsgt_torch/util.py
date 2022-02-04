@@ -62,16 +62,14 @@ def calcwinrange(g, rfbas, Ls, device="cpu"):
 
 def complex_2_magphase(spec):
     if type(spec) == torch.Tensor:
-        ret_mag = torch.abs(torch.view_as_complex(spec))
-        ret_phase = atan2(spec[..., 1], spec[..., 0])
-
-        return ret_mag, ret_phase
+        mag, phase = complex_2_magphase([spec])
+        return mag[0], phase[0]
 
     ret_mag = [None]*len(spec)
     ret_phase = [None]*len(spec)
 
     for i, C_block in enumerate(spec):
-        C_block_phase = atan2(C_block[..., 1], C_block[..., 0])
+        C_block_phase = torch.angle(torch.view_as_complex(C_block))
         C_block_mag = torch.abs(torch.view_as_complex(C_block))
 
         ret_mag[i] = C_block_mag
@@ -82,48 +80,11 @@ def complex_2_magphase(spec):
 
 def magphase_2_complex(C_mag, C_phase):
     if type(C_mag) == torch.Tensor:
-        C_cplx = torch.empty(*(*C_mag.shape, 2), dtype=C_mag.dtype, device=C_mag.device)
-        C_cplx[..., 0] = C_mag * torch.cos(C_phase)
-        C_cplx[..., 1] = C_mag * torch.sin(C_phase)
-
-        return C_cplx
+        return torch.polar(C_mag, C_phase)
 
     C_cplx = [None]*len(C_mag)
 
     for i, (C_mag_block, C_phase_block) in enumerate(zip(C_mag, C_phase)):
-        C_cplx_block = torch.empty(*(*C_mag_block.shape, 2), dtype=C_mag_block.dtype, device=C_mag_block.device)
-
-        C_cplx_block[..., 0] = C_mag_block * torch.cos(C_phase_block)
-        C_cplx_block[..., 1] = C_mag_block * torch.sin(C_phase_block)
-
-        C_cplx[i] = C_cplx_block
+        C_cplx[i] = torch.view_as_real(torch.polar(C_mag_block, C_phase_block))
 
     return C_cplx
-
-
-def atan2(y, x_input):
-    r"""Element-wise arctangent function of y/x.
-    Returns a new tensor with signed angles in radians.
-    It is an alternative implementation of torch.atan2
-
-    Args:
-        y (Tensor): First input tensor
-        x (Tensor): Second input tensor [shape=y.shape]
-
-    Returns:
-        Tensor: [shape=y.shape].
-    """
-    pi = 2 * torch.asin(torch.tensor(1.0))
-
-    # clone the input to not modify it in-place
-    x = x_input.clone()
-
-    x += ((x == 0) & (y == 0)) * 1.0
-    out = torch.atan(y / x)
-    out += ((y >= 0) & (x < 0)) * pi
-    out -= ((y < 0) & (x < 0)) * pi
-    out *= 1 - ((y > 0) & (x == 0)) * 1.0
-    out += ((y > 0) & (x == 0)) * (pi / 2)
-    out *= 1 - ((y < 0) & (x == 0)) * 1.0
-    out += ((y < 0) & (x == 0)) * (-pi / 2)
-    return out

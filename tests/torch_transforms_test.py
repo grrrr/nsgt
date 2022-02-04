@@ -106,4 +106,4 @@ def test_slicqt_cpu_fwd_inv_interpolate(audio):
 
 
 import pytest
-pytest.main(["-s", "tests/torch_test.py::test_nsgt_cpu_fwd_inv_ragged"])
+pytest.main(["-s", "tests/torch_transforms_test.py::test_nsgt_cpu_fwd_inv_ragged"])
