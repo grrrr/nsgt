@@ -20,6 +20,9 @@ dependencies:
   - ffmpeg
   - pip
   - pip:
+    - openunmix
+    - musdb>=0.4.0
+    - museval>=0.4.0
     - gitpython
     - matplotlib
     - line_profiler
