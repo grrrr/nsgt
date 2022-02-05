@@ -36,6 +36,7 @@ if __name__ == '__main__':
     parser.add_argument("--stft-window", type=int, default=4096, help="STFT window to use")
     parser.add_argument("--stft-overlap", type=int, default=1024, help="STFT overlap to use")
     parser.add_argument("--matrixform", choices=ALLOWED_MATRIX_FORMS, default='zeropad', help="Matrix form/interpolation strategy to use")
+    parser.add_argument("--flatten", action='store_true', help="Flatten the sliCQ instead of overlap-adding")
 
     args = parser.parse_args()
     if not os.path.exists(args.input):
@@ -136,7 +137,10 @@ if __name__ == '__main__':
         transform_name = 'NSGT'
         if not args.nonsliced:
             transform_name = 'sliCQT'
-            Cmag = nsgt.overlap_add(Cmag)
+            if args.flatten:
+                Cmag = torch.flatten(Cmag, start_dim=-2, end_dim=-1)
+            else:
+                Cmag = nsgt.overlap_add(Cmag)
 
         freqs, qs = nsgt.nsgt.scl()
         if args.fmin > 0.0:
@@ -156,5 +160,6 @@ if __name__ == '__main__':
             fontsize=args.fontsize,
             cmap=args.cmap,
             slicq_name=slicq_params,
-            output_file=args.output
+            output_file=args.output,
+            flattened=args.flatten,
         )

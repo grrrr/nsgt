@@ -3,7 +3,7 @@ import torch
 import numpy
 
 
-def spectrogram(c, fs, chop, coef_factor, transform_name, freqs, frames, sliced=True, fontsize=14, cmap='inferno', slicq_name='', output_file=None):
+def spectrogram(c, fs, chop, coef_factor, transform_name, freqs, frames, sliced=True, fontsize=14, cmap='inferno', slicq_name='', output_file=None, flattened=False):
     if type(c) != torch.Tensor:
         raise ValueError('only use this with interpolated_matrixform')
 
@@ -12,8 +12,6 @@ def spectrogram(c, fs, chop, coef_factor, transform_name, freqs, frames, sliced=
     if sliced:
         mls = mls[:, :, :, int(chop/2):]
         mls = mls[:, :, :, :-int(chop/2)]
-
-    print(f'mls: {mls.shape}')
 
     plt.rcParams.update({'font.size': fontsize})
     fig, axs = plt.subplots(1)
@@ -33,12 +31,12 @@ def spectrogram(c, fs, chop, coef_factor, transform_name, freqs, frames, sliced=
     mls = mls[:ncoefs, :]
 
     mls_dur = len(mls)/fs_coef # final duration of MLS
+    if flattened:
+        mls_dur *= 2.
 
     nb_bins = len(freqs)
-    print(f'nb_bins: {nb_bins}')
 
     mls_max = torch.quantile(mls, 0.999)
-    print(f'mls_dur: {mls_dur}')
     try:
         im = axs.pcolormesh(numpy.linspace(0.0, mls_dur, num=ncoefs), freqs/1000., mls.T, vmin=mls_max-120., vmax=mls_max, cmap=cmap)
     except TypeError:
@@ -55,6 +53,10 @@ def spectrogram(c, fs, chop, coef_factor, transform_name, freqs, frames, sliced=
     axs.set_xlabel('Time (s)')
     axs.set_ylabel('Frequency (kHz)')
     axs.yaxis.get_major_locator().set_params(integer=True)
+
+    if flattened:
+        ticks = axs.get_xticks()
+        axs.set_xticklabels(ticks/2.)
 
     fig.colorbar(im, ax=axs, shrink=1.0, pad=0.006, label='dB')
 
