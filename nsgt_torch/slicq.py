@@ -1,4 +1,5 @@
 import torch
+import copy
 import math
 from torch import Tensor
 import numpy as np
@@ -269,7 +270,6 @@ class SliCQTBase(torch.nn.Module):
 
         self.M = self.nsgt.ncoefs
         self.fbins_actual = self.nsgt.fbins_actual
-        print(f'nsgt_sliced: {self.M} {self.fbins_actual}')
 
     def max_bins(self, bandwidth): # convert hz bandwidth into bins
         if bandwidth is None:
@@ -300,7 +300,6 @@ class TorchSliCQT(torch.nn.Module):
         x = x.view(-1, shape[-1])
 
         C = self.nsgt.nsgt.forward((x,))
-        print(f'forward NSGT out: {len(C)}')
 
         for i, nsgt_f in enumerate(C):
             nsgt_f = torch.moveaxis(nsgt_f, 0, -2)
@@ -361,7 +360,9 @@ class TorchISliCQT(torch.nn.Module):
         self.nsgt._apply(fn)
         return self
 
-    def forward(self, X, length: int, ragged_shapes: Optional[List[int]] = None) -> Tensor:
+    def forward(self, Xorig, length: int, ragged_shapes: Optional[List[int]] = None) -> Tensor:
+        X = copy.deepcopy(Xorig)
+
         if self.nsgt.matrixform == 'interpolate':
             Xmag, Xphase = complex_2_magphase(X)
             Xmag = deinterpolate_slicqt(Xmag, ragged_shapes)
