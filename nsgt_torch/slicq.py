@@ -269,6 +269,7 @@ class SliCQTBase(torch.nn.Module):
 
         self.M = self.nsgt.ncoefs
         self.fbins_actual = self.nsgt.fbins_actual
+        print(f'nsgt_sliced: {self.M} {self.fbins_actual}')
 
     def max_bins(self, bandwidth): # convert hz bandwidth into bins
         if bandwidth is None:
@@ -299,6 +300,7 @@ class TorchSliCQT(torch.nn.Module):
         x = x.view(-1, shape[-1])
 
         C = self.nsgt.nsgt.forward((x,))
+        print(f'forward NSGT out: {len(C)}')
 
         for i, nsgt_f in enumerate(C):
             nsgt_f = torch.moveaxis(nsgt_f, 0, -2)

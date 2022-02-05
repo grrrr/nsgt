@@ -113,7 +113,9 @@ if __name__ == '__main__':
     if type(C) == list:
         print(f'ragged form, C len: {len(C)}')
         print(f'\tC[0]: {C[0].shape} {C[0].dtype}')
+        print(f'\tC[1]: {C[1].shape} {C[1].dtype}')
         print(f'\t...')
+        print(f'\tC[-2]: {C[-2].shape} {C[-2].dtype}')
         print(f'\tC[-1]: {C[-1].shape} {C[-1].dtype}')
     elif type(C) == Tensor:
         print(f'matrix form, C: {C.shape} {C.dtype}')
@@ -138,6 +140,22 @@ if __name__ == '__main__':
         print(f'\tMSE (time-domain waveform): {torch.sqrt(torch.mean((signal_recon2 - signal)**2))}')
         print(f'\tSI-SDR: {-1*auraloss.time.SISDRLoss()(signal_recon2, signal)}')
         print(f'\tSD-SDR: {-1*auraloss.time.SDSDRLoss()(signal_recon2, signal)}')
+
+        Cnew = [None]*len(C)
+        for i, Cblock in enumerate(C):
+            Cmag = torch.abs(torch.view_as_complex(Cblock))
+            Cphase = torch.angle(torch.view_as_complex(Cblock))
+
+            Cblockhat = torch.polar(Cmag, Cphase)
+            Cnew[i] = torch.view_as_real(Cblockhat)
+
+        signal_recon3 = insgt(Cnew, sf.frames, ragged_shapes=ragged_shapes_for_deinterp)
+
+        print('signal reconstruction errors after magphase roundtrip, test2:')
+        print(f'\tSNR: {-1*auraloss.time.SNRLoss()(signal_recon3, signal)}')
+        print(f'\tMSE (time-domain waveform): {torch.sqrt(torch.mean((signal_recon3 - signal)**2))}')
+        print(f'\tSI-SDR: {-1*auraloss.time.SISDRLoss()(signal_recon3, signal)}')
+        print(f'\tSD-SDR: {-1*auraloss.time.SDSDRLoss()(signal_recon3, signal)}')
 
     if args.plot:
         if args.matrixform == 'ragged':

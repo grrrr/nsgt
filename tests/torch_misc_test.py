@@ -6,6 +6,7 @@ from nsgt_torch.slicq import SliCQTBase, make_slicqt_filterbanks
 from nsgt_torch.util import magphase_2_complex, complex_2_magphase
 from nsgt import NSGT_sliced, NSGT
 import auraloss
+import sys
 
 
 # try some durations
@@ -93,8 +94,14 @@ def test_nsgt_magphase_complex_roundtrip_matrixform(audio):
 
     out = insgt(X_hat, audio_n_samples, ragged_shapes=ragged_shapes)
 
+    err = 0.
+    for i, X_hat_block in enumerate(X_hat):
+        err += np.sqrt(np.mean((X_hat_block.detach().numpy() - X[i].detach().numpy()) ** 2))
+
+    err /= len(X_hat)
+    assert err < 1e-6
+
     print(auraloss.time.SNRLoss()(audio, out))
-    assert np.sqrt(np.mean((X_hat.detach().numpy() - X.detach().numpy()) ** 2)) < 1e-6
     assert np.sqrt(np.mean((audio.detach().numpy() - out.detach().numpy()) ** 2)) < 1e-6
 
 
@@ -110,13 +117,14 @@ def test_nsgt_magphase_complex_roundtrip_ragged(audio):
 
     out = insgt(X_hat, audio_n_samples, ragged_shapes=ragged_shapes)
 
-    print(auraloss.time.SNRLoss()(audio, out))
     err = 0.
     for i, X_hat_block in enumerate(X_hat):
         err += np.sqrt(np.mean((X_hat_block.detach().numpy() - X[i].detach().numpy()) ** 2))
 
     err /= len(X_hat)
     assert err < 1e-6
+
+    print(auraloss.time.SNRLoss()(audio, out))
     assert np.sqrt(np.mean((audio.detach().numpy() - out.detach().numpy()) ** 2)) < 1e-6
 
 
@@ -132,8 +140,13 @@ def test_slicqt_magphase_complex_roundtrip_matrixform(audio):
 
     out = islicqt(X_hat, audio_n_samples, ragged_shapes=ragged_shapes)
 
+    err = 0.
+    for i, X_hat_block in enumerate(X_hat):
+        err += np.sqrt(np.mean((X_hat_block.detach().numpy() - X[i].detach().numpy()) ** 2))
+
+    err /= len(X_hat)
+
     print(auraloss.time.SNRLoss()(audio, out))
-    assert np.sqrt(np.mean((X_hat.detach().numpy() - X.detach().numpy()) ** 2)) < 1e-6
     assert np.sqrt(np.mean((audio.detach().numpy() - out.detach().numpy()) ** 2)) < 1e-6
 
 
@@ -149,13 +162,14 @@ def test_slicqt_magphase_complex_roundtrip_ragged(audio):
 
     out = islicqt(X_hat, audio_n_samples, ragged_shapes=ragged_shapes)
 
-    print(auraloss.time.SNRLoss()(audio, out))
     err = 0.
     for i, X_hat_block in enumerate(X_hat):
         err += np.sqrt(np.mean((X_hat_block.detach().numpy() - X[i].detach().numpy()) ** 2))
 
     err /= len(X_hat)
     assert err < 1e-6
+
+    print(auraloss.time.SNRLoss()(audio, out))
     assert np.sqrt(np.mean((audio.detach().numpy() - out.detach().numpy()) ** 2)) < 1e-6
 
 
