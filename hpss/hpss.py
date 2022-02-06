@@ -1,74 +1,55 @@
-import os
-from warnings import warn
-import torch
 import numpy
-import librosa
-from slicqt.audio import SndReader
-import scipy.io.wavfile
-from slicqt.torch_utils import load_deoverlapnet
-import auraloss
-
-from slicqt import torch_transforms as transforms
-
-from argparse import ArgumentParser
+import itertools
+from scipy.signal import butter, lfilter
+from librosa.decompose import hpss
+from librosa.core import stft, istft
+from librosa.util import fix_length
+from .params import DEFAULTS
 
 
-if __name__ == '__main__':
-    parser = ArgumentParser()
+# iterative hpss
+def ihpss(
+    x,
+    pool,
+    harmonic_margin=DEFAULTS["harmonic_margin"],
+    harmonic_frame=DEFAULTS["harmonic_frame"],
+    percussive_margin=DEFAULTS["percussive_margin"],
+    percussive_frame=DEFAULTS["percussive_frame"],
+):
+    print(
+        "Iteration 1 of hpss: frame = {0}, margin = {1}".format(
+            harmonic_frame, harmonic_margin
+        )
+    )
+    # big t-f resolution for harmonic
+    S1 = stft(
+        x,
+        n_fft=2 * harmonic_frame,
+        win_length=harmonic_frame,
+        hop_length=int(harmonic_frame // 2),
+    )
+    S_h1, S_p1 = hpss(S1, margin=harmonic_margin, power=numpy.inf)  # hard mask
+    S_r1 = S1 - (S_h1 + S_p1)
 
-    parser.add_argument("input", type=str, help="Input file")
-    parser.add_argument("--deoverlapnet-path", type=str, default="./pretrained-model")
-    parser.add_argument("--output-png", type=str, help="output png path", default=None)
-    parser.add_argument("--sr", type=int, default=44100, help="Sample rate used for the NSGT (default=%(default)s)")
-    parser.add_argument("--cmap", type=str, default='hot', help="spectrogram color map")
-    parser.add_argument("--fontsize", type=int, default=14, help="Plot font size, default=%(default)s)")
+    yp1 = fix_length(istft(S_p1, dtype=x.dtype), len(x))
+    yr1 = fix_length(istft(S_r1, dtype=x.dtype), len(x))
 
-    args = parser.parse_args()
-    if not os.path.exists(args.input):
-        parser.error("Input file '%s' not found"%args.input)
+    print(
+        "Iteration 2 of hpss: frame = {0}, margin = {1}".format(
+            percussive_frame, percussive_margin
+        )
+    )
+    # small t-f resolution for percussive
+    S2 = stft(
+        yp1 + yr1,
+        n_fft=2 * percussive_frame,
+        win_length=percussive_frame,
+        hop_length=int(percussive_frame // 2),
+    )
+    _, S_p2 = hpss(S2, margin=percussive_margin, power=numpy.inf)  # hard mask
 
-    print('loading deoverlapnet...')
-    deoverlapnet, slicqt, islicqt = load_deoverlapnet(args.deoverlapnet_path)
+    yp = fix_length(istft(S_p2, dtype=x.dtype), len(x))
 
-    fs = args.sr
+    yp_tshaped = yp
 
-    # Read audio data
-    sf = SndReader(args.input, sr=fs, chns=2)
-    signal = sf()
-
-    signal = [torch.tensor(sig) for sig in signal]
-    signal = torch.cat(signal, dim=-1)
-
-    # add a batch
-    signal = torch.unsqueeze(signal, dim=0)
-
-    # duration of signal in s
-    dur = sf.frames/float(fs)
-
-    C = slicqt(signal)
-
-    Cmag, C_phase = transforms.complex_2_magphase(C)
-    Cmag_ola = slicqt.overlap_add(Cmag)
-    nb_slices = Cmag[0].shape[-2]
-
-    ragged_ola_shapes = [Cmag_ola_.shape for Cmag_ola_ in Cmag_ola]
-
-    Cmag_interp_ola = torch.squeeze(torch.mean(slicqt.interpolate(Cmag_ola), dim=1), dim=0)
-    print(f'Cmag_interp_ola: {Cmag_interp_ola.shape}, {Cmag_interp_ola.device}, {Cmag_interp_ola.dtype}')
-
-    H, P = librosa.decompose.hpss(Cmag_interp_ola)
-
-    H = torch.unsqueeze(torch.cat([torch.unsqueeze(H, dim=0),torch.unsqueeze(H, dim=0)], dim=0), dim=0)
-    P = torch.unsqueeze(torch.cat([torch.unsqueeze(P, dim=0),torch.unsqueeze(P, dim=0)], dim=0), dim=0)
-
-    Hmag = deoverlapnet(slicqt.deinterpolate(H, ragged_ola_shapes), nb_slices, ragged_ola_shapes)
-    Pmag = deoverlapnet(slicqt.deinterpolate(P, ragged_ola_shapes), nb_slices, ragged_ola_shapes)
-
-    Hhat = transforms.magphase_2_complex(Hmag, C_phase)
-    Phat = transforms.magphase_2_complex(Pmag, C_phase)
-
-    h_waveform = islicqt(Hhat, signal.shape[-1]).detach().cpu().numpy()
-    p_waveform = islicqt(Phat, signal.shape[-1]).detach().cpu().numpy()
-
-    scipy.io.wavfile.write("harmonic.wav", fs, h_waveform)
-    scipy.io.wavfile.write("percussive.wav", fs, p_waveform)
+    return yp_tshaped, yp
