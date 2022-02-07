@@ -28,20 +28,27 @@ def spectrogram(c, fs, chop, coef_factor, transform_name, freqs, frames, sliced=
     fs_coef = fs*coef_factor # frame rate of coefficients
 
     ncoefs = int(coef_factor*frames)
+    if flattened:
+        ncoefs *= 2
+
     mls = mls[:ncoefs, :]
 
     mls_dur = len(mls)/fs_coef # final duration of MLS
-    if flattened:
-        mls_dur *= 2.
 
     nb_bins = len(freqs)
 
     mls_max = torch.quantile(mls, 0.999)
+
+    dur_for_plot = mls_dur
+    if flattened:
+        # doctor the duration to accomodate the lack of overlap-adding the slices
+        dur_for_plot /= 2
+
     try:
-        im = axs.pcolormesh(numpy.linspace(0.0, mls_dur, num=ncoefs), freqs/1000., mls.T, vmin=mls_max-120., vmax=mls_max, cmap=cmap)
+        im = axs.pcolormesh(numpy.linspace(0.0, dur_for_plot, num=ncoefs), freqs/1000., mls.T, vmin=mls_max-120., vmax=mls_max, cmap=cmap)
     except TypeError:
         freqs = numpy.r_[[0.], freqs]
-        im = axs.pcolormesh(numpy.linspace(0.0, mls_dur, num=ncoefs), freqs/1000., mls.T, vmin=mls_max-120., vmax=mls_max, cmap=cmap)
+        im = axs.pcolormesh(numpy.linspace(0.0, dur_for_plot, num=ncoefs), freqs/1000., mls.T, vmin=mls_max-120., vmax=mls_max, cmap=cmap)
 
     title = f'Magnitude {transform_name}'
 
@@ -53,10 +60,6 @@ def spectrogram(c, fs, chop, coef_factor, transform_name, freqs, frames, sliced=
     axs.set_xlabel('Time (s)')
     axs.set_ylabel('Frequency (kHz)')
     axs.yaxis.get_major_locator().set_params(integer=True)
-
-    if flattened:
-        ticks = axs.get_xticks()
-        axs.set_xticklabels(ticks/2.)
 
     fig.colorbar(im, ax=axs, shrink=1.0, pad=0.006, label='dB')
 
