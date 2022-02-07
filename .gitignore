@@ -11,3 +11,4 @@ nsgt/*.c
 *.wav
 *.png
 src/
+*.json

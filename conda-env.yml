@@ -20,17 +20,19 @@ dependencies:
   - ffmpeg
   - pip
   - pip:
-    - openunmix
-    - musdb>=0.4.0
-    - museval>=0.4.0
+    - musdb==0.3.1
+    - museval==0.3.1
+    - cupy-cuda113
+    - seaborn
+    - pandas
     - gitpython
     - matplotlib
     - line_profiler
     - tensorboard
     - memory_profiler
-    - matplotlib
     - pytest
+    - librosa>=0.9
     - torchinfo
-    - librosa
     - "--editable=git+git://github.com/csteinmetz1/auraloss@main#egg=auraloss"
+    - "--editable=git+git://github.com/OnAir-Music/onair-py#egg=onair"
     - "-e ."

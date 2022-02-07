@@ -249,8 +249,6 @@ SCALES_BY_NAME = {
     'bark': BarkScale,
     'Bark': BarkScale,
     'vqlog': VQLogScale,
-    'pow2': Pow2Scale
+    'pow2': Pow2Scale,
+    'oct': OctScale,
 }
-
-
-

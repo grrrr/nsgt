@@ -140,8 +140,6 @@ class NSGTBase(torch.nn.Module):
             scl_fn = SCALES_BY_NAME[scale]
         except KeyError:
             msg = f'unsupported frequency scale {scale}'
-            if scale == 'oct':
-                msg += '\n\tuse `cqlog` instead of `oct`'
             raise ValueError(msg)
 
         if scale == 'vqlog':
@@ -162,7 +160,6 @@ class NSGTBase(torch.nn.Module):
 
         self.M = self.nsgt.ncoefs
         self.fbins_actual = self.nsgt.fbins_actual
-        print(f'nsgt_sliced: {self.M} {self.fbins_actual}')
 
     def max_bins(self, bandwidth): # convert hz bandwidth into bins
         if bandwidth is None:
@@ -193,7 +190,6 @@ class TorchNSGT(torch.nn.Module):
         x = x.view(-1, nb_timesteps)
 
         C = self.nsgt.nsgt.forward(x)
-        print(f'forward NSGT out: {len(C)}')
 
         for i, nsgt_f in enumerate(C):
             nsgt_f = torch.view_as_real(nsgt_f)
