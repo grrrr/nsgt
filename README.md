@@ -5,8 +5,22 @@ This project is a PyTorch implementation of the Nonstationary Gabor Transform an
 * Bark scale based on the [Barktan formula](https://github.com/stephencwelch/Perceptual-Coding-In-Python/issues/3)
 * Variable-Q scale with a frequency offset parameter, which can be seen in [Schörkhuber et al. 2014](https://www.researchgate.net/publication/274009051_A_Matlab_Toolbox_for_Efficient_Perfect_Reconstruction_Time-Frequency_Transforms_with_Log-Frequency_Resolution) and [Huang et al. 2015](https://www.researchgate.net/publication/292361602_A_Real-Time_Variable-Q_Non-Stationary_Gabor_Transform_for_Pitch_Shifting)
 * Minimum slice length suggestion for a given frequency scale
+* Interpolated matrix form (in addition to the reference zero-padded)
+* Overlap-add procedure for the sliCQT (non-invertible)
+* Example scripts included for [plotting spectrograms](./examples/spectrogram.py) and [Harmonic/Percussive Source Separation](./examples/hpss)
+* High-level Torch transform classes, similar to those used in https://github.com/sevagh/xumx-sliCQ:
+  ```
+  from nsgt_torch.cq import NSGTBase, make_nsgt_filterbanks
+  from nsgt_torch.slicq import SliCQTBase, make_slicqt_filterbanks
 
-This is the standalone version of the sliCQ transform used in https://github.com/sevagh/xumx-sliCQ
+  nsgt_base = NSGTBase('oct', 12, 20., N, fmax=22050., matrixform="zeropad", fs=44100., device="cpu")
+  nsgt, insgt = make_nsgt_filterbanks(nsgt_base)
+
+  slicqt_base = SliCQTBase('oct', 12, 20., fmax=22050., matrixform="zeropad", fs=44100., device="cpu")
+  slicqt, islicqt = make_slicqt_filterbanks(slicqt_base)
+  ```
+
+This is the standalone version of the sliCQ transform used in https://github.com/sevagh/xumx-sliCQ, and presents some improvements and differences over the [main branch](https://github.com/sevagh/nsgt/tree/main) of this repo.
 
 ## STFT vs. sliCQ spectrogram
 
