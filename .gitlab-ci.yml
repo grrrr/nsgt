@@ -23,4 +23,4 @@ upload_nsgt:
   stage: deploy
   script:
     - . $HOME/.profile
-	- make upload
+    - make upload
