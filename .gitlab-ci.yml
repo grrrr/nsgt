@@ -6,8 +6,7 @@ stages:
 make_nsgt:
   stage: build
   script:
-    - sh $HOME/.profile
-    - echo $PATH
+    - . $HOME/.profile
     - make
   artifacts:
     paths:
@@ -17,11 +16,12 @@ make_nsgt:
 test_nsgt:
   stage: test
   script:
-    - sh $HOME/.profile
+    - . $HOME/.profile
+    - echo $PATH
     - make test
 
 upload_nsgt:
   stage: deploy
   script:
-    - sh $HOME/.profile
+    - . $HOME/.profile
     - make upload
