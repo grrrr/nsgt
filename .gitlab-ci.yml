@@ -17,3 +17,10 @@ test_nsgt:
   stage: test
   script:
     - . $HOME/.profile
+    - make test
+	
+upload_nsgt:
+  stage: deploy
+  script:
+    - . $HOME/.profile
+	- make upload
