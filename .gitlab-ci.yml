@@ -1,21 +1,42 @@
 stages:
   - build
+  - test
   - deploy
 
-make_files:
+make_bdist_wheel:
   stage: build
   script:
-    - export PATH="$PATH:$HOME/bin:$HOME/.cabal/bin"
-    - make
+    - . $HOME/.profile
+    - python3 setup.py bdist_wheel
   artifacts:
     paths:
-      - $CI_PROJECT_DIR/build/bdist.*
+      - $CI_PROJECT_DIR/dist/*
     expire_in: 1h
 
-deploy_files:
+make_sdist:
+  stage: build
+  script:
+    - . $HOME/.profile
+    - python3 setup.py sdist
+  artifacts:
+    paths:
+      - $CI_PROJECT_DIR/dist/*
+    expire_in: 1h
+
+test_nsgt:
+  stage: test
+  script:
+    - . $HOME/.profile
+    - python3 setup.py test
+	
+twine_test:
+  stage: test
+  script:
+    - . $HOME/.profile
+    - twine check dist/*
+
+deploy_packages:
   stage: deploy
-  needs: [make_files]
   script:
     - export PATH="$PATH:$HOME/bin:$HOME/.cabal/bin"
-    - make install
-
+	- twine upload dist/*
