@@ -28,7 +28,7 @@ test_nsgt:
   script:
     - . $HOME/.profile
     - python3 setup.py test
-	
+
 twine_test:
   stage: test
   script:
@@ -39,4 +39,4 @@ deploy_packages:
   stage: deploy
   script:
     - export PATH="$PATH:$HOME/bin:$HOME/.cabal/bin"
-	- twine upload dist/*
+    - twine upload dist/*
