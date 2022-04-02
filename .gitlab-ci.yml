@@ -17,11 +17,12 @@ test_nsgt:
   stage: test
   script:
     - . $HOME/.profile
-    - echo $PATH
+    - export PATH="$PATH:~/bin:~/.cabal/bin:~/.local/bin"
     - make test
 
 upload_nsgt:
   stage: deploy
   script:
     - . $HOME/.profile
+    - export PATH="$PATH:~/bin:~/.cabal/bin:~/.local/bin"
     - make upload
