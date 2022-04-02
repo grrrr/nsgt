@@ -1,0 +1,21 @@
+stages:
+  - build
+  - deploy
+
+make_files:
+  stage: build
+  script:
+    - export PATH="$PATH:$HOME/bin:$HOME/.cabal/bin"
+    - make
+  artifacts:
+    paths:
+      - $CI_PROJECT_DIR/build/bdist.*
+    expire_in: 1h
+
+deploy_files:
+  stage: deploy
+  needs: [make_files]
+  script:
+    - export PATH="$PATH:$HOME/bin:$HOME/.cabal/bin"
+    - make install
+
