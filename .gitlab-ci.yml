@@ -3,21 +3,11 @@ stages:
   - test
   - deploy
 
-make_bdist_wheel:
+make_nsgt:
   stage: build
   script:
     - . $HOME/.profile
-    - python3 setup.py bdist_wheel
-  artifacts:
-    paths:
-      - $CI_PROJECT_DIR/dist/*
-    expire_in: 1h
-
-make_sdist:
-  stage: build
-  script:
-    - . $HOME/.profile
-    - python3 setup.py sdist
+    - make
   artifacts:
     paths:
       - $CI_PROJECT_DIR/dist/*
@@ -27,16 +17,10 @@ test_nsgt:
   stage: test
   script:
     - . $HOME/.profile
-    - python3 setup.py test
+    - make test
 	
-twine_test:
-  stage: test
-  script:
-    - . $HOME/.profile
-    - twine check dist/*
-
-deploy_packages:
+upload_nsgt:
   stage: deploy
   script:
-    - export PATH="$PATH:$HOME/bin:$HOME/.cabal/bin"
-	- twine upload dist/*
+    - . $HOME/.profile
+	- make upload
