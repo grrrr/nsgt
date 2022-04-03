@@ -1,4 +1,4 @@
-.PHONY: all test upload
+.PHONY: all test upload github
 
 all:
 	python3 setup.py bdist_wheel
@@ -13,3 +13,7 @@ test:
 
 upload:
 	twine upload --skip-existing dist/*
+
+github:
+	-git remote add github https://$(GITHUB_ACCESS_TOKEN)@github.com/$(GITHUB_USERNAME)/nsgt.git
+	git push github
