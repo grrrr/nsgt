@@ -1,8 +1,3 @@
-stages:
-  - build
-  - test
-  - deploy
-
 make_nsgt:
   stage: build
   script:
@@ -17,7 +12,12 @@ test_nsgt:
   script:
     - make test
 
-upload_nsgt:
+upload_pypi:
   stage: deploy
   script:
-    - make upload
+    - make upload_pypi
+
+push_github:
+  stage: deploy
+  script:
+    - make push_github
