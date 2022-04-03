@@ -12,8 +12,8 @@ build_bdist:
 	python3 setup.py bdist_wheel
 	# for linux use auditwheel to convert to manylinux format
 	if auditwheel repair dist/nsgt*.whl; then \
-		rm dist/nsgt*.whl \
-		mv wheelhouse/nsgt*.whl dist/ \
+		rm dist/nsgt*.whl; \
+		mv wheelhouse/nsgt*.whl dist/; \
 	fi
 	
 # build source dist
