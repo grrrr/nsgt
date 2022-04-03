@@ -1,12 +1,8 @@
 .PHONY: all test build_bdist build_sdist test_nsgt test_dist upload_pypi push_github
 
-all:
-	build_bdist
-	build_sdist
+all: build_bdist build_sdist
 
-test:
-	test_nsgt
-	test_dist
+test: test_nsgt test_dist
 	
 build_bdist:
 	python3 setup.py bdist_wheel
