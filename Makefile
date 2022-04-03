@@ -24,4 +24,6 @@ upload_pypi:
 
 push_github:
 	-git remote add github https://$(GITHUB_ACCESS_TOKEN)@github.com/$(GITHUB_USERNAME)/nsgt.git
-	git push github
+	# we need some extra treatment because the gitlab-runner doesn't check out the full history
+	git push github HEAD:master
+
