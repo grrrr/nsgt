@@ -6,10 +6,10 @@ all:
 	rm dist/nsgt*.whl
 	mv wheelhouse/nsgt*.whl dist/
 	python3 setup.py sdist
-	
+
 test:
 	python3 setup.py test
 	twine check dist/*
-	
+
 upload:
 	twine upload --skip-existing dist/*
