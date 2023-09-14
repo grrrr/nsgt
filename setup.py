@@ -89,13 +89,13 @@ setup(
     install_requires=["numpy"],
     include_dirs=INCLUDE_DIRS,
     packages=['nsgt'],
-    cmdclass=cmdclass,  # Assuming cmdclass is defined elsewhere
-    ext_modules=ext_modules,  # Assuming ext_modules is defined elsewhere
+    cmdclass=cmdclass, 
+    ext_modules=ext_modules,  
     classifiers=[
         "Development Status :: 4 - Beta",
         "Topic :: Scientific/Engineering :: Mathematics",
         "License :: OSI Approved :: Artistic License",
         "Programming Language :: Python"
     ],
-    **setup_options  # Assuming setup_options is defined elsewhere
+    **setup_options 
 )
