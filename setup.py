@@ -67,27 +67,35 @@ else:
                    Extension("nsgt._nsigtf_loop", ["nsgt/nsigtf_loop.pyx"])
     ]
 
+
+try:
+    import numpy
+    INCLUDE_DIRS = [numpy.get_include()]
+except ImportError:
+    INCLUDE_DIRS = []
+
 setup(
-    name = "nsgt",
-    version = "0.19",
-    author = "Thomas Grill",
-    author_email = "gr@grrrr.org",
-    maintainer = "Thomas Grill",
-    maintainer_email = "gr@grrrr.org",
-    description = "Python implementation of Non-Stationary Gabor Transform (NSGT)",
-    license = "Artistic License",
-    keywords = "fourier gabor",
-    url = "http://grrrr.org/nsgt",
-    requires = ["numpy"],
-    include_dirs = [numpy.get_include()],
-    packages = ['nsgt'],
-    cmdclass = cmdclass,
-    ext_modules = ext_modules,
-    classifiers = [
+    name="nsgt",
+    version="0.19",
+    author="Thomas Grill",
+    author_email="gr@grrrr.org",
+    maintainer="Thomas Grill",
+    maintainer_email="gr@grrrr.org",
+    description="Python implementation of Non-Stationary Gabor Transform (NSGT)",
+    license="Artistic License",
+    keywords="fourier gabor",
+    url="http://grrrr.org/nsgt",
+    setup_requires=["numpy"],
+    install_requires=["numpy"],
+    include_dirs=INCLUDE_DIRS,
+    packages=['nsgt'],
+    cmdclass=cmdclass,  # Assuming cmdclass is defined elsewhere
+    ext_modules=ext_modules,  # Assuming ext_modules is defined elsewhere
+    classifiers=[
         "Development Status :: 4 - Beta",
         "Topic :: Scientific/Engineering :: Mathematics",
         "License :: OSI Approved :: Artistic License",
         "Programming Language :: Python"
     ],
-    **setup_options
+    **setup_options  # Assuming setup_options is defined elsewhere
 )
