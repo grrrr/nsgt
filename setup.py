@@ -56,8 +56,6 @@ try:
 except ImportError:
     build_ext = None
     
-import numpy
-
 
 if build_ext is None:
     cmdclass = {}
