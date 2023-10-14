@@ -11,7 +11,11 @@ Austrian Research Institute for Artificial Intelligence (OFAI)
 AudioMiner project, supported by Vienna Science and Technology Fund (WWTF)
 """
 
+import atexit
 import numpy as np
+import os.path
+import pickle
+from threading import Timer
 from warnings import warn
 
 # Try engines in order of:
@@ -111,29 +115,47 @@ elif pyfftw is not None:
     original_fft = np.fft
     # Enable cache to keep wisdom, etc.
     pyfftw.interfaces.cache.enable()
+
+    # Load stored wisdom
+    PYFFTW_WISDOM_FILENAME = os.path.join(os.path.expanduser("~"), ".nsgt_pyfftw_wisdom.p")
+    if os.path.isfile(PYFFTW_WISDOM_FILENAME):
+        with open(PYFFTW_WISDOM_FILENAME, 'rb') as f:
+            pyfftw.import_wisdom(pickle.load(f))
+            print("Loaded pyFFTW wisdom from %s" % PYFFTW_WISDOM_FILENAME)
+
+    def save_wisdom():
+        print("Saving pyFFTW wisdom to %s" % PYFFTW_WISDOM_FILENAME)
+        with open(PYFFTW_WISDOM_FILENAME, 'wb') as f:
+            pickle.dump(pyfftw.export_wisdom(), f)
+
+    # Save wisdom on exit
+    atexit.register(save_wisdom)
 else:
     # fall back to numpy methods
     warn("nsgt.fft falling back to numpy.fft")
     ENGINE = "NUMPY"
 
 if ENGINE in ["PYFFTW", "NUMPY"]:
+    def get_kwargs(measure):
+        return ({'planner_effort': 'FFTW_MEASURE' if measure else 'FFTW_ESTIMATE'}
+                if ENGINE=="PYFFTW" else {})
     class fftp:
         def __init__(self, measure=False, dtype=float):
-            pass
+            self.kwargs = get_kwargs(measure)
         def __call__(self,x, outn=None, ref=False):
-            return np.fft.fft(x)
+            return np.fft.fft(x, **self.kwargs)
     class ifftp:
         def __init__(self, measure=False, dtype=float):
-            pass
+            self.kwargs = get_kwargs(measure)
         def __call__(self,x, outn=None, n=None, ref=False):
-            return np.fft.ifft(x,n=n)
+            return np.fft.ifft(x,n=n,**self.kwargs)
     class rfftp:
         def __init__(self, measure=False, dtype=float):
-            pass
+            self.kwargs = get_kwargs(measure)
         def __call__(self,x, outn=None, ref=False):
-            return np.fft.rfft(x)
+            return np.fft.rfft(x,**self.kwargs)
     class irfftp:
         def __init__(self, measure=False, dtype=float):
-            pass
+            self.kwargs = get_kwargs(measure)
         def __call__(self,x,outn=None,ref=False):
-            return np.fft.irfft(x,n=outn)
+            return np.fft.irfft(x,n=outn,**self.kwargs)

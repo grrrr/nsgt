@@ -2,6 +2,10 @@ import numpy as np
 from nsgt import CQ_NSGT
 import unittest
 
+# Make test deterministic
+np.random.seed(666)
+
+
 class Test_CQ_NSGT(unittest.TestCase):
 
     def test_transform(self, length=100000, fmin=50, fmax=22050, bins=12, fs=44100):

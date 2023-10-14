@@ -2,6 +2,10 @@ import numpy as np
 from nsgt import NSGT, OctScale
 import unittest
 
+# Make test deterministic
+np.random.seed(666)
+
+
 class TestNSGT(unittest.TestCase):
 
     def test_oct(self):

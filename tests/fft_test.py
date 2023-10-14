@@ -2,6 +2,10 @@ import numpy as np
 from nsgt.fft import rfftp, irfftp, fftp, ifftp
 import unittest
 
+# Make test deterministic
+np.random.seed(666)
+
+
 class TestFFT(unittest.TestCase):
     def __init__(self, methodName, n=10000):
         super(TestFFT, self).__init__(methodName)
